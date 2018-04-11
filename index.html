@@ -664,7 +664,7 @@ make
 <li><strong>GUNROCK_APP_TOPK</strong> (default: OFF)</li>
 </ul></li>
 <li><p><strong>GUNROCK_MGPU_TESTS</strong> (default: OFF) - If on, tests multiple GPU primitives with <code>ctest</code>.</p></li>
-<li><p><strong>GUNROCK_GENCODE_SM&lt;&gt;</strong> (default: GUNROCK_GENCODE_SM30,35,61=ON) change to generate code for a different compute capability.</p></li>
+<li><p><strong>GUNROCK_GENCODE_SM<></strong> (default: GUNROCK_GENCODE_SM30,35,61=ON) change to generate code for a different compute capability.</p></li>
 <li><p><strong>CUDA_VERBOSE_PTXAS</strong> (default: OFF) - ON to enable verbose output from the PTXAS assembler.</p></li>
 </ul>
 
@@ -679,7 +679,7 @@ make
 * To download them to your local machine, just type <code>make</code> in the <code>dataset/large/</code> subdirectory.
 * You can also choose to only download one specific dataset to your local machine by stepping into the subdirectory of that dataset and typing make inside that subdirectory.</p>
 <h2 id='hardware'>Hardware</h2>
-<p><strong>Laboratory Tested Hardware:</strong> Gunrock with GeForce GTX 970, Tesla K40s. We have not encountered any trouble in-house with devices with CUDA capability &gt;= 3.0.</p>
+<p><strong>Laboratory Tested Hardware:</strong> Gunrock with GeForce GTX 970, Tesla K40s. We have not encountered any trouble in-house with devices with CUDA capability >= 3.0.</p>
 <h1 id='why-gunrock'>Why Gunrock?</h1>
 <p>Gunrock is a stable, powerful, and forward-looking substrate for GPU-based graph-centric research and development. Like many graph frameworks, it leverages a bulk-synchronous programming model and targets iterative convergent graph computations. We believe that today Gunrock offers both the best performance on GPU graph analytics as well as the widest range of primitives.</p>
 
@@ -797,7 +797,7 @@ As in the other Git workflows, the Forking Workflow begins with an <strong>offic
 <li>Fork using GitHub; https://github.com/gunrock/gunrock</li>
 <li><code>git clone --recursive https://github.com/gunrock/gunrock.git</code></li>
 <li><code>git remote set-url --push origin https://github.com/username/gunrock.git</code> This insures that you are pulling from <code>gunrock/gunrock</code> (staying updated with the main repository) but pushing to your own fork <code>username/gunrock</code>.</li>
-<li><code>git add &lt;filename&gt;</code></li>
+<li><code>git add <filename></code></li>
 <li><code>git commit -m "Describe your changes."</code></li>
 <li><code>git push</code></li>
 <li>Once you've pushed the changes on your fork, you can create a <strong>pull request</strong> on Github to merge the changes.</li>
@@ -837,14 +837,14 @@ idea of what needs to be in the test and what you are missing.</p>
 <p><img src="https://i.imgur.com/5QwKjcB.png" alt="Example CodeCov Stats" /></p>
 <h2 id='example-test-using-googletest'>Example Test Using GoogleTest</h2>
 <ol>
-<li><p>Create a <code>test_&lt;test-name&gt;.h</code> file and place it in the appropriate directory inside <code>/path/to/gunrock/tests/</code>. I will be using <code>test_bfs_lib.h</code> as an example.</p></li>
+<li><p>Create a <code>test_<test-name>.h</code> file and place it in the appropriate directory inside <code>/path/to/gunrock/tests/</code>. I will be using <code>test_bfs_lib.h</code> as an example.</p></li>
 <li><p>In the <code>tests/test.cpp</code> file, add your test file as an include:</p></li>
 </ol>
 <pre class="highlight c tab-c"><code><span class="c1">// Add google tests
 </span><span class="cp">#include "bfs/test_lib_bfs.h"
 </span></code></pre>
 <ol>
-<li><p>In your <code>test_&lt;test-name&gt;.h</code> file, create a <code>TEST()</code> function, which takes two parameters: <code>TEST(&lt;nameofthesuite&gt;, &lt;nameofthetest&gt;)</code>.</p></li>
+<li><p>In your <code>test_<test-name>.h</code> file, create a <code>TEST()</code> function, which takes two parameters: <code>TEST(<nameofthesuite>, <nameofthetest>)</code>.</p></li>
 <li><p>Use <code>EXPECT</code> and <code>ASSERT</code> to write the actual test itself. I have provided a commented example below:</p></li>
 </ol>
 <pre class="highlight c tab-c"><code><span class="cm">/**
@@ -853,10 +853,10 @@ idea of what needs to be in the test and what you are missing.</p>
  */</span>
 
 <span class="c1">// Includes required for the test
-</span><span class="cp">#include &lt;stdio.h&gt;
-#include &lt;gunrock/gunrock.h&gt;
-#include &lt;gmock/gmock.h&gt;
-#include &lt;gtest/gtest.h&gt;
+</span><span class="cp">#include <stdio.h>
+#include <gunrock/gunrock.h>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 </span>
 <span class="c1">// Add to gunrock's namespace
 </span><span class="n">namespace</span> <span class="n">gunrock</span> <span class="p">{</span>
@@ -880,22 +880,22 @@ idea of what needs to be in the test and what you are missing.</p>
 
     <span class="k">struct</span> <span class="n">GRGraph</span> <span class="o">*</span><span class="n">grapho</span> <span class="o">=</span> <span class="p">(</span><span class="k">struct</span> <span class="n">GRGraph</span><span class="o">*</span><span class="p">)</span><span class="n">malloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">GRGraph</span><span class="p">));</span>
     <span class="k">struct</span> <span class="n">GRGraph</span> <span class="o">*</span><span class="n">graphi</span> <span class="o">=</span> <span class="p">(</span><span class="k">struct</span> <span class="n">GRGraph</span><span class="o">*</span><span class="p">)</span><span class="n">malloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="n">GRGraph</span><span class="p">));</span>
-    <span class="n">graphi</span><span class="o">-&gt;</span><span class="n">num_nodes</span>   <span class="o">=</span> <span class="n">num_nodes</span><span class="p">;</span>
-    <span class="n">graphi</span><span class="o">-&gt;</span><span class="n">num_edges</span>   <span class="o">=</span> <span class="n">num_edges</span><span class="p">;</span>
-    <span class="n">graphi</span><span class="o">-&gt;</span><span class="n">row_offsets</span> <span class="o">=</span> <span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">row_offsets</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
-    <span class="n">graphi</span><span class="o">-&gt;</span><span class="n">col_indices</span> <span class="o">=</span> <span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">col_indices</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+    <span class="n">graphi</span><span class="o">-></span><span class="n">num_nodes</span>   <span class="o">=</span> <span class="n">num_nodes</span><span class="p">;</span>
+    <span class="n">graphi</span><span class="o">-></span><span class="n">num_edges</span>   <span class="o">=</span> <span class="n">num_edges</span><span class="p">;</span>
+    <span class="n">graphi</span><span class="o">-></span><span class="n">row_offsets</span> <span class="o">=</span> <span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">row_offsets</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+    <span class="n">graphi</span><span class="o">-></span><span class="n">col_indices</span> <span class="o">=</span> <span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">col_indices</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
 
     <span class="n">gunrock_bfs</span><span class="p">(</span><span class="n">grapho</span><span class="p">,</span> <span class="n">graphi</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">data_t</span><span class="p">);</span>
 
-    <span class="kt">int</span> <span class="o">*</span><span class="n">labels</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="p">)</span><span class="n">malloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span> <span class="o">*</span> <span class="n">graphi</span><span class="o">-&gt;</span><span class="n">num_nodes</span><span class="p">);</span>
-    <span class="n">labels</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="p">)</span><span class="n">grapho</span><span class="o">-&gt;</span><span class="n">node_value1</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="o">*</span><span class="n">labels</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="p">)</span><span class="n">malloc</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span> <span class="o">*</span> <span class="n">graphi</span><span class="o">-></span><span class="n">num_nodes</span><span class="p">);</span>
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="o">*</span><span class="p">)</span><span class="n">grapho</span><span class="o">-></span><span class="n">node_value1</span><span class="p">;</span>
 
     <span class="c1">// IMPORTANT: Expected output is stored in an array to compare against determining if the test passed or failed
 </span>    <span class="kt">int</span> <span class="n">result</span><span class="p">[</span><span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">2147483647</span><span class="p">,</span> <span class="mi">2147483647</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">};</span>
 
-    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">graphi</span><span class="o">-&gt;</span><span class="n">num_nodes</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o"><</span> <span class="n">graphi</span><span class="o">-></span><span class="n">num_nodes</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
       <span class="c1">// IMPORTANT: Compare expected result with the generated labels
-</span>      <span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">&lt;&lt;</span> <span class="s">"Vectors x and y differ at index "</span> <span class="o">&lt;&lt;</span> <span class="n">i</span><span class="p">;</span>
+</span>      <span class="n">EXPECT_EQ</span><span class="p">(</span><span class="n">labels</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o"><<</span> <span class="s">"Vectors x and y differ at index "</span> <span class="o"><<</span> <span class="n">i</span><span class="p">;</span>
     <span class="p">}</span>
 
     <span class="k">if</span> <span class="p">(</span><span class="n">graphi</span><span class="p">)</span> <span class="n">free</span><span class="p">(</span><span class="n">graphi</span><span class="p">);</span>
@@ -947,9 +947,9 @@ the developers of Gunrock.</p>
 <li><p>Load time includes graph generation (for synthetic graphs) or raw data reading
 (for real graphs) + format conversion (to CSR and / or CSC, to UD, when necessary) time</p></li>
 <li><p>Preprocess time includes memory allocation, graph partition (for multiple GPU) and
-initial data transmission (CPU -&gt; GPU) time</p></li>
+initial data transmission (CPU -> GPU) time</p></li>
 <li><p>Process time is the actual algorithm running time on GPU</p></li>
-<li><p>Postprocess time includes resulted data transmission (GPU -&gt; CPU), verification and
+<li><p>Postprocess time includes resulted data transmission (GPU -> CPU), verification and
 clean-up time</p></li>
 <li><p>The total time of our results are dominated by load / write time (our server
 is not optimized for data load / write performance). The processing time may be a better

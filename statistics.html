@@ -7563,7 +7563,7 @@ of graph throughput (millions of edges per second, MTEPS) ...
     "transform": {
         "calculate": [
             {
-                "expr": "datum.speedup &lt; 1 ? \"&lt; 1\" : \"&gt;= 1\"",
+                "expr": "datum.speedup < 1 ? \"< 1\" : \">= 1\"",
                 "field": "faster_or_slower"
             }
         ]
