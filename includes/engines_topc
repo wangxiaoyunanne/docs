@@ -1,18 +1,3 @@
-<h1 id='comparison-with-other-engines'>Comparison with Other Engines</h1>
-<p>We compared Gunrock against several other engines for graph analytics:</p>
-
-<ul>
-<li><a href="http://farkhor.github.io/CuSha/">CuSha (GPU)</a></li>
-<li><a href="http://iss.ices.utexas.edu/?p=projects/galois">Galois (CPU)</a></li>
-<li>Hardwired (primitive-specific) (GPU)</li>
-<li><a href="http://jshun.github.io/ligra/">Ligra (CPU)</a></li>
-<li><a href="https://www.blazegraph.com/mapgraph-technology/">MapGraph (GPU)</a></li>
-<li><a href="https://developer.nvidia.com/nvgraph">nvGRAPH (GPU)</a></li>
-</ul>
-
-<p>Below are comparative results on 5 primitives times 9 datasets in terms
-of graph throughput (millions of edges per second, MTEPS) ...</p>
-
 <p><div id="vis_MTEPS"></div>
   <script>
   var vlSpec = {
@@ -2649,7 +2634,9 @@ of graph throughput (millions of edges per second, MTEPS) ...</p>
   });
   </script></p>
 
-<p>... and elapsed time (ms).</p>
+<aside class="notice">
+... and elapsed time (ms).
+</aside>
 
 <p><div id="vis_elapsed"></div>
   <script>
@@ -5287,7 +5274,9 @@ of graph throughput (millions of edges per second, MTEPS) ...</p>
   });
   </script></p>
 
-<p>Here&#39;s a &quot;Small Multiple Dot Plot&quot; (<a href="https://policyviz.com/hmv_post/run-time-column-chart/">design by Joe Mako</a>) that shows Gunrock speedup over different engines on different primitives and datasets:</p>
+<aside class="notice">
+Here's a "Small Multiple Dot Plot" ([design by Joe Mako](https://policyviz.com/hmv_post/run-time-column-chart/)) that shows Gunrock speedup over different engines on different primitives and datasets:
+</aside>
 
 <p><div id="vis_speedup"></div>
   <script>
