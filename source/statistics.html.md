@@ -1,9 +1,7 @@
 ---
 title: Vega
 
-language_tabs: # must be one of https://git.io/vQNgJ
-  - shell
-  - c
+# language_tabs: # must be one of https://git.io/vQNgJ
 
 toc_footers:
   - <a href='https://github.com/gunrock/gunrock'>Gunrock; GPU Graph Analytics</a>
