@@ -293,7 +293,7 @@ This is a test to ensure gunrock's vega graphs embed correctly.
 <p>Below are comparative results on 5 primitives times 9 datasets in terms
 of graph throughput (millions of edges per second, MTEPS) ...</p>
 
-<div id="vis_MTEPS"></div>
+<p><div id="vis_MTEPS"></div>
   <script>
   var vlSpec = {
     "mark": "point",
@@ -2921,18 +2921,17 @@ of graph throughput (millions of edges per second, MTEPS) ...</p>
     mode: "vega-lite",  // Instruct Vega-Embed to use the Vega-Lite compiler
     spec: vlSpec
   };
-  // Embed the visualization in the container with id `vis_MTEPS`
+  // Embed the visualization in the container with id <code>vis_MTEPS</code>
   vg.embed("#vis_MTEPS", embedSpec, function(error, result) {
     // Callback receiving the View instance and parsed Vega spec
     // result.view is the View, which resides under the
     // '#vis_MTEPS' element
   });
-  </script>
+  </script></p>
 
+<p>... and elapsed time (ms).</p>
 
-... and elapsed time (ms).
-
-  <div id="vis_elapsed"></div>
+<p><div id="vis_elapsed"></div>
   <script>
   var vlSpec = {
     "mark": "point",
@@ -5560,19 +5559,17 @@ of graph throughput (millions of edges per second, MTEPS) ...</p>
     mode: "vega-lite",  // Instruct Vega-Embed to use the Vega-Lite compiler
     spec: vlSpec
   };
-  // Embed the visualization in the container with id `vis_elapsed`
+  // Embed the visualization in the container with id <code>vis_elapsed</code>
   vg.embed("#vis_elapsed", embedSpec, function(error, result) {
     // Callback receiving the View instance and parsed Vega spec
     // result.view is the View, which resides under the
     // '#vis_elapsed' element
   });
-  </script>
+  </script></p>
 
+<p>Here's a "Small Multiple Dot Plot" (<a href="https://policyviz.com/hmv_post/run-time-column-chart/">design by Joe Mako</a>) that shows Gunrock speedup over different engines on different primitives and datasets:</p>
 
-Here's a "Small Multiple Dot Plot" ([design by Joe Mako](https://policyviz.com/hmv_post/run-time-column-chart/)) that shows Gunrock speedup over different engines on different primitives and datasets:
-
-
-  <div id="vis_speedup"></div>
+<p><div id="vis_speedup"></div>
   <script>
   var vlSpec = {
     "mark": "point",
@@ -7572,7 +7569,7 @@ Here's a "Small Multiple Dot Plot" ([design by Joe Mako](https://policyviz.com/h
     "transform": {
         "calculate": [
             {
-                "expr": "datum.speedup < 1 ? \"< 1\" : \">= 1\"",
+                "expr": "datum.speedup &lt; 1 ? \"&lt; 1\" : \"&gt;= 1\"",
                 "field": "faster_or_slower"
             }
         ]
@@ -7626,13 +7623,13 @@ Here's a "Small Multiple Dot Plot" ([design by Joe Mako](https://policyviz.com/h
     mode: "vega-lite",  // Instruct Vega-Embed to use the Vega-Lite compiler
     spec: vlSpec
   };
-  // Embed the visualization in the container with id `vis_speedup`
+  // Embed the visualization in the container with id <code>vis_speedup</code>
   vg.embed("#vis_speedup", embedSpec, function(error, result) {
     // Callback receiving the View instance and parsed Vega spec
     // result.view is the View, which resides under the
     // '#vis_speedup' element
   });
-  </script>
+  </script></p>
 
       </div>
       <div class="dark-box">
