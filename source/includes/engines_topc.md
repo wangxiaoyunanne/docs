@@ -5274,9 +5274,7 @@
   });
   </script>
 
-<aside class="notice">
-Here's a "Small Multiple Dot Plot" ([design by Joe Mako](https://policyviz.com/hmv_post/run-time-column-chart/)) that shows Gunrock speedup over different engines on different primitives and datasets:
-</aside>
+Here's a **"Small Multiple Dot Plot"** ([design by Joe Mako](https://policyviz.com/hmv_post/run-time-column-chart/)) that shows Gunrock speedup over different engines on different primitives and datasets:
 
 
   <div id="vis_speedup"></div>
