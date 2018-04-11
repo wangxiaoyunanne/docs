@@ -22,6 +22,8 @@ Options:
 
 run_build() {
   bundle exec middleman build --clean
+  sed -i -- 's/&quot;/"/g' ./build/*.html
+  sed -i -- 's/&#39;/'"'"'/g' ./build/*.html
 }
 
 parse_args() {
