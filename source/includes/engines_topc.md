@@ -2651,7 +2651,6 @@ of graph throughput (millions of edges per second, MTEPS) ...
 
 ... and elapsed time (ms).
 
-  <!-- Container for the visualization elapsed -->
   <div id="vis_elapsed"></div>
   <script>
   var vlSpec = {
@@ -5291,7 +5290,7 @@ of graph throughput (millions of edges per second, MTEPS) ...
 
 Here's a "Small Multiple Dot Plot" ([design by Joe Mako](https://policyviz.com/hmv_post/run-time-column-chart/)) that shows Gunrock speedup over different engines on different primitives and datasets:
 
-  <!-- Container for the visualization speedup -->
+
   <div id="vis_speedup"></div>
   <script>
   var vlSpec = {
