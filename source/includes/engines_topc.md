@@ -12,7 +12,6 @@ We compared Gunrock against several other engines for graph analytics:
 Below are comparative results on 5 primitives times 9 datasets in terms
 of graph throughput (millions of edges per second, MTEPS) ...
 
-  <!-- Container for the visualization MTEPS -->
   <div id="vis_MTEPS"></div>
   <script>
   var vlSpec = {
@@ -2649,12 +2648,8 @@ of graph throughput (millions of edges per second, MTEPS) ...
   });
   </script>
 
-\endhtmlonly
-
 
 ... and elapsed time (ms).
-
-\htmlonly
 
   <!-- Container for the visualization elapsed -->
   <div id="vis_elapsed"></div>
@@ -5293,12 +5288,8 @@ of graph throughput (millions of edges per second, MTEPS) ...
   });
   </script>
 
-\endhtmlonly
-
 
 Here's a "Small Multiple Dot Plot" ([design by Joe Mako](https://policyviz.com/hmv_post/run-time-column-chart/)) that shows Gunrock speedup over different engines on different primitives and datasets:
-
-\htmlonly
 
   <!-- Container for the visualization speedup -->
   <div id="vis_speedup"></div>
