@@ -13,8 +13,7 @@
 <p>Below are comparative results on 5 primitives times 9 datasets in terms
 of graph throughput (millions of edges per second, MTEPS) ...</p>
 
-<p>&lt;!-- Container for the visualization MTEPS --&gt;
-  <div id="vis_MTEPS"></div>
+<p><div id="vis_MTEPS"></div>
   <script>
   var vlSpec = {
     &quot;mark&quot;: &quot;point&quot;,
@@ -2650,11 +2649,7 @@ of graph throughput (millions of edges per second, MTEPS) ...</p>
   });
   </script></p>
 
-<p>\endhtmlonly</p>
-
 <p>... and elapsed time (ms).</p>
-
-<p>\htmlonly</p>
 
 <p>&lt;!-- Container for the visualization elapsed --&gt;
   <div id="vis_elapsed"></div>
@@ -5293,11 +5288,7 @@ of graph throughput (millions of edges per second, MTEPS) ...</p>
   });
   </script></p>
 
-<p>\endhtmlonly</p>
-
 <p>Here&#39;s a &quot;Small Multiple Dot Plot&quot; (<a href="https://policyviz.com/hmv_post/run-time-column-chart/">design by Joe Mako</a>) that shows Gunrock speedup over different engines on different primitives and datasets:</p>
-
-<p>\htmlonly</p>
 
 <p>&lt;!-- Container for the visualization speedup --&gt;
   <div id="vis_speedup"></div>
