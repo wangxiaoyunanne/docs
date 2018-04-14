@@ -29,4 +29,4 @@ predictor of performance than the input frontier size.</p>
     vegaEmbed(&quot;#output_frontier&quot;, spec, opt);
   </script></p>
 
-<p><a href="md_stats_frontier_table_html.html">Source data</a>, with links to the output JSON for each run</p>
+<p><a href="frontier_size_table_html.html">Source data</a>, with links to the output JSON for each run</p>
