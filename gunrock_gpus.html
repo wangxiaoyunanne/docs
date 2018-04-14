@@ -204,6 +204,18 @@
     <script src="https://cdn.jsdelivr.net/npm/vega@3"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-lite@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/vega-embed@3"></script>
+
+    <style media="screen">
+      /* Add space between vega-embed links */
+      /* http://vega.github.io/vega-tutorials/airports/ */
+      .vega-embed .vega-actions a {
+        margin-left: 1em;
+        visibility: hidden;
+      }
+      .vega-embed:hover .vega-actions a {
+        visibility: visible;
+      }
+    </style>
   </head>
 
   <body class="gunrock_gpus" data-languages="[]">
@@ -225,7 +237,7 @@
           </li>
       </div>
         <ul class="toc-footer">
-            <li><a href='https://github.com/gunrock/gunrock'>Gunrock; GPU Graph Analytics</a></li>
+            <li>#<Middleman::Util::EnhancedHash <a href='https://github.com/gunrock/gunrock'>Gunrock="GPU Graph Analytics</a>"></li>
             <li>Gunrock &copy; 2014&ndash;2018 The Regents of the University of California.</li>
         </ul>
     </div>
