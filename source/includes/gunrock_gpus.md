@@ -10,4 +10,4 @@ We ran Gunrock on several GPUs on 5 primitives times 9 datasets. As the compute 
     vegaEmbed("#vis", spec, opt);
   </script>
 
-[Source data](gunrock_gpus_table_html.html), with links to the output JSON for each run
+[Source data](gunrock_gpus_table.html), with links to the output JSON for each run
