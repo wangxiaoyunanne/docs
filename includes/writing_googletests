@@ -1,4 +1,4 @@
-<h1 id='how-to-write-googletest-for-gunrock'>How to write GoogleTest for Gunrock?</h1>
+<h1 id='googletest-for-gunrock'>GoogleTest for Gunrock</h1>
 <p><strong>Recommended Read:</strong> <a href="https://github.com/google/googletest/blob/master/googletest/docs/Primer.md">Introduction: Why Google C++ Testing Framework?</a></p>
 
 <p>When writing a good test, we would like to cover all possible functions (or execute all code lines),

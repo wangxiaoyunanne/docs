@@ -237,10 +237,10 @@
         <ul class="search-results"></ul>
       <div id="toc" class="toc-list-h1">
           <li>
-            <a href="#gunrock" class="toc-h1 toc-link" data-title="gunrock">Gunrock</a>
+            <a href="#gunrock-gpu-graph-analytics" class="toc-h1 toc-link" data-title="gunrock-gpu-graph-analytics">Gunrock: GPU Graph Analytics</a>
               <ul class="toc-list-h2">
                   <li>
-                    <a href="#links-for-gunrock-source-code" class="toc-h2 toc-link" data-title="links-for-gunrock-source-code">Links for Gunrock source code</a>
+                    <a href="#gunrock-source-code" class="toc-h2 toc-link" data-title="gunrock-source-code">Gunrock Source Code</a>
                   </li>
                   <li>
                     <a href="#getting-started-with-gunrock" class="toc-h2 toc-link" data-title="getting-started-with-gunrock">Getting Started with Gunrock</a>
@@ -337,33 +337,10 @@
             <a href="#road-map" class="toc-h1 toc-link" data-title="road-map">Road Map</a>
           </li>
           <li>
-            <a href="#how-to-write-googletest-for-gunrock" class="toc-h1 toc-link" data-title="how-to-write-googletest-for-gunrock">How to write GoogleTest for Gunrock?</a>
+            <a href="#googletest-for-gunrock" class="toc-h1 toc-link" data-title="googletest-for-gunrock">GoogleTest for Gunrock</a>
               <ul class="toc-list-h2">
                   <li>
                     <a href="#example-test-using-googletest" class="toc-h2 toc-link" data-title="example-test-using-googletest">Example Test Using GoogleTest</a>
-                  </li>
-              </ul>
-          </li>
-          <li>
-            <a href="#results" class="toc-h1 toc-link" data-title="results">Results</a>
-              <ul class="toc-list-h2">
-                  <li>
-                    <a href="#general-remarks" class="toc-h2 toc-link" data-title="general-remarks">General remarks</a>
-                  </li>
-                  <li>
-                    <a href="#breadth-first-search-bfs" class="toc-h2 toc-link" data-title="breadth-first-search-bfs">Breadth-First Search (BFS)</a>
-                  </li>
-                  <li>
-                    <a href="#page-rank-pr" class="toc-h2 toc-link" data-title="page-rank-pr">Page Rank (PR)</a>
-                  </li>
-                  <li>
-                    <a href="#hardware" class="toc-h2 toc-link" data-title="hardware">Hardware</a>
-                  </li>
-                  <li>
-                    <a href="#software" class="toc-h2 toc-link" data-title="software">Software</a>
-                  </li>
-                  <li>
-                    <a href="#gunrock-version" class="toc-h2 toc-link" data-title="gunrock-version">Gunrock version</a>
                   </li>
               </ul>
           </li>
@@ -376,8 +353,8 @@
     <div class="page-wrapper">
       <div class="dark-box"></div>
       <div class="content">
-        <h1 id='gunrock'>Gunrock</h1>
-<p><strong>Gunrock</strong> <a href="http://mario.ece.ucdavis.edu:8080/job/gunrock/job/dev/"><img src="http://mario.ece.ucdavis.edu:8080/buildStatus/icon?job=gunrock/dev" alt="Build Status" /></a> is a CUDA library for graph-processing designed specifically for the
+        <h1 id='gunrock-gpu-graph-analytics'>Gunrock: GPU Graph Analytics</h1>
+<p>Gunrock <a href="http://mario.ece.ucdavis.edu:8080/job/gunrock/job/dev/"><img src="http://mario.ece.ucdavis.edu:8080/buildStatus/icon?job=gunrock/dev" alt="Build Status" /></a> is a CUDA library for graph-processing designed specifically for the
 GPU. It uses a high-level, bulk-synchronous, data-centric abstraction focused
 on operations on a vertex or edge frontier. Gunrock achieves a balance between
 performance and expressiveness by coupling high performance GPU computing
@@ -387,7 +364,7 @@ code size and minimal GPU programming knowledge.</p>
 
 <p>For more details, please visit our
 <a href="http://gunrock.github.io/">website</a>,
-read <a href="http://gunrock.github.io/gunrock/doc/latest/why-gunrock.html">Why Gunrock</a>,
+read <a href="#why-gunrock">Why Gunrock</a>,
 our TOPC 2017 paper
 <a href="http://escholarship.org/uc/item/9gj6r1dj">Gunrock: GPU Graph Analytics</a>,
 look at our <a href="#results">results</a>,
@@ -395,22 +372,27 @@ and find more details in our <a href="#publications">publications</a>.
 See <a href="http://gunrock.github.io/gunrock/doc/latest/release_notes.html">Release Notes</a> to keep up with the our latest changes.</p>
 
 <p>Gunrock is featured on NVIDIA's list of <a href="https://developer.nvidia.com/gpu-accelerated-libraries">GPU Accelerated Libraries</a> as the only external library for GPU graph analytics.</p>
-<h2 id='links-for-gunrock-source-code'>Links for Gunrock source code</h2>
-<p>[ <a href="http://gunrock.github.io/gunrock/doc/latest/pages.html">Related Pages</a> |
-<a href="http://gunrock.github.io/gunrock/doc/latest/modules.html">Modules</a> |
-<a href="http://gunrock.github.io/gunrock/doc/latest/namespaces.html">Namespaces</a> |
-<a href="http://gunrock.github.io/gunrock/doc/latest/annotated.html">Data Structures</a> |
-<a href="http://gunrock.github.io/gunrock/doc/latest/files.html">Files</a> ]</p>
+<h2 id='gunrock-source-code'>Gunrock Source Code</h2>
+<table><thead>
+<tr>
+<th><a href="http://gunrock.github.io/gunrock/doc/latest/pages.html">Related Pages</a></th>
+<th><a href="http://gunrock.github.io/gunrock/doc/latest/modules.html">Modules</a></th>
+<th><a href="http://gunrock.github.io/gunrock/doc/latest/namespaces.html">Namespaces</a></th>
+<th><a href="http://gunrock.github.io/gunrock/doc/latest/annotated.html">Data Structures</a></th>
+<th><a href="http://gunrock.github.io/gunrock/doc/latest/files.html">Files</a></th>
+</tr>
+</thead><tbody>
+</tbody></table>
 <h2 id='getting-started-with-gunrock'>Getting Started with Gunrock</h2>
 <ul>
 <li><p>For Frequently Asked Questions, see the
 <a href="http://gunrock.github.io/gunrock/doc/latest/faq.html">FAQ</a>.</p></li>
 <li><p>For information on building Gunrock, see
-<a href="http://gunrock.github.io/gunrock/doc/latest/building_gunrock.html">Building Gunrock</a>.</p></li>
+<a href="#building-gunrock">Building Gunrock</a>.</p></li>
 <li><p>The "tests" subdirectory included with Gunrock has a comprehensive test
 application for most the functionality of Gunrock.</p></li>
 <li><p>For the programming model we use in Gunrock, see
-<a href="http://gunrock.github.io/gunrock/doc/latest/programming_model.html">Programming Model</a>.</p></li>
+<a href="#programming-model">Programming Model</a>.</p></li>
 <li><p>We have also provided code samples for how to use
 <a href="https://github.com/gunrock/gunrock/tree/master/shared_lib_tests">Gunrock's C interface</a>
 and how to
@@ -785,7 +767,7 @@ reduction and segmented intersection. Generally we want to find the right set of
 <li><p><strong>API:</strong> We would like to make an API refactoring to simplify parameter passing and to isolate parts of the library that dependencies are not necessary. The target is to make the frontier concept more clear, and to promote code reuse.</p></li>
 <li><p><strong>Primitives:</strong> Our near-term goal is to graduate several primitives in dev branch including A* search, weighted label propagation, subgraph matching, triangle counting, and clustering coefficients; implement maximal independent set, max flow, and graph coloring algorithms, build better support for bipartite graph algorithms, and explore community detection algorithms. Our long term goals include algorithms on dynamic graphs, multi-level priority queue support, graph partitioning, and more flexible and scalable multi-GPU algorithms.</p></li>
 </ul>
-<h1 id='how-to-write-googletest-for-gunrock'>How to write GoogleTest for Gunrock?</h1>
+<h1 id='googletest-for-gunrock'>GoogleTest for Gunrock</h1>
 <p><strong>Recommended Read:</strong> <a href="https://github.com/google/googletest/blob/master/googletest/docs/Primer.md">Introduction: Why Google C++ Testing Framework?</a></p>
 
 <p>When writing a good test, we would like to cover all possible functions (or execute all code lines),
@@ -891,300 +873,6 @@ This binary it automatically compiled when gunrock is built, and is found in <co
 <li>I highly recommend reading the Primer document mentioned at the start of this tutorial. It explains in detail how to write a unit test using google test. My tutorial has more been about how to incorporate it into Gunrock.</li>
 <li>Another interesting read is <a href="https://testing.googleblog.com/2014/07/measuring-coverage-at-google.html">Measuring Coverage at Google</a>.</li>
 </ul>
-<h1 id='results'>Results</h1>
-<p>The following are some preliminary performance results. It is meant to give a rough idea
-of how Gunrock performs with specific version, testing environment, parameters
-and datasets. The numbers may change (with very high chances in reality),
-throughout the development of the library, and / or with different environments,
-running parameters and datasets. If more accurate numbers (e.g. for comparison
-in a paper), or results with different parameters / datasets, please contact
-the developers of Gunrock.</p>
-<h2 id='general-remarks'>General remarks</h2>
-<ul>
-<li>All timings are shown in Millisecond (ms).</li>
-<li><p>Abreviation:</p>
-
-<ul>
-<li>CSR   = compressed sparse row</li>
-<li>CSC   = compressed sparse column</li>
-<li>D     = directed</li>
-<li>UD    = undirected</li>
-<li>SOC   = social graph</li>
-<li>MTEPS = million traversed edges per second</li>
-<li>MTVPS = million traversed vertices per second</li>
-<li>V     = vertex</li>
-<li>E     = edge</li>
-<li>H     = hardware</li>
-<li>S     = software</li>
-<li>G     = Gunrock</li>
-<li>P     = parameter</li>
-</ul></li>
-<li><p>Load time includes graph generation (for synthetic graphs) or raw data reading
-(for real graphs) + format conversion (to CSR and / or CSC, to UD, when necessary) time</p></li>
-<li><p>Preprocess time includes memory allocation, graph partition (for multiple GPU) and
-initial data transmission (CPU -> GPU) time</p></li>
-<li><p>Process time is the actual algorithm running time on GPU</p></li>
-<li><p>Postprocess time includes resulted data transmission (GPU -> CPU), verification and
-clean-up time</p></li>
-<li><p>The total time of our results are dominated by load / write time (our server
-is not optimized for data load / write performance). The processing time may be a better
-indicator of performance.</p></li>
-</ul>
-<h2 id='breadth-first-search-bfs'>Breadth-First Search (BFS)</h2>
-<table><thead>
-<tr>
-<th>No.</th>
-<th>Dataset</th>
-<th>graph type</th>
-<th>V</th>
-<th>E</th>
-<th>root vertex</th>
-<th>iteration</th>
-<th>process time</th>
-<th>MTEPS</th>
-<th>MTVPS</th>
-<th>load time</th>
-<th>preprocess time</th>
-<th>postprocess time</th>
-<th>write time</th>
-<th>total time</th>
-<th>condition</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>1</td>
-<td>friendster_edges_small_2hop</td>
-<td>SOC, CSR, D</td>
-<td>121,674,532</td>
-<td>20,509</td>
-<td>3,546,566</td>
-<td>6</td>
-<td>17.2760</td>
-<td>1.1871</td>
-<td>0.4893</td>
-<td>12,590.6990</td>
-<td>17,114.5179</td>
-<td></td>
-<td>112.5512</td>
-<td>31,016.4499</td>
-<td>H1 + S1 + G1 + P1</td>
-</tr>
-<tr>
-<td>2</td>
-<td>friendster_edges_gte_1M</td>
-<td>SOC, CSR, D</td>
-<td>124,836,417</td>
-<td>8,361,851</td>
-<td>27,345,193</td>
-<td>10</td>
-<td>30.0791</td>
-<td>227.9951</td>
-<td>101.5078</td>
-<td>12,519.1791</td>
-<td>17,790.8509</td>
-<td></td>
-<td>2,787.5559</td>
-<td>34,283.0300</td>
-<td>H1 + S1 + G1 + P1</td>
-</tr>
-<tr>
-<td>3</td>
-<td>friendster_edges_gte_10M</td>
-<td>SOC, CSR, D</td>
-<td>124,836,417</td>
-<td>1,342,099,766</td>
-<td>71,768,986</td>
-<td>12</td>
-<td>1,442.8939</td>
-<td>930.1573</td>
-<td>68.5219</td>
-<td>12,633.6250</td>
-<td>103,272.5029</td>
-<td></td>
-<td>42,752.1100</td>
-<td>161,598.9239</td>
-<td>H1 + S1 + G1 + P1</td>
-</tr>
-<tr>
-<td>4</td>
-<td>com_friendster</td>
-<td>SOC, CSR, D</td>
-<td>124,836,419</td>
-<td>1,806,067,135</td>
-<td>7,688,909</td>
-<td>31</td>
-<td>1,425.3568</td>
-<td>1267.0983</td>
-<td>108.0366</td>
-<td>16,707.1941</td>
-<td>145,548.2471</td>
-<td></td>
-<td>65,636.1299</td>
-<td>231,047.3258</td>
-<td>H1 + S1 + G1 + P1</td>
-</tr>
-<tr>
-<td>5</td>
-<td>com_LiveJournal</td>
-<td>SOC, CSR, D</td>
-<td>4,036,537</td>
-<td>34,681,189</td>
-<td>9,766</td>
-<td>17</td>
-<td>49.9380</td>
-<td>694.4850</td>
-<td>191.7421</td>
-<td>12,260.1349</td>
-<td>1,461.0670</td>
-<td></td>
-<td>12,260.1349</td>
-<td>18,522.2769</td>
-<td>H1 + S1 + G1 + P1</td>
-</tr>
-</tbody></table>
-<h3 id='parameters'>Parameters</h3>
-<ul>
-<li>P1 = --traversal-mode=0 --device=0,1,2,3 --src=largestdegree --mark-pred --quick --output_filename=some_valid_filename</li>
-</ul>
-<h3 id='remarks'>Remarks</h3>
-<ul>
-<li>Idempotence is disabled when --mark-pred (mark predecessors) is used.</li>
-</ul>
-<h2 id='page-rank-pr'>Page Rank (PR)</h2>
-<table><thead>
-<tr>
-<th>No.</th>
-<th>Dataset</th>
-<th>graph type</th>
-<th>V</th>
-<th>E</th>
-<th>iteration</th>
-<th>process time</th>
-<th>MTEPS</th>
-<th>MTVPS</th>
-<th>load time</th>
-<th>preprocess time</th>
-<th>postprocess time</th>
-<th>write time</th>
-<th>total time</th>
-<th>condition</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>1</td>
-<td>friendster_edges_small_2hop</td>
-<td>SOC, CSR, D</td>
-<td>121,674,532</td>
-<td>20,509</td>
-<td>18</td>
-<td>5,287.1938</td>
-<td>0.0698</td>
-<td>414.2352</td>
-<td>10,758.1401</td>
-<td>241.4210</td>
-<td></td>
-<td>235,052.1171</td>
-<td>251,862.2911</td>
-<td>H2 + S1 + G1 + P1</td>
-</tr>
-<tr>
-<td>2</td>
-<td>friendster_edges_gte_1M</td>
-<td>SOC, CSR, D</td>
-<td>124,836,417</td>
-<td>8,361,851</td>
-<td>41</td>
-<td>13,322.2578</td>
-<td>25.7340</td>
-<td>384.1911</td>
-<td>10,514.4429</td>
-<td>156.9688</td>
-<td></td>
-<td>245,985.4951</td>
-<td>270,482.5490</td>
-<td>H2 + S1 + G1 + P1</td>
-</tr>
-<tr>
-<td>3</td>
-<td>friendster_edges_gte_10M</td>
-<td>SOC, CSR, D</td>
-<td>124,836,417</td>
-<td>1,342,099,766</td>
-<td>78</td>
-<td>173,413.8281</td>
-<td>603.6646</td>
-<td>56.1503</td>
-<td>13,701.0510</td>
-<td>2,358.1159</td>
-<td></td>
-<td>222,023.1612</td>
-<td>412,033.6931</td>
-<td>H2 + S1 + G1 + P1</td>
-</tr>
-<tr>
-<td>4</td>
-<td>com_friendster</td>
-<td>SOC, CSR, D</td>
-<td>124,836,419</td>
-<td>1,806,067,135</td>
-<td>100</td>
-<td>308,233.7812</td>
-<td>585.9407</td>
-<td>40.5005</td>
-<td>14,585.0809</td>
-<td>3,117.2709</td>
-<td></td>
-<td>240,381.1152</td>
-<td>567,139.1692</td>
-<td>H2 + S1 + G1 + P1</td>
-</tr>
-<tr>
-<td>5</td>
-<td>com_LiveJournal</td>
-<td>SOC, CSR, D</td>
-<td>4,036,537</td>
-<td>34,681,189</td>
-<td>23</td>
-<td>2,333.8479</td>
-<td>341.7821</td>
-<td>369.7800</td>
-<td>8,339.2031</td>
-<td>100.7540</td>
-<td></td>
-<td>7,719.7220</td>
-<td>18,512.9559</td>
-<td>H2 + S1 + G1 + P1</td>
-</tr>
-</tbody></table>
-<h3 id='paramters'>Paramters</h3>
-<ul>
-<li>P1 = --traversal-mode=1 --device=2 --quick --delta=0.85 --error=0.001 --max-iter=100 --normalized --queue-sizing=1 --queue-sizing1=0</li>
-</ul>
-<h3 id='remarks-2'>Remarks</h3>
-<ul>
-<li>PR has two formulations, and Gunrock has both implemented. The
-unnormalized one is the one described by the original PR paper;
-it does not converge and can be called by not passing --normalized
-to the Gunrock executable. The normalized one is the one that actually
-converge, and can be called by passing --normalized to the Gunrock
-executable.</li>
-<li>No special treatment is used for 0-out degree vertices, and we use
-a directed graph, so ranks can escape from those vertices. There is a
-way to solve this by distributing the rank of those vertices to all
-vertices. This should make the total rank always equal to 1 (when using
-the normalized formula), but we have not implemented this yet.</li>
-</ul>
-<h2 id='hardware'>Hardware</h2>
-<ul>
-<li>H1 = 4 x NVIDIA Tesla K40c, 2 x Intel Xeon E5-2637 v2, 256 GB DDR3 RAM with ECC</li>
-<li>H2 = 1 x NVIDIA Telsa K40c, 2 x Intel Xeon E5-2637 v2, 256 GB DDR3 RAM with ECC</li>
-</ul>
-<h2 id='software'>Software</h2>
-<ul>
-<li>S1 = ubuntu 14.04.3 LTS (GNU/Linux 3.13.0-62-generic x86_64), NVIDIA GPU driver 352.30, CUDA 7.5, gcc 4.8.4</li>
-</ul>
-<h2 id='gunrock-version'>Gunrock version</h2>
-<p>G1 = dev, bc761f0c78ac855e33587c4be55e2cf672013de5, 2015.12.31</p>
 
       </div>
       <div class="dark-box">
