@@ -13,4 +13,4 @@ Because none of these partitioning methods is clearly superior, all our multi-GP
     vegaEmbed("#mgpu_partition", spec, opt);
   </script>
 
-[Source data](md_stats_mgpu_partition_table_html.html), with links to the output JSON for each run
+[Source data](tables/mgpu_partition_table.html), with links to the output JSON for each run
