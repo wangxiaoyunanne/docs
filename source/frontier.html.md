@@ -8,7 +8,7 @@ toc_footers:
   - Gunrock &copy; 2014&ndash;2018 The Regents of the University of California.
 
 includes:
-  - frontier
+  - frontier_size
 
 search: true
 ---
