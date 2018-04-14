@@ -1,4 +1,4 @@
-# How to write GoogleTest for Gunrock?
+# GoogleTest for Gunrock
 
 **Recommended Read:** [Introduction: Why Google C++ Testing Framework?](https://github.com/google/googletest/blob/master/googletest/docs/Primer.md)
 

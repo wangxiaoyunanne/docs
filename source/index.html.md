@@ -17,14 +17,14 @@ includes:
   - forking_workflow_gunrock
   - road_map
   - writing_googletests
-  - results
+# - results
 
 search: true
 ---
 
-# Gunrock
+# Gunrock: GPU Graph Analytics
 
-**Gunrock** [![Build Status](http://mario.ece.ucdavis.edu:8080/buildStatus/icon?job=gunrock/dev)](http://mario.ece.ucdavis.edu:8080/job/gunrock/job/dev/) is a CUDA library for graph-processing designed specifically for the
+Gunrock [![Build Status](http://mario.ece.ucdavis.edu:8080/buildStatus/icon?job=gunrock/dev)](http://mario.ece.ucdavis.edu:8080/job/gunrock/job/dev/) is a CUDA library for graph-processing designed specifically for the
 GPU. It uses a high-level, bulk-synchronous, data-centric abstraction focused
 on operations on a vertex or edge frontier. Gunrock achieves a balance between
 performance and expressiveness by coupling high performance GPU computing
@@ -34,7 +34,7 @@ code size and minimal GPU programming knowledge.
 
 For more details, please visit our
 [website](http://gunrock.github.io/),
-read [Why Gunrock](http://gunrock.github.io/gunrock/doc/latest/why-gunrock.html),
+read [Why Gunrock](#why-gunrock),
 our TOPC 2017 paper
 [Gunrock: GPU Graph Analytics](http://escholarship.org/uc/item/9gj6r1dj),
 look at our [results](#results),
@@ -43,13 +43,11 @@ See [Release Notes](http://gunrock.github.io/gunrock/doc/latest/release_notes.ht
 
 Gunrock is featured on NVIDIA's list of [GPU Accelerated Libraries](https://developer.nvidia.com/gpu-accelerated-libraries) as the only external library for GPU graph analytics.
 
-## Links for Gunrock source code
+## Gunrock Source Code
 
-[ [Related Pages](http://gunrock.github.io/gunrock/doc/latest/pages.html) |
-[Modules](http://gunrock.github.io/gunrock/doc/latest/modules.html) |
-[Namespaces](http://gunrock.github.io/gunrock/doc/latest/namespaces.html) |
-[Data Structures](http://gunrock.github.io/gunrock/doc/latest/annotated.html) |
-[Files](http://gunrock.github.io/gunrock/doc/latest/files.html) ]
+[Related Pages](http://gunrock.github.io/gunrock/doc/latest/pages.html) | [Modules](http://gunrock.github.io/gunrock/doc/latest/modules.html) | [Namespaces](http://gunrock.github.io/gunrock/doc/latest/namespaces.html) | [Data Structures](http://gunrock.github.io/gunrock/doc/latest/annotated.html) | [Files](http://gunrock.github.io/gunrock/doc/latest/files.html) |
+-------------------------------------------------------------------------|---------------------------------------------------------------------|---------------------------------------------------------------------------|-------------------------------------------------------------------------------|-----------------------------------------------------------------|
+
 
 
 ## Getting Started with Gunrock
@@ -58,13 +56,13 @@ Gunrock is featured on NVIDIA's list of [GPU Accelerated Libraries](https://deve
 [FAQ](http://gunrock.github.io/gunrock/doc/latest/faq.html).
 
 - For information on building Gunrock, see
-[Building Gunrock](http://gunrock.github.io/gunrock/doc/latest/building_gunrock.html).
+[Building Gunrock](#building-gunrock).
 
 - The "tests" subdirectory included with Gunrock has a comprehensive test
 application for most the functionality of Gunrock.
 
 - For the programming model we use in Gunrock, see
-[Programming Model](http://gunrock.github.io/gunrock/doc/latest/programming_model.html).
+[Programming Model](#programming-model).
 
 - We have also provided code samples for how to use
 [Gunrock's C interface](https://github.com/gunrock/gunrock/tree/master/shared_lib_tests)
