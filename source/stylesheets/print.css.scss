@@ -22,6 +22,7 @@ under the License.
 $print-color: #999;
 $print-color-light: #ccc;
 $print-font-size: 12px;
+$print-border-color: #e1e4e5;
 
 body {
   @extend %default-font;
@@ -62,9 +63,11 @@ body {
   }
 
   table {
-    border: 1px solid $print-color;
+    // border: 1px solid $print-color;
+    border: 0px;
     tr {
-      border-bottom: 1px solid $print-color;
+      // border-bottom: 1px solid $print-color;
+      border: 1px solid $print-border-color;
     }
     td,th {
       padding: 0.7em;
