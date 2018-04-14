@@ -22,4 +22,4 @@ PageRank<div id="mgpu_scalability_PageRank"></div>
     vegaEmbed(&quot;#mgpu_scalability_PageRank&quot;, spec, opt);
   </script></p>
 
-<p>[<a href="mgpu_scalability_DOBFS_table.html">DOBFS source data</a>] [<a href="mgpu_scalability_BFS_table.html">BFS source data</a>] [<a href="mgpu_scalability_PageRank_table.html">PageRank source data</a>], with links to the output JSON for each run<br/></p>
+<p>[<a href="tables/mgpu_scalability_DOBFS_table.html">DOBFS source data</a>] [<a href="tables/mgpu_scalability_BFS_table.html">BFS source data</a>] [<a href="tables/mgpu_scalability_PageRank_table.html">PageRank source data</a>], with links to the output JSON for each run<br/></p>

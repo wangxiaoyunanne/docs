@@ -17,6 +17,6 @@
     vegaEmbed(&quot;#mgpu_speedup_geomean&quot;, spec, opt);
   </script></p>
 
-<p><a href="mgpu_speedup_all_table.html">Source data</a>, with links to the output JSON for each run<br/></p>
+<p><a href="tables/mgpu_speedup_all_table.html">Source data</a>, with links to the output JSON for each run<br/></p>
 
-<p><a href="mgpu_speedup_geomean_table.html">Geomean source data</a></p>
+<p><a href="tables/mgpu_speedup_geomean_table.html">Geomean source data</a></p>
