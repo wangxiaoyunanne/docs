@@ -201,46 +201,9 @@
     <link href="stylesheets/print.css" rel="stylesheet" media="print" />
       <script src="javascripts/all.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.17/d3.js" charset="utf-8"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vega/2.6.5/vega.js" charset="utf-8"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-lite/1.3.1/vega-lite.js" charset="utf-8"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/vega-embed/2.2.0/vega-embed.js" charset="utf-8"></script>
-
-    <script type="text/javascript">
-        // parse a spec and create a visualization view
-        function plot(divid, spec) {
-            vg.parse.spec(spec, function(chart) {
-                chart({el:"#" + divid}).update();
-            });
-        }
-        function plotvl(divid, spec) {
-            var vgSpec = vl.compile(spec).spec;
-            vg.parse.spec(vgSpec, function(chart) {
-                chart({el:"#" + divid}).update();
-            });
-        }
-        function plotjson(divid, jsonpath) {
-            $.getJSON(jsonpath, function(result) {
-                plot(divid, result);
-            });
-        }
-        function plotvljson(divid, jsonpath) {
-            $.getJSON(jsonpath, function(result) {
-                plotvl(divid, result);
-            });
-        }
-    </script>
-    <style media="screen">
-      /* Add space between vega-embed links */
-      /* http://vega.github.io/vega-tutorials/airports/ */
-      .vega-embed .vega-actions a {
-        margin-left: 1em;
-        visibility: hidden;
-      }
-      .vega-embed:hover .vega-actions a {
-        visibility: visible;
-      }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/vega@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@3"></script>
   </head>
 
   <body class="gunrock_gpus" data-languages="[]">
