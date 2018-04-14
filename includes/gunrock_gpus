@@ -8,4 +8,4 @@
     vegaEmbed(&quot;#vis&quot;, spec, opt);
   </script></p>
 
-<p><a href="gunrock_gpus_table_html.html">Source data</a>, with links to the output JSON for each run</p>
+<p><a href="gunrock_gpus_table.html">Source data</a>, with links to the output JSON for each run</p>
