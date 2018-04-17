@@ -15,9 +15,10 @@ includes:
   - methodology
   - programming_model
   - forking_workflow_gunrock
-  - road_map
   - writing_googletests
-# - results
+  - road_map
+  - release_notes
+  - FAQ
 
 search: true
 ---
