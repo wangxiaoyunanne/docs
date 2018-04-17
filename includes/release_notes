@@ -1,4 +1,115 @@
-<h1 id='gunrock-v0-4-release-notes-release_notes'>Gunrock v0.4 Release Notes {#release_notes}</h1>
+<h1 id='gunrock-v0-5-release-notes'>Gunrock v0.5 Release Notes</h1>
+<p>Release 0.5, Upcoming</p>
+
+<p>Release 0.5 is mainly a API refactor, with some feature updates:
+- New operator interfaces
+- New graph representations
+- New frontier structure
+- New test driver
+- Restructured enactor routines
+- New parameter handling
+- New 1D operators
+- Other code restructuring
+- Optional Boost dependency</p>
+<h2 id='changelog'>ChangeLog</h2>
+<ul>
+<li><p>Operators (i.e. advance, filter)</p>
+
+<ul>
+<li>Take in lambda functions for per-element operations, instead of static
+functions in a structure. <code>&lt;algo&gt;_functor.cuh</code> is merged into
+<code>&lt;algo&gt;_enactor.cuh</code></li>
+<li>Use <code>OprtrParameters</code> structure to keep inputs, except for the graph,
+input / output frontiers, and the lambdas</li>
+<li><code>KernelPolicy</code> is defined within each operator, instead of in the enactor</li>
+<li>Templatized options (Idempotence, mark-preds, advance types, reduce ops,
+reduce types, etc.) are provided as a combined 32bit <code>OprtrFlag</code></li>
+<li>Queue index and selector are automatically changed by the operator when
+needed</li>
+</ul></li>
+<li><p>Graph representation</p>
+
+<ul>
+<li>A single structure encloses all graph related data</li>
+<li>Different representations (CSR, CSC, COO, etc.) can be selected based
+on algorithmic needs</li>
+<li>New graph representations could be added without changing other parts of
+Gunrock, except operator implementation that handles how to traverse such
+new representation</li>
+<li>CPU, GPU and sub-graphs use the same graph data structure, no more
+<code>GraphSlice</code> and <code>GRGraph</code></li>
+</ul></li>
+<li><p>Frontier</p>
+
+<ul>
+<li>A single structure <code>gunrock/app/frontier.cuh:Frontier</code>
+encloses all frontier related data</li>
+</ul></li>
+<li><p>Test driver</p>
+
+<ul>
+<li>Allows multiple graph types (<code>64bit-VertexT</code>, <code>64bit-SizeT</code>,
+<code>64bit-ValueT</code>, directed vs. undirected) and multiple parameters
+combinations to run in a single execution</li>
+<li>Allows result validation for each run, instead of only the last run</li>
+<li>Result validation without reference for BFS and SSSP</li>
+<li>Moved common functions into <code>gunrock/app/test_base.cuh</code><br></li>
+<li>Moved CPU reference code and result validation into
+<code>gunrock/app/&lt;algo&gt;/&lt;algo&gt;_test.cuh</code></li>
+</ul></li>
+<li><p>Enactor</p>
+
+<ul>
+<li>Common functions moved into <code>gunrock/app/enactor_base.cuh</code></li>
+<li>Use OpenMP to maintain controlling threads on CPU</li>
+<li>Use instances of <code>Iteration</code> instead of static access to its functions</li>
+</ul></li>
+<li><p>Command line parameters</p>
+
+<ul>
+<li>A dedicated <code>Parameters</code> struct to store all running parameters</li>
+<li>Need to define parameters via. <code>Use</code> function before using them</li>
+<li>Command line is parsed by <code>get_opt</code></li>
+<li><code>Set</code> to set parameter values</li>
+<li><code>Get</code> to get parameter values</li>
+<li>Handles vectors as parameter values</li>
+</ul></li>
+<li><p>1D operators for Array1D</p>
+
+<ul>
+<li>Per-element operations, e.g. <code>ForAll</code> and <code>ForEach</code></li>
+<li>Vector-Vector operations, e.g. <code>Add</code>, <code>Minus</code>, <code>Mul</code>, <code>Div</code>, <code>Mad</code>, <code>Set</code></li>
+<li>Vector-Scalar operations</li>
+<li>Sort</li>
+</ul></li>
+<li><p>Code restructuring</p>
+
+<ul>
+<li>Partitioners moved from <code>gunrock/app</code> to <code>gunrock/partitioner</code></li>
+<li><code>LB</code> operator moved from <code>gunrock/oprtr/edge_map_partitioned_forward</code> to
+<code>gunrock/oprtr/LB_advance</code></li>
+<li><code>TWC</code> operator moved from &#39;gunrock/oprtr/edge_map_forward&#39; to
+<code>gunrock/oprtr/TWC_advance</code></li>
+</ul></li>
+<li><p>Optional Boost dependency</p>
+
+<ul>
+<li>Utility functions changed to C++11 or implemented</li>
+<li>CPU references implemented for BFS and SSSP, and will be called when BOOST
+is not available</li>
+<li><code>info</code> will use RapidJson-based implementation, when Boost is not available</li>
+</ul></li>
+</ul>
+<h2 id='known-issues'>Known Issues</h2>
+<ul>
+<li>Multi-GPU framework not tested</li>
+<li>Operators have decreased performance, due to more than 32 registers used by
+a single thread in the kernels</li>
+<li>RGG and GRMAT generators not working</li>
+<li>SSSP may have incorrect predecessors, due to data racing in marking the
+predecessors within the operator kernels</li>
+</ul>
+<h1 id='gunrock-v0-4-release-notes'>Gunrock v0.4 Release Notes</h1>
 <p>Release 0.4
 8th November 2016</p>
 
@@ -11,7 +122,7 @@
 <li>Updates on several interfaces</li>
 <li>Overall performance improvement for both single and multi-GPU execution</li>
 </ul>
-<h1 id='v0-4-changelog'>v0.4 ChangeLog</h1>
+<h2 id='changelog-2'>ChangeLog</h2>
 <ul>
 <li>Integrated direction-optimizing BFS with normal BFS. Now for BFS
 there is only one executable, named bfs. The direction-optimizing
@@ -44,7 +155,7 @@ to remove from the input frontier; used in CC and PR.</li>
 can set the number of iterations to run and specify the source node
 for each run (if necessary) via <code>InitSetup()</code> defined in gunrock.h.</li>
 </ul>
-<h1 id='v0-4-known-issues'>v0.4 Known Issues</h1>
+<h2 id='known-issues-2'>Known Issues</h2>
 <ul>
 <li>HITS and SALSA do not have CPU reference yet</li>
 <li>HITS, SALSA, and who-to-Follow do not have multi-GPU support yet</li>

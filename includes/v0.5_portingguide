@@ -1,0 +1,350 @@
+<h1 id='gunrock-v0-4-gt-v0-5-porting-guide'>Gunrock v0.4 -&gt; v0.5 Porting Guide</h1>
+<p>This document hopes to help app programer to port a graph
+primitive implemented using v0.4 API to v0.5 API.</p>
+
+<p>There are examples with side-by-side comparison and comments, using SSSP:</p>
+
+<p>sssp_enactor.cuh: https://docs.google.com/document/d/12y6eo7VvvT_URb9FjCWhYfyKq7nXKGan7RvK1eBXOVE/edit?usp=sharing</p>
+
+<p>sssp_problem.cuh: https://docs.google.com/document/d/1ZlP57JmFo_1x8oDnY0fmUgk_9iyLziFLtYm4gQ9B_74/edit?usp=sharing</p>
+
+<p>sssp_app.cu and test_sssp.cu: https://docs.google.com/document/d/1rQfL3YzE1kz31jORMuk85Xmv0kh02EugLBoFqE7NJd8/edit?usp=sharing</p>
+
+<p>In the following of this document, (<code>line number old</code> -&gt; <code>line number new</code>) in the
+beginning of a paragraph indicates where to look for in the annotated SSSP example,
+starting from <code>line number old</code> in the old file, and from <code>line number new</code> in the
+new file</p>
+<h2 id='lt-algo-gt-_functor-cuh'><code>&lt;algo&gt;_functor.cuh</code></h2>
+<p>Merge functors into <code>&lt;algo&gt;_enactor.cuh</code> as lambda functions, and inputs to
+the operators</p>
+<h2 id='lt-algo-gt-_enactor-cuh'><code>&lt;algo&gt;_enactor.cuh</code></h2>
+<ul>
+<li><p><code>Expand_Incoming_Kernel</code></p>
+
+<ul>
+<li>(38 -&gt; 175) Define expand incoming operations as per-element lambda in
+<code>IterationLoop::Expand_Incoming</code></li>
+</ul></li>
+<li><p><code>UseParameters_enactor</code></p>
+
+<ul>
+<li>( -&gt; 32) Specify the command line parameters used by enactor</li>
+</ul></li>
+<li><p><code>Iteration</code> -&gt; <code>IterationLoop</code></p>
+
+<ul>
+<li>(124 -&gt; 44) Change name from Iteration to IterationLoop</li>
+<li>(125 -&gt; 45, 145 -&gt; 56) Only <code>EnactorT</code> as template parameter, no more
+<code>KernelPolicy</code> (defined in individual operators now)</li>
+<li>(126 -&gt; 45, 146 -&gt; 56) Combine options past down to IterationLoopBase to a
+single 32bit binary, using hot-coded binary flags, defined in <code>app/enactor_iteration.cuh</code></li>
+<li>(137 -&gt; ) Clean-up <code>typedef</code>, no more <code>GraphSliceT</code>, <code>Frontier</code>, <code>Functor</code>
+and <code>LabelT</code></li>
+<li>(165 -&gt; 66) Change <code>FullQueue_Core(...)</code> and <code>SubQueue_Core(...)</code> to just
+<code>Core(...)</code>, for the core per-iteration computation; only use <code>peer_</code> as
+parameter. More on the core computation in the next section</li>
+<li><p>(389 -&gt; 162) <code>Expand_Incoming()</code> -&gt; <code>ExpandIncoming()</code></p>
+
+<ul>
+<li>(389 -&gt; 163) Reduce parameters of <code>ExpandIncoming()</code>, the related data
+are contained by the <code>IterationLoop</code> structure now</li>
+<li>(38 -&gt; 175) Define per-element operation to combine received and local
+data as a lambda function</li>
+<li>(406 -&gt; 193) Remove size checking and kernel launching, they are now
+in <code>BaseIterationLoop::ExpandIncomingBase</code></li>
+</ul></li>
+<li><p>(464 -&gt; ) <code>Compute_OutputLength</code>: now <code>EnactorBase</code> can handle more cases,
+check whether that covers what&#39;s needed, or a special one needs to implement</p></li>
+<li><p>(530 -&gt; ) <code>Check_Queue_Size</code>: similar to <code>Compute_OutputLength</code>, check
+<code>EnactorBase</code></p></li>
+</ul></li>
+<li><p>Core computation</p>
+
+<ul>
+<li>(59 -&gt; 88) Combine <code>CondEdge</code> and <code>ApplyEdge</code> of <code>Functor</code> into lambda
+<code>advance_op</code> (or any other name suitable), with signature:
+<code>
+[]__host__ __device__ (
+    const VertexT &amp;src, VertexT &amp;dest, const SizeT &amp;edge_id,
+    const InKeyT &amp;input_item, const SizeT &amp;input_pos, SizeT &amp;output_pos
+    ) -&gt; bool
+</code>
+where <code>src</code> and <code>dest</code> are the source and the destination vertices of the
+edge being traveled (identified by <code>edge_id</code>), <code>input_item</code> is the item
+in the input frontier that being processed (could be a vertex or edge,
+placed at the <code>input_pos</code> position in the input frontier), and <code>output_pos</code>
+is where the output item supposed to go in the output frontier. The
+return boolean value indicates whether the traversal is valid (i.e. the
+same as the return value from <code>CondEdge</code> with the v0.4 interface).</li>
+</ul>
+
+<p>Algorithm specific data (e.g. per-vertex distances from the source in SSSP)
+  are past as captured variables in <code>[]</code>. Restrictions of extended lambda
+  functions (in F.3.15.1 of CUDA C Programming Guide, v9.1.85,
+  http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#lambda-expressions)
+  apply. Captured variables are past by values; <code>util::Array1D</code> and raw
+  pointers can be past, and elements inside them accessed and modified within
+  the lambda.
+- (131 -&gt; 116) Similarly, combine <code>CondFilter</code> and <code>ApplyFilter</code> of <code>Functor</code>
+  into lambda <code>filter_op</code> (or any other name suitable), with the same
+  signature as <code>advance_op</code>:
+  <code>
+  []__host__ __device__ (
+        const VertexT &amp;src, VertexT &amp;dest, const SizeT &amp;edge_id,
+        const InKeyT &amp;input_item, const SizeT &amp;input_pos, SizeT &amp;output_pos
+        ) -&gt; bool
+</code>
+- (71 -&gt; 94, 113 -&gt; 108) Update <code>util::io::ModifiedLoad&lt;...&gt;</code> and
+  <code>util::io::ModifiedStore&lt;...&gt;</code> as <code>Load&lt;cub::CacheLoadModifier&gt;</code> and
+  <code>Store&lt;cub::CacheStoreModifier&gt;</code>
+- (193 -&gt; 129) Change advance operator launching interfaces as
+  <code>
+  template &lt;
+      OprtrFlag FLAG,
+      typename  GraphT,
+      typename  FrontierInT,
+      typename  FrontierOutT,
+      typename  ParametersT,
+      typename  AdvanceOpT,
+      typename  FilterOpT&gt;
+  cudaError_t oprtr::advance::Launch(
+      const GraphT        &amp;graph,
+      const FrontierInT  * frontier_in,
+            FrontierOutT * frontier_out,
+            ParametersT   &amp;oprtr_parameters,
+            AdvanceOpT     advance_op,
+            FilterOpT      filter_op)
+</code>
+  - <code>FLAG</code> contains all the templatized operator options as a uint32_t
+    value; options of <code>OprtrFlag</code> can be found in <code>oprtr/oprtr_base.cuh</code>;
+  - <code>GraphT</code>, <code>FrontierInT</code>, <code>FrontierOutT</code>, <code>ParametersT</code>, <code>AdvanceOpT</code>
+    and <code>FilterOpT</code> are types of the inputs, and are auto-deduced by the
+    compiler;
+  - <code>graph</code> is the graph that the operator works on; it needs to be graph
+    representation specific, i.e. has a unique type. Eg. graph.csr() gives
+    the CSR representation of a graph;
+  - <code>frontier_in</code> and <code>frontier_out</code> are the input and the output frontier queues;
+    <code>enactor_slice.frontier.V_Q()</code> and <code>enactor_slice.frontier.Next_V_Q()</code>
+    give the current and the next VertexT-typed frontier queues; use <code>E_Q()</code>
+    and <code>Next_E_Q()</code> for SizeT-typed frontier queues if that needed;
+    <code>queue_index</code> and <code>queue_reset</code> from v0.4 is now automatically maintained
+    by the operator, they can be changed by assigning values to
+    <code>frontier.queue_index</code> and <code>frontier.queue_reset</code>; no more
+    <code>queue_selector</code>;
+  - <code>oprtr_parameters</code> is the running parameters of the operator; it&#39;s defined
+    in <code>oprtr/oprtr_paramters.cuh</code>, and contains inputs / outputs to the
+    operator kernels, except for the graph, the input / output frontier queues
+    and the lambda operations;
+  - <code>advance_op</code> and <code>filter_op</code> are the advance and the filter lambdas;
+    the filter lambda is provided for the fuzed kernels, and the default value
+    is a always-true do-nothing lambda;
+  - The return value indicates whether the operator launch successfully.</p></li>
+<li><p><code>SSSPThread</code> -&gt; <code>Enactor::Run()</code></p>
+
+<ul>
+<li>(614 -&gt; 322) The CPU controlling thread, or the OpenMP routines, are now
+part of <code>EnactorBase</code>. Just put the caller of the <code>Iteration_Loop</code> in the
+<code>Run()</code> function.</li>
+</ul></li>
+<li><p><code>SSSPEnactor</code> -&gt; <code>Enactor</code></p>
+
+<ul>
+<li>(684 -&gt; 207) Add extra template flags for more flexible memory allocations;</li>
+<li>(686 -&gt; 212) Change <code>EnactorBase</code> template parameters;</li>
+<li>(703 -&gt; 235) Pass all options via <code>util::Parameters</code> from the <code>Enactor::Init()</code>
+call;</li>
+<li>( -&gt; 239) Tell the maximum number of <code>VertexT</code> and <code>SizeT</code>-typed associate
+data to transmit together with the sub-frontier queues during inter-GPU
+communication. Communication buffers are now part of the <code>MGpuSlice</code> data
+structure, under <code>EnactorBase</code>;</li>
+<li>(726 -&gt; 257) CPU Thread / OpenMP controls are in <code>EnactorBase</code>;
+<code>EnactorBase::Release()</code> will handle that, and takes in parameter pointing
+to which location to do the allocation release, reserving to handling
+memory allocation on CPU;</li>
+<li>(761 -&gt; 278) Only pass <code>Problem</code> and allocation location to <code>Init</code>;
+options are in <code>util::Parameters</code>, and past with the <code>problem</code> instance;
+<code>KernelPolicy</code> are now in individual operators now;</li>
+<li>( -&gt; 288) The interface of <code>EnactorBase::Init()</code> changed to:
+<code>
+template &lt;typename ProblemT&gt;
+cudaError_t Init(
+  ProblemT         &amp;problem,
+  Enactor_Flag      flag           = Enactor_None,
+  unsigned int      num_queues     = 2,
+  FrontierType     *frontier_types = NULL,
+  util::Location    target         = util::DEVICE,
+  bool              skip_makeout_selection = false)
+</code>
+where <code>flag</code> is a binary hot-code compressed options, telling whether <code>Debug</code>,
+<code>Instrument</code> or <code>Size_Check</code> are in effect; <code>num_queues</code> and <code>frontier_types</code>
+tells how many frontier queues and what types (<code>VERTEX_FRONTIER</code> or
+<code>EDGE_FRONTIER</code>) of frontier queues are needed (v0.4 mostly uses two
+<code>VERTEX_FRONTIER</code>);</li>
+<li>( -&gt; 295) Here actually allocates the frontier queues;</li>
+<li>( -&gt; 342) Frontier reset is now in <code>Enactor::Reset()</code> instead of
+<code>Problem::Reset()</code>;</li>
+<li>(845 -&gt; 385) <code>Enactor::Enact()</code> now only calls <code>EnactorBase::Run_Threads()</code>
+or the OpenMP parallel calls, no need to control CPU threads explicitly;</li>
+<li>(878 -&gt; ) No more <code>KernelPolicy</code> and related template switches in <code>Enactor</code>.</li>
+</ul></li>
+</ul>
+<h2 id='lt-algo-gt-_problem-cuh'><code>&lt;algo&gt;_problem.cuh</code></h2>
+<ul>
+<li><p><code>UseParameters_problem</code></p>
+
+<ul>
+<li>( -&gt; 28) List parameters used by the <code>Problem</code></li>
+</ul></li>
+<li><p><code>SSSPProblem</code> -&gt; <code>Problem</code></p>
+
+<ul>
+<li>(35 -&gt; 51) Change template parameters: <code>VertexT</code> and <code>SizeT</code> are enclosed
+in <code>GraphT</code>; <code>LabelT</code> is SSSP specific, used for per-vertex label marking
+the latest iteration a vertex has been marked; <code>ValueT</code> is the type of
+per-vertex distance from the source; <code>FLAG</code> is a binary compressed hot-code
+operations for the <code>Problem</code>.</li>
+<li>(39 -&gt; 55) Change <code>ProblemBase</code> and <code>DataSliceBase</code> template parameters
+accordingly.</li>
+<li>(67 -&gt; 78) <code>labels</code>, <code>preds</code> and <code>temp_preds</code> are now defined in algorithm
+specific <code>DataSlice</code>, instead of <code>DataSliceBase</code>.</li>
+<li>(94 -&gt; 106) <code>Release</code> takes in location parameter that tells where to release
+the memory allocation.</li>
+<li>(134 -&gt; 129) Drops all multi-GPU related options from <code>DataSlice::Init()</code>;
+multi-GPU related data are handled by <code>MGpuSlice</code> inside <code>Enactor</code> now.</li>
+<li>( -&gt; 147) <code>DataSlice::Init()</code> now handles the graph movement from CPU to GPU.</li>
+<li>(226 -&gt; 157) <code>DataSlice::Reset()</code> only takes in the location parameter.</li>
+<li>(235 -&gt; ) <code>DataSlice</code> no need to handle frontiers.</li>
+<li>(325 -&gt; 171) Use heterogenous <code>ForEach</code> and <code>ForAll</code> functions to assign
+initial values.</li>
+<li>(356 -&gt; 209) Options are past via <code>util::Parameters</code> and compressed
+hot-coded <code>flag</code>, to <code>Problem</code> and <code>BaseProblem</code>.</li>
+<li>(374 -&gt; 229) <code>Release</code> takes in and handles different locations.</li>
+<li>(401 -&gt; 259) <code>Extract</code> handles extracting results from either GPU or CPU.</li>
+<li>(480 -&gt; 345) <code>Init</code> only takes in <code>graph</code> and location; all options are in
+<code>util::Parameters</code>, which past to <code>Problem</code> from the constructor.</li>
+<li>(520 -&gt; 364) Change <code>DataSice::Init()</code> caller, according to the new interface.</li>
+<li>(553 -&gt; 378) <code>Reset</code> only takes in the source vertex and location.</li>
+</ul></li>
+</ul>
+<h2 id='lt-algo-gt-_app-cu'><code>&lt;algo&gt;_app.cu</code></h2>
+<ul>
+<li><p><code>SSSP_Parameter</code> -&gt;</p>
+
+<ul>
+<li>(34 -&gt; ) <code>util::Parameters</code> takes care of all running parameters, no more
+algorithm specific parameter structures.</li>
+</ul></li>
+<li><p><code>UseParameters</code></p>
+
+<ul>
+<li>( -&gt; 32) List command line parameters before using them.</li>
+</ul></li>
+<li><p><code>runSSSP</code> -&gt; <code>RunTests</code></p>
+
+<ul>
+<li>(88 -&gt; test_sssp.cu::93) No need to switch parameters explicitly,
+<code>app::Switch_Parameters</code> now do that more systematically.</li>
+<li>(109 -&gt; 68) Change template parameters: <code>VertexT</code> and <code>SizeT</code> are enclosed
+within <code>GraphT</code>; <code>ValueT</code> can be different from <code>GraphT::ValueT</code>, i.e.
+the per-vertex distance from the source vertex could have different type
+as the edge weights; <code>mark-pred</code> is a non-template parameter, enclosed in
+<code>util::Parameters</code>.</li>
+<li>(114 -&gt; 70) No more algorithm specific parameters, only unified
+<code>util::Parameters</code>; no more <code>GRGraph</code>, all graphs are of the same group of
+types, and the one used for SSSP is defined at test_sssp.cu:46; takes in
+<code>ref_distances</code> for result verification (when available), a per-vertex
+array for each run.</li>
+<li>(127 -&gt; 84) Clean up parameters and variables.</li>
+<li>(154 -&gt; ) <code>ProblemBase</code> now handles memory tracking.</li>
+<li>(161 -&gt; 97) Change <code>Problem</code> constructor and <code>Problem::Init</code> parameters
+according to the definition of <code>Problem</code>; <code>sssp::Problem::Problem()</code> only
+takes in <code>util::Parameters</code>, and <code>sssp::Problem::Init()</code> only takes in
+the <code>graph</code> and location.</li>
+<li>(178 -&gt; 100) Change <code>Enactor::Init</code> parameters according to the definition
+of <code>Enactor</code>; <code>sssp::Enactor::Enactor()</code> takes in nothing, and
+<code>sssp::Enactor::Init()</code> only takes in <code>problem</code> and location.</li>
+<li>(192 -&gt; 109) <code>sssp::Problem::Reset</code> and <code>sssp::Enactor::Reset</code> now only
+takes in the source vertex and the location.</li>
+<li>(198 -&gt; 114) <code>sssp::Enactor::Enact</code> only takes in the source vertex.</li>
+<li>(189 -&gt; 118) <code>Round</code> or <code>Iteration</code> -&gt; <code>Run</code>, when mentioning one sssp.</li>
+<li>( -&gt; 124) Now can validate the results from each run, instead of just the
+last run.</li>
+<li>(test_sssp.cu:464 -&gt; 116) <code>util::info::CollectSingleRun</code> function handles
+collecting all needed info for a run.</li>
+<li>( -&gt; 158) <code>util::info::Finalize</code> collects all last stage info, makes necessary
+computation, and outputs related stats.</li>
+</ul></li>
+<li><p>&#39;dispatchSSSP&#39; -&gt;</p>
+
+<ul>
+<li>(239 -&gt; ) removed, type switching is done by <code>app::Switch_Types</code>; caller
+at <code>test_sssp.cu:126</code>.</li>
+</ul></li>
+<li><p><code>gunrock_sssp</code></p>
+
+<ul>
+<li>(351 -&gt; 177) <code>gunrock_sssp</code> now is templatized for different graph types;
+parameters are past via <code>util::Parameters</code>, instead of <code>GRSetup</code>; outputs
+are past out via two raw arrays, instead of a dummy graph.</li>
+<li>(358 -&gt; ) <code>streams</code> and <code>context</code> are defined within <code>Enactor</code>, no need to
+define at high level.</li>
+<li>(393 -&gt; 184) instead of calling <code>runTests</code> with extra timings and result
+validation, <code>gunrock_sssp</code> only runs the minimum routines, providing best
+performance when run in library mode.</li>
+</ul></li>
+<li><p><code>sssp</code></p>
+
+<ul>
+<li>(406 -&gt; 238) <code>sssp</code> now is templatized; parameters are rearranged, and
+handles multiple sources for multiple runs.</li>
+<li>(423 -&gt; 261) new way of handling running parameters, using <code>util::Parameters</code>.</li>
+<li>(426 -&gt; 274) new way of passing memory to the graph structure.</li>
+</ul></li>
+</ul>
+<h2 id='test_-lt-algo-gt-cu'><code>test_&lt;algo&gt;.cu</code></h2>
+<ul>
+<li><p>include and namespace</p>
+
+<ul>
+<li>(15 -&gt; 15) clean up includes and namespaces.</li>
+</ul></li>
+<li><p><code>Usage</code> -&gt;</p>
+
+<ul>
+<li>(56 -&gt; ) <code>util::Parameters::Print_Help</code> lists all command line parameters,
+based on their definitions.</li>
+</ul></li>
+<li><p><code>DisplaySolution</code> -&gt; <code>app::sssp::DisplaySolution</code></p>
+
+<ul>
+<li>(126 -&gt; app/sssp_test.cuh:46) Move to <code>app/sssp_test.cuh</code>.</li>
+</ul></li>
+<li><p><code>ReferenceSssp</code> -&gt; <code>app::sssp::CPU_Reference</code></p>
+
+<ul>
+<li>(159 -&gt; app/sssp_test.cuh:76) Move to <code>app/sssp_test.cuh</code>, implement
+a simple CPU reference when boost is not available.</li>
+</ul></li>
+<li><p><code>RunTests</code> -&gt; <code>app::sssp::RunTests</code></p>
+
+<ul>
+<li>(288 -&gt; app/sssp_app.cu:68) directly use <code>app::sssp::RunTests</code>.</li>
+<li>(512 -&gt; app/sssp_test.cuh:272) Move to &#39;app::sssp::Validate_Result&#39;, and
+implement validation without reference results.</li>
+<li>(638 -&gt; ) type and parameter switches now use <code>app::Switch_Types</code> and
+<code>app::Switch_Parameters</code>.</li>
+</ul></li>
+<li><p>&#39;main&#39;</p>
+
+<ul>
+<li>(656 -&gt; 28) Change main function enclosure into <code>main_struct::operator()</code>.</li>
+<li>(665 -&gt; app/sssp/sssp_app.cuh:90) Instance of <code>util::info</code> is defined in
+<code>app::sssp::RunTests</code>.</li>
+<li>(673 -&gt; 55) Move graph loading from <code>util::info::Init</code> into
+&#39;graphio::LoadGraph&#39;.</li>
+<li>( -&gt; 68) Compute per-run CPU reference results, when needed.</li>
+<li>(729 -&gt; 114) Use <code>util::Parameters</code> to handle command line parameters.</li>
+<li>(737 -&gt; 126) Use &#39;app::Switch_Types&#39; to switch graph types, depending
+on template flags given.</li>
+</ul></li>
+</ul>
