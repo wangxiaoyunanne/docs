@@ -1,4 +1,4 @@
-# Gunrock FAQ
+# FAQ
 
 ## What does it do?
 
