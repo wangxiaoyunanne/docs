@@ -449,6 +449,16 @@ html, body {
     max-width: 100%;
   }
 
+  // Links hover gold, normal gray.
+  a {
+    text-decoration: none;
+    color: #989898;
+  }
+
+  a:hover {
+    color: gold;
+  }
+
   code {
     background-color: rgba(0,0,0,0.05);
     padding: 3px;
