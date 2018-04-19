@@ -416,11 +416,12 @@ html, body {
     }
 
     td {
+      border: 1px solid #e1e4e5;
       padding: 10px;
     }
 
     tr:last-child {
-      border-bottom: 1px solid #ccc;
+      border: 1px solid #e1e4e5;
     }
 
     tr:nth-child(odd)>td {
