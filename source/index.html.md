@@ -25,7 +25,7 @@ search: true
 
 # Gunrock: GPU Graph Analytics
 
-Gunrock [![Build Status](http://mario.ece.ucdavis.edu:8080/buildStatus/icon?job=gunrock/dev)](http://mario.ece.ucdavis.edu:8080/job/gunrock/job/dev/) is a CUDA library for graph-processing designed specifically for the
+Gunrock is a CUDA library for graph-processing designed specifically for the
 GPU. It uses a high-level, bulk-synchronous, data-centric abstraction focused
 on operations on a vertex or edge frontier. Gunrock achieves a balance between
 performance and expressiveness by coupling high performance GPU computing
@@ -44,6 +44,10 @@ See [Release Notes](http://gunrock.github.io/gunrock/doc/latest/release_notes.ht
 
 Gunrock is featured on NVIDIA's list of [GPU Accelerated Libraries](https://developer.nvidia.com/gpu-accelerated-libraries) as the only external library for GPU graph analytics.
 
+| **Service**                    | **System**         | **Environment**       | **Status**                                                                                                                                    |
+|--------------------------------|--------------------|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
+| [Jenkins](https://jenkins.io/) | Ubuntu 16.04.4 LTS | CUDA 9.1, GCC/G++ 5.4 | [![Build Status](http://mario.ece.ucdavis.edu:8080/buildStatus/icon?job=gunrock/dev)](http://mario.ece.ucdavis.edu:8080/job/gunrock/job/dev/) |
+
 ## Gunrock Source Code
 
 [Related Pages](http://gunrock.github.io/gunrock/doc/latest/pages.html) | [Modules](http://gunrock.github.io/gunrock/doc/latest/modules.html) | [Namespaces](http://gunrock.github.io/gunrock/doc/latest/namespaces.html) | [Data Structures](http://gunrock.github.io/gunrock/doc/latest/annotated.html) | [Files](http://gunrock.github.io/gunrock/doc/latest/files.html) |
@@ -54,7 +58,7 @@ Gunrock is featured on NVIDIA's list of [GPU Accelerated Libraries](https://deve
 ## Getting Started with Gunrock
 
 - For Frequently Asked Questions, see the
-[FAQ](http://gunrock.github.io/gunrock/doc/latest/faq.html).
+[FAQ](#faq).
 
 - For information on building Gunrock, see
 [Building Gunrock](#building-gunrock).
@@ -76,14 +80,14 @@ for two typical graph primitives.
 
 ## Results and Analysis
 
-We are gradually adding summaries of our results to these web pages (please let us know if you would like other comparisons). These summaries also include a table of results along with links to the configuration and results of each individual run. We detail our [methodology for our measurements here](http://gunrock.github.io/gunrock/doc/latest/md_methodology.html).
+We are gradually adding summaries of our results to these web pages (please let us know if you would like other comparisons). These summaries also include a table of results along with links to the configuration and results of each individual run. We detail our [methodology for our measurements here](#methodology-for-graph-analytics-performance).
 
-- [Gunrock performance compared with other engines for graph analytics](http://gunrock.github.io/gunrock/doc/latest/md_stats_engines_topc.html)
+- [Gunrock performance compared with other engines for graph analytics](https://gunrock.github.io/docs/engines_topc.html)
 - [Setting parameters for direction-optimized BFS](http://gunrock.github.io/gunrock/doc/latest/md_stats_do_ab_random.html)
-- [Gunrock results on different GPUs](http://gunrock.github.io/gunrock/doc/latest/md_stats_gunrock_gpus.html)
-- [Gunrock BFS throughput as a function of frontier size](http://gunrock.github.io/gunrock/doc/latest/md_stats_frontier.html)
-- [Multi-GPU Gunrock Speedups](http://gunrock.github.io/gunrock/doc/latest/md_stats_mgpu_speedup.html) and [Multi-GPU Gunrock Scalability](http://gunrock.github.io/gunrock/doc/latest/md_stats_mgpu_scalability.html)
-- [Multi-GPU Gunrock Partition Performance](http://gunrock.github.io/gunrock/doc/latest/md_stats_mgpu_partition.html)
+- [Gunrock results on different GPUs](https://gunrock.github.io/docs/gunrock_gpus.html)
+- [Gunrock BFS throughput as a function of frontier size](https://gunrock.github.io/docs/frontier.html)
+- [Multi-GPU Gunrock Speedups](https://gunrock.github.io/docs/mgpu_speedup.html) and [Multi-GPU Gunrock Scalability](https://gunrock.github.io/docs/mgpu_scalability.html)
+- [Multi-GPU Gunrock Partition Performance](https://gunrock.github.io/docs/mgpu_partition.html)
 - [Comparison to Groute](http://gunrock.github.io/gunrock/doc/latest/md_stats_groute.html)
 
 For reproducibility, we maintain Gunrock configurations and results in our github [gunrock/io](https://github.com/gunrock/io/tree/master/gunrock-output) repository.
