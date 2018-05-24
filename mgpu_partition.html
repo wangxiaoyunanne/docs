@@ -242,7 +242,9 @@
         </ul>
     </div>
     <div class="page-wrapper">
-      <div class="dark-box"></div>
+
+        <div class="dark-box"></div>
+
       <div class="content">
         <h1 id='speedup-for-different-partition-methods'>Speedup for different partition methods</h1>
 <p>We test three primitives (BFS, DOBFS, PageRank) on three different datasets with three different partitioners. Random partitioning captures no locality but has excellent load balance. Biased-random is like random but biases its choice toward a GPU that contains more of its neighbors. <a href="http://glaros.dtc.umn.edu/gkhome/metis/metis/overview">Metis</a> is the classic offline partitioner.</p>
@@ -260,6 +262,7 @@
 <p><a href="tables/mgpu_partition_table.html">Source data</a>, with links to the output JSON for each run</p>
 
       </div>
+
       <div class="dark-box">
       </div>
     </div>
