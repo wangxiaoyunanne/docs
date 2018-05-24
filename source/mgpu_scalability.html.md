@@ -11,4 +11,6 @@ includes:
   - mgpu_scalability
 
 search: true
+
+full_length: true
 ---

@@ -11,4 +11,6 @@ includes:
   - frontier_size
 
 search: true
+
+full_length: true
 ---

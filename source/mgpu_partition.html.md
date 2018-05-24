@@ -11,4 +11,6 @@ includes:
   - mgpu_partition
 
 search: true
+
+full_length: true
 ---

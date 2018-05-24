@@ -11,4 +11,6 @@ includes:
   - gunrock_gpus
 
 search: true
+
+full_length: true
 ---

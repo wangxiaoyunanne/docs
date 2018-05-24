@@ -11,4 +11,6 @@ includes:
   - engines_topc
 
 search: true
+
+full_length: true
 ---
