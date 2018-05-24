@@ -111,10 +111,20 @@ under the License.
       <% end %>
     </div>
     <div class="page-wrapper">
-      <div class="dark-box"></div>
+
+      <% if current_page.data.full_length %>
+        <!-- <div class="dark-box"></div> -->
+      <% else %>
+        <div class="dark-box"></div>
+      <% end %>
+
       <div class="content">
         <%= page_content %>
       </div>
+
+      <% if current_page.data.full_length %>
+        <!-- <div class="dark-box"></div> -->
+      <% else %>
       <div class="dark-box">
         <% if language_tabs.any? %>
           <div class="lang-selector">
@@ -128,6 +138,7 @@ under the License.
           </div>
         <% end %>
       </div>
+      <% end %>
     </div>
   </body>
 </html>

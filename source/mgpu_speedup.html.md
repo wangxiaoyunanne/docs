@@ -11,4 +11,6 @@ includes:
   - mgpu_speedup
 
 search: true
+
+full_length: true
 ---
