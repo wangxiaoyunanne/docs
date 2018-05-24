@@ -44,15 +44,34 @@ See [Release Notes](http://gunrock.github.io/gunrock/doc/latest/release_notes.ht
 
 Gunrock is featured on NVIDIA's list of [GPU Accelerated Libraries](https://developer.nvidia.com/gpu-accelerated-libraries) as the only external library for GPU graph analytics.
 
-| **Service**                    | **System**         | **Environment**       | **Status**                                                                                                                                    |
-|--------------------------------|--------------------|-----------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| [Jenkins](https://jenkins.io/) | Ubuntu 16.04.4 LTS | CUDA 9.1, GCC/G++ 5.4 | [![Build Status](http://mario.ece.ucdavis.edu:8080/buildStatus/icon?job=gunrock/dev)](http://mario.ece.ucdavis.edu:8080/job/gunrock/job/dev/) |
+<table style="font-size: 12px;"><thead>
+<tr>
+  <th><strong>Service</strong></th>
+  <th><strong>System</strong></th>
+  <th><strong>Environment</strong></th>
+  <th><strong>Status</strong></th>
+</tr>
+</thead><tbody>
+<tr>
+  <td><a href="https://jenkins.io/">Jenkins</a></td>
+  <td>Ubuntu 16.04.4 LTS</td>
+  <td>CUDA 9.1, GCC/G++ 5.4</td>
+  <td><a href="http://mario.ece.ucdavis.edu:8080/job/gunrock/job/dev/"><img src="http://mario.ece.ucdavis.edu:8080/buildStatus/icon?job=gunrock/dev" alt="Build Status"></a></td>
+</tr>
+</tbody></table>
 
 ## Gunrock Source Code
 
-[Related Pages](http://gunrock.github.io/gunrock/doc/latest/pages.html) | [Modules](http://gunrock.github.io/gunrock/doc/latest/modules.html) | [Namespaces](http://gunrock.github.io/gunrock/doc/latest/namespaces.html) | [Data Structures](http://gunrock.github.io/gunrock/doc/latest/annotated.html) | [Files](http://gunrock.github.io/gunrock/doc/latest/files.html) |
--------------------------------------------------------------------------|---------------------------------------------------------------------|---------------------------------------------------------------------------|-------------------------------------------------------------------------------|-----------------------------------------------------------------|
-
+<table style="font-size: 12px;"><thead>
+<tr>
+  <th><a href="http://gunrock.github.io/gunrock/doc/latest/pages.html">Related Pages</a></th>
+  <th><a href="http://gunrock.github.io/gunrock/doc/latest/modules.html">Modules</a></th>
+  <th><a href="http://gunrock.github.io/gunrock/doc/latest/namespaces.html">Namespaces</a></th>
+  <th><a href="http://gunrock.github.io/gunrock/doc/latest/annotated.html">Data Structures</a></th>
+  <th><a href="http://gunrock.github.io/gunrock/doc/latest/files.html">Files</a></th>
+</tr>
+</thead><tbody>
+</tbody></table>
 
 
 ## Getting Started with Gunrock
