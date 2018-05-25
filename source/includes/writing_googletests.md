@@ -22,19 +22,6 @@ Below is an example of what lines are a hit and a miss; you can target the lines
 
 ## Example Test Using GoogleTest
 
-1. Create a `test_<test-name>.h` file and place it in the appropriate directory inside `/path/to/gunrock/tests/`. I will be using `test_bfs_lib.h` as an example.
-
-2. In the `tests/test.cpp` file, add your test file as an include:
-
-```c
-// Add google tests
-#include "bfs/test_lib_bfs.h"
-```
-
-3. In your `test_<test-name>.h` file, create a `TEST()` function, which takes two parameters: `TEST(<nameofthesuite>, <nameofthetest>)`.
-
-4. Use `EXPECT` and `ASSERT` to write the actual test itself. I have provided a commented example below:
-
 ```c
 /**
  * @brief BFS test for shared library advanced interface
@@ -94,6 +81,19 @@ TEST(sharedlibrary, breadthfirstsearch)
 }
 } // namespace gunrock
 ```
+
+1. Create a `test_<test-name>.h` file and place it in the appropriate directory inside `/path/to/gunrock/tests/`. I will be using `test_bfs_lib.h` as an example.
+
+2. In the `tests/test.cpp` file, add your test file as an include:
+
+```c
+// Add google tests
+#include "bfs/test_lib_bfs.h"
+```
+
+3. In your `test_<test-name>.h` file, create a `TEST()` function, which takes two parameters: `TEST(<nameofthesuite>, <nameofthetest>)`.
+
+4. Use `EXPECT` and `ASSERT` to write the actual test itself. I have provided a commented example below:
 
 5. Now when you run the binary called `unit_test`, it will automatically run your test suite along with all other google tests as well.
 This binary it automatically compiled when gunrock is built, and is found in `/path/to/builddir/bin/unit_test`.

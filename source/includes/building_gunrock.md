@@ -70,6 +70,15 @@ You can also compile gunrock with more specific/advanced settings using `cmake -
 * **GUNROCK_BUILD_LIB** (default: ON) - Builds main gunrock library.
 * **GUNROCK_BUILD_SHARED_LIBS** (default: ON) - Turn off to build for static libraries.
 * **GUNROCK_BUILD_APPLICATIONS** (default: ON) - Set off to only build one of the following primitive (GUNROCK\_APP\_* must be set on to build if this option is turned off.)
+
+> Example for compiling gunrock with only *Breadth First Search (BFS)* primitive
+
+```shell
+mkdir build && cd build
+cmake -DGUNROCK_BUILD_APPLICATIONS=OFF -DGUNROCK_APP_BFS=ON ..
+make
+```
+
   * **GUNROCK_APP_BC** (default: OFF)
   * **GUNROCK_APP_BFS** (default: OFF)
   * **GUNROCK_APP_CC** (default: OFF)
@@ -85,14 +94,6 @@ You can also compile gunrock with more specific/advanced settings using `cmake -
 * **GUNROCK_MGPU_TESTS** (default: OFF) - If on, tests multiple GPU primitives with `ctest`.
 * **GUNROCK_GENCODE_SM<>** (default: GUNROCK_GENCODE_SM30,35,61=ON) change to generate code for a different compute capability.
 * **CUDA_VERBOSE_PTXAS** (default: OFF) - ON to enable verbose output from the PTXAS assembler.
-
-> Example for compiling gunrock with only *Breadth First Search (BFS)* primitive
-
-```shell
-mkdir build && cd build
-cmake -DGUNROCK_BUILD_APPLICATIONS=OFF -DGUNROCK_APP_BFS=ON ..
-make
-```
 
 ## Generating Datasets
 All dataset-related code is under the `gunrock/dataset/` subdirectory. The current version of Gunrock only supports [Matrix-market coordinate-formatted graph](http://math.nist.gov/MatrixMarket/formats.html) format. The datasets are divided into two categories according to their scale. Under the `dataset/small/` subdirectory, there are trivial graph datasets for testing the correctness of the graph primitives. All of them are ready to use. Under the `dataset/large/` subdirectory, there are large graph datasets for doing performance regression tests.
