@@ -2,7 +2,6 @@
 Gunrock's current release has been tested on Linux Mint 15 (64-bit), Ubuntu 12.04, 14.04 and 15.10 with CUDA 7.5 installed, compute architecture 3.0 and g++ 4.8. We expect Gunrock to build and run correctly on other 64-bit and 32-bit Linux distributions, Mac OS, and Windows.
 
 ## Installation
-**Overview:**
 
 * [Prerequisites](#prerequisites)
 * [Compilation](#compilation)

@@ -2,8 +2,6 @@
 title: Gunrock
 
 language_tabs: # must be one of https://git.io/vQNgJ
-  - shell
-  - c
 
 toc_footers:
   - <a href='https://github.com/gunrock/gunrock'>Gunrock; GPU Graph Analytics</a>
@@ -230,11 +228,4 @@ Gabriela Araujo for their support during the XDATA program.
 
 ## Copyright and Software License
 
-Gunrock is copyright The Regents of the University of
-California, 2013--2017. The library, examples, and all source code are
-released under
-[Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0).
-
-<aside class="notice">
-Switch between the tabs on the right to view code in different languages (example shell or c).
-</aside>
+Gunrock is copyright The Regents of the University of California, 2013--2017. The library, examples, and all source code are released under [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0).
