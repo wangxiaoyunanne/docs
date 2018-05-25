@@ -21,15 +21,10 @@ Gunrock's current release has been tested on Linux Mint 15 (64-bit), Ubuntu 12.0
   * Ideal location for Boost installation is `/usr/local/`. If the build cannot find your Boost library, make sure a symbolic link for boost installation exists somewhere in `/usr/` directory.
 
 * [ModernGPU](https://github.com/moderngpu/moderngpu) and [CUB](http://nvlabs.github.io/cub/) used as external submodules for Gunrock's APIs.
-  * You will need to download or clone ModernGPU and CUB, and place them to `gunrock/externals`.
+  * You will need to download or clone ModernGPU and CUB, and place them to `gunrock/externals`
   * Alternatively, you can clone gunrock recursively with `git clone --recursive https://github.com/gunrock/gunrock`
-
-> or if you already cloned gunrock, under `gunrock/` directory
-
-```shell
-git submodule init
-git submodule update
-```
+  * or if you already cloned gunrock, under `gunrock/` directory: run `git submodule init` and
+  `git submodule update`
 
 **Optional Dependencies:**
 

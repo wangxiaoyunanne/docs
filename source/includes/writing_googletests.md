@@ -29,10 +29,11 @@ Below is an example of what lines are a hit and a miss; you can target the lines
  */
 
 // Includes required for the test
-#include <stdio.h>
-#include <gunrock/gunrock.h>
-#include <gmock/gmock.h>
-#include <gtest/gtest.h>
+
+#include "stdio.h"
+#include "gunrock/gunrock.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 
 // Add to gunrock's namespace
 namespace gunrock {
@@ -84,12 +85,7 @@ TEST(sharedlibrary, breadthfirstsearch)
 
 1. Create a `test_<test-name>.h` file and place it in the appropriate directory inside `/path/to/gunrock/tests/`. I will be using `test_bfs_lib.h` as an example.
 
-2. In the `tests/test.cpp` file, add your test file as an include:
-
-```c
-// Add google tests
-#include "bfs/test_lib_bfs.h"
-```
+2. In the `tests/test.cpp` file, add your test file as an include: `#include "bfs/test_lib_bfs.h"`.
 
 3. In your `test_<test-name>.h` file, create a `TEST()` function, which takes two parameters: `TEST(<nameofthesuite>, <nameofthetest>)`.
 
