@@ -23,19 +23,7 @@ idea of what needs to be in the test and what you are missing.</p>
 <p>Below is an example of what lines are a hit and a miss; you can target the lines missed in the tests to improve coverage.</p>
 
 <p><img src="https://i.imgur.com/5QwKjcB.png" alt="Example CodeCov Stats" /></p>
-<h2 id='example-test-using-googletest'>Example Test Using GoogleTest</h2>
-<ol>
-<li><p>Create a <code>test_&lt;test-name&gt;.h</code> file and place it in the appropriate directory inside <code>/path/to/gunrock/tests/</code>. I will be using <code>test_bfs_lib.h</code> as an example.</p></li>
-<li><p>In the <code>tests/test.cpp</code> file, add your test file as an include:</p></li>
-</ol>
-<pre class="highlight c tab-c"><code><span class="c1">// Add google tests
-</span><span class="cp">#include "bfs/test_lib_bfs.h"
-</span></code></pre>
-<ol>
-<li><p>In your <code>test_&lt;test-name&gt;.h</code> file, create a <code>TEST()</code> function, which takes two parameters: <code>TEST(&lt;nameofthesuite&gt;, &lt;nameofthetest&gt;)</code>.</p></li>
-<li><p>Use <code>EXPECT</code> and <code>ASSERT</code> to write the actual test itself. I have provided a commented example below:</p></li>
-</ol>
-<pre class="highlight c tab-c"><code><span class="cm">/**
+<h2 id='example-test-using-googletest'>Example Test Using GoogleTest</h2><pre class="highlight c tab-c"><code><span class="cm">/**
  * @brief BFS test for shared library advanced interface
  * @file test_lib_bfs.h
  */</span>
@@ -94,8 +82,17 @@ idea of what needs to be in the test and what you are missing.</p>
 <span class="p">}</span> <span class="c1">// namespace gunrock
 </span></code></pre>
 <ol>
-<li>Now when you run the binary called <code>unit_test</code>, it will automatically run your test suite along with all other google tests as well.
-This binary it automatically compiled when gunrock is built, and is found in <code>/path/to/builddir/bin/unit_test</code>.</li>
+<li><p>Create a <code>test_&lt;test-name&gt;.h</code> file and place it in the appropriate directory inside <code>/path/to/gunrock/tests/</code>. I will be using <code>test_bfs_lib.h</code> as an example.</p></li>
+<li><p>In the <code>tests/test.cpp</code> file, add your test file as an include:</p></li>
+</ol>
+<pre class="highlight c tab-c"><code><span class="c1">// Add google tests
+</span><span class="cp">#include "bfs/test_lib_bfs.h"
+</span></code></pre>
+<ol>
+<li><p>In your <code>test_&lt;test-name&gt;.h</code> file, create a <code>TEST()</code> function, which takes two parameters: <code>TEST(&lt;nameofthesuite&gt;, &lt;nameofthetest&gt;)</code>.</p></li>
+<li><p>Use <code>EXPECT</code> and <code>ASSERT</code> to write the actual test itself. I have provided a commented example below:</p></li>
+<li><p>Now when you run the binary called <code>unit_test</code>, it will automatically run your test suite along with all other google tests as well.
+This binary it automatically compiled when gunrock is built, and is found in <code>/path/to/builddir/bin/unit_test</code>.</p></li>
 </ol>
 
 <p><strong>Final Remarks:</strong></p>

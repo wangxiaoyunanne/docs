@@ -80,8 +80,16 @@ make
 <ul>
 <li><strong>GUNROCK_BUILD_LIB</strong> (default: ON) - Builds main gunrock library.</li>
 <li><strong>GUNROCK_BUILD_SHARED_LIBS</strong> (default: ON) - Turn off to build for static libraries.</li>
-<li><p><strong>GUNROCK_BUILD_APPLICATIONS</strong> (default: ON) - Set off to only build one of the following primitive (GUNROCK_APP_* must be set on to build if this option is turned off.)</p>
+<li><strong>GUNROCK_BUILD_APPLICATIONS</strong> (default: ON) - Set off to only build one of the following primitive (GUNROCK_APP_* must be set on to build if this option is turned off.)</li>
+</ul>
 
+<blockquote>
+<p>Example for compiling gunrock with only <em>Breadth First Search (BFS)</em> primitive</p>
+</blockquote>
+<pre class="highlight shell tab-shell"><code>mkdir build <span class="o">&amp;&amp;</span> <span class="nb">cd </span>build
+cmake -DGUNROCK_BUILD_APPLICATIONS<span class="o">=</span>OFF -DGUNROCK_APP_BFS<span class="o">=</span>ON ..
+make
+</code></pre>
 <ul>
 <li><strong>GUNROCK_APP_BC</strong> (default: OFF)</li>
 <li><strong>GUNROCK_APP_BFS</strong> (default: OFF)</li>
@@ -93,20 +101,15 @@ make
 <li><strong>GUNROCK_APP_SALSA</strong> (default: OFF)</li>
 <li><strong>GUNROCK_APP_MST</strong> (default: OFF)</li>
 <li><strong>GUNROCK_APP_WTF</strong> (default: OFF)</li>
-<li><strong>GUNROCK_APP_TOPK</strong> (default: OFF)</li>
-</ul></li>
-<li><p><strong>GUNROCK_MGPU_TESTS</strong> (default: OFF) - If on, tests multiple GPU primitives with <code>ctest</code>.</p></li>
-<li><p><strong>GUNROCK_GENCODE_SM&lt;&gt;</strong> (default: GUNROCK_GENCODE_SM30,35,61=ON) change to generate code for a different compute capability.</p></li>
-<li><p><strong>CUDA_VERBOSE_PTXAS</strong> (default: OFF) - ON to enable verbose output from the PTXAS assembler.</p></li>
-</ul>
+<li><p><strong>GUNROCK_APP_TOPK</strong> (default: OFF)</p>
 
-<blockquote>
-<p>Example for compiling gunrock with only <em>Breadth First Search (BFS)</em> primitive</p>
-</blockquote>
-<pre class="highlight shell tab-shell"><code>mkdir build <span class="o">&amp;&amp;</span> <span class="nb">cd </span>build
-cmake -DGUNROCK_BUILD_APPLICATIONS<span class="o">=</span>OFF -DGUNROCK_APP_BFS<span class="o">=</span>ON ..
-make
-</code></pre><h2 id='generating-datasets'>Generating Datasets</h2>
+<ul>
+<li><strong>GUNROCK_MGPU_TESTS</strong> (default: OFF) - If on, tests multiple GPU primitives with <code>ctest</code>.</li>
+<li><strong>GUNROCK_GENCODE_SM&lt;&gt;</strong> (default: GUNROCK_GENCODE_SM30,35,61=ON) change to generate code for a different compute capability.</li>
+<li><strong>CUDA_VERBOSE_PTXAS</strong> (default: OFF) - ON to enable verbose output from the PTXAS assembler.</li>
+</ul></li>
+</ul>
+<h2 id='generating-datasets'>Generating Datasets</h2>
 <p>All dataset-related code is under the <code>gunrock/dataset/</code> subdirectory. The current version of Gunrock only supports <a href="http://math.nist.gov/MatrixMarket/formats.html">Matrix-market coordinate-formatted graph</a> format. The datasets are divided into two categories according to their scale. Under the <code>dataset/small/</code> subdirectory, there are trivial graph datasets for testing the correctness of the graph primitives. All of them are ready to use. Under the <code>dataset/large/</code> subdirectory, there are large graph datasets for doing performance regression tests.
 * To download them to your local machine, just type <code>make</code> in the <code>dataset/large/</code> subdirectory.
 * You can also choose to only download one specific dataset to your local machine by stepping into the subdirectory of that dataset and typing make inside that subdirectory.</p>
