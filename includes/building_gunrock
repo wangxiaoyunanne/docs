@@ -26,17 +26,13 @@
 <li><p><a href="https://github.com/moderngpu/moderngpu">ModernGPU</a> and <a href="http://nvlabs.github.io/cub/">CUB</a> used as external submodules for Gunrock&#39;s APIs.</p>
 
 <ul>
-<li>You will need to download or clone ModernGPU and CUB, and place them to <code>gunrock/externals</code>.</li>
+<li>You will need to download or clone ModernGPU and CUB, and place them to <code>gunrock/externals</code></li>
 <li>Alternatively, you can clone gunrock recursively with <code>git clone --recursive https://github.com/gunrock/gunrock</code></li>
+<li>or if you already cloned gunrock, under <code>gunrock/</code> directory: run <code>git submodule init</code> and
+<code>git submodule update</code></li>
 </ul></li>
 </ul>
 
-<blockquote>
-<p>or if you already cloned gunrock, under <code>gunrock/</code> directory</p>
-</blockquote>
-<pre class="highlight shell tab-shell"><code>git submodule init
-git submodule update
-</code></pre>
 <p><strong>Optional Dependencies:</strong></p>
 
 <ul>

@@ -29,10 +29,11 @@ idea of what needs to be in the test and what you are missing.</p>
  */</span>
 
 <span class="c1">// Includes required for the test
-</span><span class="cp">#include &lt;stdio.h&gt;
-#include &lt;gunrock/gunrock.h&gt;
-#include &lt;gmock/gmock.h&gt;
-#include &lt;gtest/gtest.h&gt;
+</span>
+<span class="cp">#include "stdio.h"
+#include "gunrock/gunrock.h"
+#include "gmock/gmock.h"
+#include "gtest/gtest.h"
 </span>
 <span class="c1">// Add to gunrock's namespace
 </span><span class="n">namespace</span> <span class="n">gunrock</span> <span class="p">{</span>
@@ -83,12 +84,7 @@ idea of what needs to be in the test and what you are missing.</p>
 </span></code></pre>
 <ol>
 <li><p>Create a <code>test_&lt;test-name&gt;.h</code> file and place it in the appropriate directory inside <code>/path/to/gunrock/tests/</code>. I will be using <code>test_bfs_lib.h</code> as an example.</p></li>
-<li><p>In the <code>tests/test.cpp</code> file, add your test file as an include:</p></li>
-</ol>
-<pre class="highlight c tab-c"><code><span class="c1">// Add google tests
-</span><span class="cp">#include "bfs/test_lib_bfs.h"
-</span></code></pre>
-<ol>
+<li><p>In the <code>tests/test.cpp</code> file, add your test file as an include: <code>#include &quot;bfs/test_lib_bfs.h&quot;</code>.</p></li>
 <li><p>In your <code>test_&lt;test-name&gt;.h</code> file, create a <code>TEST()</code> function, which takes two parameters: <code>TEST(&lt;nameofthesuite&gt;, &lt;nameofthetest&gt;)</code>.</p></li>
 <li><p>Use <code>EXPECT</code> and <code>ASSERT</code> to write the actual test itself. I have provided a commented example below:</p></li>
 <li><p>Now when you run the binary called <code>unit_test</code>, it will automatically run your test suite along with all other google tests as well.
