@@ -1,3 +1,7 @@
+---
+full_length: true
+---
+
 # Source data for frontier_size
 
 <table border="1" class="dataframe">

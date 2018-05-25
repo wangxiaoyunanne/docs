@@ -1,3 +1,7 @@
+---
+full_length: true
+---
+
 # Source data for gunrock_gpus
 
 <table border="1" class="dataframe">

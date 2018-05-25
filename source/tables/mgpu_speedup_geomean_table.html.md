@@ -1,3 +1,7 @@
+---
+full_length: true
+---
+
 # Source data for mgpu_speedup_geomean
 
 <table border="1" class="dataframe">
