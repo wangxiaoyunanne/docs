@@ -1,4 +1,6 @@
-# FAQ
+# Frequently Asked Questions
+
+Some of the most common questions we have come across during the life of Gunrock project. If your question isn't already answered below, feel free to create an [issue](https://github.com/gunrock/gunrock/issues) on GitHub.
 
 ## What does it do?
 

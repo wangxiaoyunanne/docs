@@ -15,9 +15,9 @@ includes:
   - forking_workflow_gunrock
   - writing_googletests
   - road_map
-  - release_notes
-  - FAQ
   - potential_projects
+  - release_notes
+  - frequently_asked_questions
 
 search: true
 ---
@@ -99,7 +99,7 @@ To report Gunrock bugs or request features, please file an issue directly using 
 
 ## Publications
 
-Yuechao Pan, Roger Pearce, and John D. Owens. Scalable Breadth-First Search on a GPU Cluster. In Proceedings of the 31st IEEE International Parallel and Distributed Processing Symposium, IPDPS 2018, May 2018. [[http](https://escholarship.org/uc/item/9bd842z6)]
+Yuechao Pan, Roger Pearce, and John D. Owens. **Scalable Breadth-First Search on a GPU Cluster**. In Proceedings of the 31st IEEE International Parallel and Distributed Processing Symposium, IPDPS 2018, May 2018. [[http](https://escholarship.org/uc/item/9bd842z6)]
 
 Yangzihao Wang, Yuechao Pan, Andrew Davidson, Yuduo Wu, Carl Yang, Leyuan Wang, Muhammad Osama, Chenshan Yuan, Weitang Liu, Andy T. Riffel, and John D. Owens. **Gunrock: GPU Graph Analytics**. ACM Transactions on Parallel Computing, 4(1):3:1&ndash;3:49, August 2017. [[DOI](http://dx.doi.org/10.1145/3108140) | [http](http://escholarship.org/uc/item/9gj6r1dj)]
 
@@ -136,16 +136,19 @@ COSN '14, pages 63&ndash;68, October 2014.
 
 ## Presentations
 
-GTC 2016, Gunrock: A Fast and Programmable Multi-GPU Graph Processing Library, April 2016. [[slides](http://on-demand.gputechconf.com/gtc/2016/presentation/s6374-yangzihao-wang-gunrock.pdf)]
+GTC 2018, **Latest Development of the Gunrock Graph Processing Library on GPUs**, March 2018. [[slides](http://on-demand.gputechconf.com/gtc/2018/presentation/s8594-latest-development-of-the-gunrock-graph-processing-library-on-gpus.pdf) | [video](http://on-demand.gputechconf.com/gtc/2018/video/S8594/)]
+
+GTC 2018, **Writing Graph Primitives with Gunrock**, March 2018. [[slides](https://github.com/gunrock/gunrock/blob/master/doc/Writing-Gunrock-Primitives.pdf) | [video](http://on-demand.gputechconf.com/gtc/2018/video/S8586/)]
+
+GTC 2016, **Gunrock: A Fast and Programmable Multi-GPU Graph Processing Library**, April 2016. [[slides](http://on-demand.gputechconf.com/gtc/2016/presentation/s6374-yangzihao-wang-gunrock.pdf)]
 
 NVIDIA [webinar](http://info.nvidianews.com/gunrock-webinar-reg-0416.html), April 2016. [[slides](http://tinyurl.com/owens-nv-webinar-160426)]
 
-GPU Technology Theater at SC15, Gunrock: A Fast and Programmable Multi-GPU Graph processing Library, November 2015. [[slides](http://images.nvidia.com/events/sc15/pdfs/SC5139-gunrock-multi-gpu-processing-library.pdf) | [video](http://images.nvidia.com/events/sc15/SC5139-gunrock-multi-gpu-processing-library.html)]
+GPU Technology Theater at SC15, **Gunrock: A Fast and Programmable Multi-GPU Graph processing Library**, November 2015. [[slides](http://images.nvidia.com/events/sc15/pdfs/SC5139-gunrock-multi-gpu-processing-library.pdf) | [video](http://images.nvidia.com/events/sc15/SC5139-gunrock-multi-gpu-processing-library.html)]
 
-GTC 2014, High-Performance Graph Primitives on the GPU: design and Implementation of Gunrock, March 2014. [[slides](http://on-demand.gputechconf.com/gtc/2014/presentations/S4609-hi-perf-graph-primitives-on-gpus.pdf) | [video](http://on-demand.gputechconf.com/gtc/2014/video/S4609-hi-perf-graph-primitives-on-gpus.mp4)]
+GTC 2014, **High-Performance Graph Primitives on the GPU: design and Implementation of Gunrock**, March 2014. [[slides](http://on-demand.gputechconf.com/gtc/2014/presentations/S4609-hi-perf-graph-primitives-on-gpus.pdf) | [video](http://on-demand.gputechconf.com/gtc/2014/video/S4609-hi-perf-graph-primitives-on-gpus.mp4)]
 
-Gunrock Developers
-------------------
+## Gunrock Developers
 
 - [Yangzihao Wang](http://www.idav.ucdavis.edu/~yzhwang/),
   University of California, Davis
