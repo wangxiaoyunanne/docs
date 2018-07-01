@@ -4,7 +4,7 @@ title: Gunrock
 language_tabs: # must be one of https://git.io/vQNgJ
 
 toc_footers:
-  - <a href='https://github.com/gunrock/gunrock'>Gunrock; GPU Graph Analytics</a>
+  - <a href='https://github.com/gunrock/gunrock'>Gunrock: GPU Graph Analytics</a>
   - Gunrock © 2018 The Regents of the University of California.
 
 includes:
@@ -23,22 +23,9 @@ search: true
 
 # Gunrock: GPU Graph Analytics
 
-Gunrock is a CUDA library for graph-processing designed specifically for the
-GPU. It uses a high-level, bulk-synchronous, data-centric abstraction focused
-on operations on a vertex or edge frontier. Gunrock achieves a balance between
-performance and expressiveness by coupling high performance GPU computing
-primitives and optimization strategies with a high-level programming model
-that allows programmers to quickly develop new graph primitives with small
-code size and minimal GPU programming knowledge.
+Gunrock is a CUDA library for graph-processing designed specifically for the GPU. It uses a high-level, bulk-synchronous, data-centric abstraction focused on operations on a vertex or edge frontier. Gunrock achieves a balance between performance and expressiveness by coupling high performance GPU computing primitives and optimization strategies with a high-level programming model that allows programmers to quickly develop new graph primitives with small code size and minimal GPU programming knowledge.
 
-For more details, please visit our
-[website](http://gunrock.github.io/),
-read [Why Gunrock](#why-gunrock),
-our TOPC 2017 paper
-[Gunrock: GPU Graph Analytics](http://escholarship.org/uc/item/9gj6r1dj),
-look at our [results](#results),
-and find more details in our [publications](#publications).
-See [Release Notes](http://gunrock.github.io/gunrock/doc/latest/release_notes.html) to keep up with the our latest changes.
+For more details, please visit our [website](http://gunrock.github.io/), read [Why Gunrock](#why-gunrock), our TOPC 2017 paper [Gunrock: GPU Graph Analytics](http://escholarship.org/uc/item/9gj6r1dj), look at our [results](#results), and find more details in our [publications](#publications). See [Release Notes](http://gunrock.github.io/gunrock/doc/latest/release_notes.html) to keep up with the our latest changes.
 
 Gunrock is featured on NVIDIA's list of [GPU Accelerated Libraries](https://developer.nvidia.com/gpu-accelerated-libraries) as the only external library for GPU graph analytics.
 
@@ -74,24 +61,15 @@ Gunrock is featured on NVIDIA's list of [GPU Accelerated Libraries](https://deve
 
 ## Getting Started with Gunrock
 
-- For Frequently Asked Questions, see the
-[FAQ](#faq).
+- For Frequently Asked Questions, see the [FAQ](#faq).
 
-- For information on building Gunrock, see
-[Building Gunrock](#building-gunrock).
+- For information on building Gunrock, see [Building Gunrock](#building-gunrock).
 
-- The "tests" subdirectory included with Gunrock has a comprehensive test
-application for most the functionality of Gunrock.
+- The "tests" subdirectory included with Gunrock has a comprehensive test application for most the functionality of Gunrock.
 
-- For the programming model we use in Gunrock, see
-[Programming Model](#programming-model).
+- For the programming model we use in Gunrock, see [Programming Model](#programming-model).
 
-- We have also provided code samples for how to use
-[Gunrock's C interface](https://github.com/gunrock/gunrock/tree/master/shared_lib_tests)
-and how to
-[call Gunrock primitives from Python](https://github.com/gunrock/gunrock/tree/master/python),
-as well as [annotated code](http://gunrock.github.io/gunrock/doc/annotated_primitives/annotated_primitives.html)
-for two typical graph primitives.
+- We have also provided code samples for how to use [Gunrock's C interface](https://github.com/gunrock/gunrock/tree/master/shared_lib_tests) and how to [call Gunrock primitives from Python](https://github.com/gunrock/gunrock/tree/master/python), as well as [annotated code](http://gunrock.github.io/gunrock/doc/annotated_primitives/annotated_primitives.html) for two typical graph primitives.
 
 - For details on upcoming changes and features, see the [Road Map](http://gunrock.github.io/gunrock/doc/latest/road_map.html).
 
@@ -113,13 +91,14 @@ We are happy to run experiments with other engines, particularly if those engine
 
 ## Reporting Problems
 
-To report Gunrock bugs or request features, please file an issue
-directly using [Github](https://github.com/gunrock/gunrock/issues).
+To report Gunrock bugs or request features, please file an issue directly using [Github](https://github.com/gunrock/gunrock/issues).
 
 <!-- TODO: Algorithm Input Size Limitations -->
 
 
 ## Publications
+
+Yuechao Pan, Roger Pearce, and John D. Owens. Scalable Breadth-First Search on a GPU Cluster. In Proceedings of the 31st IEEE International Parallel and Distributed Processing Symposium, IPDPS 2018, May 2018. [[http](https://escholarship.org/uc/item/9bd842z6)]
 
 Yangzihao Wang, Yuechao Pan, Andrew Davidson, Yuduo Wu, Carl Yang, Leyuan Wang, Muhammad Osama, Chenshan Yuan, Weitang Liu, Andy T. Riffel, and John D. Owens. **Gunrock: GPU Graph Analytics**. ACM Transactions on Parallel Computing, 4(1):3:1&ndash;3:49, August 2017. [[DOI](http://dx.doi.org/10.1145/3108140) | [http](http://escholarship.org/uc/item/9gj6r1dj)]
 
@@ -198,34 +177,10 @@ Gunrock Developers
 
 ## Acknowledgments
 
-Thanks to the following developers who contributed code: The
-connected-component implementation was derived from code written by
-Jyothish Soman, Kothapalli Kishore, and P. J. Narayanan and described
-in their IPDPSW '10 paper *A Fast GPU Algorithm for Graph
-Connectivity* ([DOI](http://dx.doi.org/10.1109/IPDPSW.2010.5470817)).
-The breadth-first search implementation and many of the utility
-functions in Gunrock are derived from the
-[b40c](http://code.google.com/p/back40computing/) library of
-[Duane Merrill](https://sites.google.com/site/duanemerrill/). The
-algorithm is described in his PPoPP '12 paper *Scalable GPU Graph
-Traversal* ([DOI](http://dx.doi.org/10.1145/2370036.2145832)). Thanks
-to Erich Elsen and Vishal Vaidyanathan from
-[Royal Caliber](http://www.royal-caliber.com/) and the [Onu](http://www.onu.io/) Team for their discussion on
-library development and the dataset auto-generating code. Thanks to
-Adam McLaughlin for his technical discussion. Thanks to Oded Green
-for his technical discussion and an optimization in the CC primitive.
-Thanks to the [Altair](https://altair-viz.github.io/) and [Vega-lite](https://vega.github.io/vega-lite/) teams in the [Interactive Data Lab](http://idl.cs.washington.edu/) at the University of Washington for graphing help. We appreciate the technical assistance, advice, and machine access from many colleagues at NVIDIA: Chandra Cheij, Joe Eaton, Michael Garland, Mark Harris, Ujval Kapasi, David Luebke, Duane Merrill, Nikolai Sakharnykh, and Cliff Woolley.
+Thanks to the following developers who contributed code: The connected-component implementation was derived from code written by Jyothish Soman, Kothapalli Kishore, and P. J. Narayanan and described in their IPDPSW '10 paper *A Fast GPU Algorithm for Graph Connectivity* ([DOI](http://dx.doi.org/10.1109/IPDPSW.2010.5470817)). The breadth-first search implementation and many of the utility functions in Gunrock are derived from the [b40c](http://code.google.com/p/back40computing/) library of [Duane Merrill](https://sites.google.com/site/duanemerrill/). The algorithm is described in his PPoPP '12 paper *Scalable GPU Graph Traversal* ([DOI](http://dx.doi.org/10.1145/2370036.2145832)). Thanks to Erich Elsen and Vishal Vaidyanathan from [Royal Caliber](http://www.royal-caliber.com/) and the [Onu](http://www.onu.io/) Team for their discussion on library development and the dataset auto-generating code. Thanks to Adam McLaughlin for his technical discussion. Thanks to Oded Green for his technical discussion and an optimization in the CC primitive. Thanks to the [Altair](https://altair-viz.github.io/) and [Vega-lite](https://vega.github.io/vega-lite/) teams in the [Interactive Data Lab](http://idl.cs.washington.edu/) at the University of Washington for graphing help. We appreciate the technical assistance, advice, and machine access from many colleagues at NVIDIA: Chandra Cheij, Joe Eaton, Michael Garland, Mark Harris, Ujval Kapasi, David Luebke, Duane Merrill, Josh Patterson, Nikolai Sakharnykh, and Cliff Woolley.
 
-This work was funded by the DARPA XDATA program under AFRL Contract
-FA8750-13-C-0002, by NSF awards CCF-1017399, OCI-1032859, and
-CCF-1629657, by DARPA STTR award D14PC00023, and by DARPA SBIR award
-W911NF-16-C-0020. Our XDATA principal investigator is Eric Whyne of
-[Data Tactics Corporation](http://www.data-tactics.com/) and our DARPA
-program managers are Dr. Christopher White (2012--2014) and
-[Mr. Wade Shen](http://www.darpa.mil/staff/mr-wade-shen)
-(2015--present). Thanks to Chris, Wade, and DARPA business manager
-Gabriela Araujo for their support during the XDATA program.
+This work was funded by the DARPA HIVE program under AFRL Contract FA8650-18-2-7835, the DARPA XDATA program under AFRL Contract FA8750-13-C-0002, by NSF awards OAC-1740333, CCF-1629657, OCI-1032859, and CCF-1017399, by DARPA STTR award D14PC00023, and by DARPA SBIR award W911NF-16-C-0020. Our XDATA principal investigator was Eric Whyne of [Data Tactics Corporation](http://www.data-tactics.com/) and our DARPA program manager is [Mr. Wade Shen](http://www.darpa.mil/staff/mr-wade-shen) (since 2015), and before that Dr. Christopher White (2012--2014). Thanks to Chris, Wade, and DARPA business manager Gabriela Araujo for their support during the XDATA program.
 
 ## Copyright and Software License
 
-Gunrock is copyright The Regents of the University of California, 2013--2017. The library, examples, and all source code are released under [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0).
+Gunrock is copyright The Regents of the University of California, 2013--2018. The library, examples, and all source code are released under [Apache 2.0](http://www.apache.org/licenses/LICENSE-2.0).
