@@ -893,16 +893,19 @@ reduction and segmented intersection. Generally we want to find the right set of
 <h1 id='gunrock-v0-5-release-notes'>Gunrock v0.5 Release Notes</h1>
 <p>Release 0.5, Upcoming</p>
 
-<p>Release 0.5 is mainly a API refactor, with some feature updates:
-- New operator interfaces
-- New graph representations
-- New frontier structure
-- New test driver
-- Restructured enactor routines
-- New parameter handling
-- New 1D operators
-- Other code restructuring
-- Optional Boost dependency</p>
+<p>Release 0.5 is mainly a API refactor, with some feature updates:</p>
+
+<ul>
+<li>New operator interfaces</li>
+<li>New graph representations</li>
+<li>New frontier structure</li>
+<li>New test driver</li>
+<li>Restructured enactor routines</li>
+<li>New parameter handling</li>
+<li>New 1D operators</li>
+<li>Other code restructuring</li>
+<li>Optional Boost dependency</li>
+</ul>
 <h2 id='changelog'>ChangeLog</h2>
 <ul>
 <li><p>Operators (i.e. advance, filter)</p>
@@ -945,7 +948,7 @@ encloses all frontier related data</li>
 combinations to run in a single execution</li>
 <li>Allows result validation for each run, instead of only the last run</li>
 <li>Result validation without reference for BFS and SSSP</li>
-<li>Moved common functions into <code>gunrock/app/test_base.cuh</code><br></li>
+<li>Moved common functions into <code>gunrock/app/test_base.cuh</code></li>
 <li>Moved CPU reference code and result validation into
 <code>gunrock/app/<algo>/<algo>_test.cuh</code></li>
 </ul></li>
