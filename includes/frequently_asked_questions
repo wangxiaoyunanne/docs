@@ -1,4 +1,6 @@
-<h1 id='faq'>FAQ</h1><h2 id='what-does-it-do'>What does it do?</h2>
+<h1 id='frequently-asked-questions'>Frequently Asked Questions</h1>
+<p>Some of the most common questions we have come across during the life of Gunrock project. If your question isn&#39;t already answered below, feel free to create an <a href="https://github.com/gunrock/gunrock/issues">issue</a> on GitHub.</p>
+<h2 id='what-does-it-do'>What does it do?</h2>
 <p>Gunrock is a fast and efficient graph processing library on the GPU that
 provides a set of graph algorithms used in big data analytics and visualization
 with high performance.  It also provides a set of operators which abstract the
