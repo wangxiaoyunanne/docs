@@ -17,6 +17,7 @@ includes:
   - road_map
   - release_notes
   - FAQ
+  - potential_projects
 
 search: true
 ---
