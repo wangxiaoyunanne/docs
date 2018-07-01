@@ -2,6 +2,7 @@
 Release 0.5, Upcoming
 
 Release 0.5 is mainly a API refactor, with some feature updates:
+
 - New operator interfaces
 - New graph representations
 - New frontier structure
@@ -48,7 +49,7 @@ Release 0.5 is mainly a API refactor, with some feature updates:
       combinations to run in a single execution
     - Allows result validation for each run, instead of only the last run
     - Result validation without reference for BFS and SSSP
-    - Moved common functions into `gunrock/app/test_base.cuh`    
+    - Moved common functions into `gunrock/app/test_base.cuh`
     - Moved CPU reference code and result validation into
       `gunrock/app/<algo>/<algo>_test.cuh`
 
