@@ -21,7 +21,14 @@ Options:
 
 
 run_build() {
+  # pre-processing
+  rm -rf ./source/includes/README.md
+  wget -O ./source/includes/README.md https://raw.githubusercontent.com/gunrock/gunrock/master/README.md
+
+  # build documentation
   bundle exec middleman build --clean
+
+  # post-processing
   sed -i -- 's/&quot;/"/g' ./build/*.html
   sed -i -- 's/&#39;/'"'"'/g' ./build/*.html
   sed -i -- 's/&lt;/</g' ./build/*.html
