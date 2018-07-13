@@ -1,5 +1,5 @@
 ---
-title: Gunrock Performance Across GPUs
+title: Groute performance vs. Gunrock
 
 # language_tabs: # must be one of https://git.io/vQNgJ
 
@@ -8,7 +8,7 @@ toc_footers:
   - Gunrock &copy; 2018 The Regents of the University of California.
 
 includes:
-  - gunrock_gpus
+  - groute
 
 search: true
 
