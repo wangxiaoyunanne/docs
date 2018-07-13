@@ -89,4 +89,4 @@
       .catch(error =&gt; showError(el_groute, error));
   </script></p>
 
-<p><a href="tables/groute_table_html.html">Source data</a>, with links to the output JSON for each run<br/></p>
+<p><a href="tables/groute_table.html">Source data</a>, with links to the output JSON for each run<br/></p>
