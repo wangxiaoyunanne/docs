@@ -64,11 +64,11 @@
 <p>We note that Groute&#39;s circular work list overflowed on Tesla K40c for some PageRank runs with the twitter and kron datasets (<code>circular worklist has overflowed, please allocate more memory</code>). We haven&#39;t yet worked out the right command-line switch to allocate more memory for this case, although we&#39;re sure this is a simple fix.</p>
 <h2 id='full-performance-comparison'>Full performance comparison</h2>
 <p>The following plot compares <a href="https://github.com/gunrock/gunrock/releases/tag/v0.4">Gunrock 0.4</a> with <a href="https://github.com/groute/ppopp17-artifact">Groute&#39;s PPoPP artifact</a>. It has multiple GPUs on one plot. We have broken them out by GPU on individual pages here:
-[ <a href="groute_Tesla%20P100-PCIE-16GB.html">Tesla P100</a>
-| <a href="groute_Tesla_K40c.html">Tesla K40c</a>
-| <a href="groute_Tesla_K40m.html">Tesla K40m</a>
-| <a href="groute_Tesla_K80.html">Tesla K80</a>
-| <a href="groute_Tesla_M60.html">Tesla M60</a>
+[ <a href="includes/groute_Tesla%20P100-PCIE-16GB.html">Tesla P100</a>
+| <a href="includes/groute_Tesla_K40c.html">Tesla K40c</a>
+| <a href="includes/groute_Tesla_K40m.html">Tesla K40m</a>
+| <a href="includes/groute_Tesla_K80.html">Tesla K80</a>
+| <a href="includes/groute_Tesla_M60.html">Tesla M60</a>
 ]</p>
 
 <div id="vis_groute"></div>
