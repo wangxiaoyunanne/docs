@@ -75,7 +75,10 @@ html, body {
   .logo {
     display: block;
     max-width: 100%;
-    margin-bottom: $logo-margin;
+    margin-bottom: $logo-margin-bot;
+    margin-left: $logo-margin-left;
+    margin-top: $logo-margin-top;
+    margin-right: $logo-margin-right;
   }
 
   &>.search {
@@ -107,7 +110,7 @@ html, body {
     margin-top: 0;
     box-sizing: border-box;
     height: 0;
-    overflow-y: auto;
+    overflow-y: hidden; // auto;
     overflow-x: hidden;
     transition-property: height, margin;
     transition-duration: 180ms;
