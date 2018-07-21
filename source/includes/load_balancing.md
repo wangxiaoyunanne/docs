@@ -78,7 +78,7 @@ The simplest policy is to not attempt any load-balance across vertices at all. W
 
 The obvious disadvantage of this policy is that significant imbalance in work among neighboring vertices leads to poor performance. However, it has minimal load-balancing overhead, and if the input graph has a fairly uniform distribution of edges per vertex, it performs fairly well.
 
-In Gunrock, we can enable `ThreadExpand` by configuring the next strategy, as we will describe below.
+We don't use this policy in practice in Gunrock. It would be straightforward to write this as a standalone policy, or alternatively, in Gunrock, we can implement `ThreadExpand` by configuring the `TWC` strategy, as we will describe below.
 
 <!--
 yzh: "`ThreadExpand`, `WarpExpand` and `CtaExpand` together form both `TWC_FORWARD` and `TWC_BACKWARD` mode. You will see `ThreadExpand` appear in both `edge_map_forward/cta.cuh` and `edge_map_backward/cta.cuh`. `ThreadExpand()` maps to Merrill's `ExpandByScan()`. It uses each thread to put each node's neighbor list node ids to shared memory (https://github.com/gunrock/gunrock/blob/master/gunrock/oprtr/edge_map_forward/cta.cuh#L900). Then use one thread to expand several neighbor nodes (not necessarily from one input node) in a for loop: https://github.com/gunrock/gunrock/blob/master/gunrock/oprtr/edge_map_forward/cta.cuh#L907 "
@@ -101,7 +101,7 @@ TWC groups neighbor lists into three categories based on their size, then indivi
 `Dispatch::Kernel` (in `oprtr/TWC_advance/kernel.cuh`)
 first calls `GetCtaWorkLimits` (in `util/cta_work_distribution.cuh`), which fills a `work_limits` structure for that CTA with the number of grains and the starting grain for that CTA. Then the workhorse routine is `Cta::ProcessTile` in `oprtr/TWC_advance/cta.cuh`. It:
 
-- Loads a tile (`LoadValid`) _into shared memory?_
+- Loads a tile (`LoadValid`) into registers. The intent with `LoadValid` is that data is thread-local unless it is needed across the block, in which case it will be moved to shared memory.
 - Scans that tile (prefix-sum) to determine the number and distribution of  output elements (?)
 - Runs `CtaExpand` with the `advance_op`. This loops until no thread has a neighbor list at least as long as `CTA_GATHER_THRESHOLD`.
     - All threads that have a neighbor list at least as large as `CTA_GATHER_THRESHOLD` attempt to get control of the CTA. One succeeds (the "command thread"). The command thread sets some block-wide constants that allow all threads to participate in the next phase.
@@ -112,10 +112,20 @@ first calls `GetCtaWorkLimits` (in `util/cta_work_distribution.cuh`), which fill
 - Loops until done:
     - Runs `ThreadExpand`, which assembles a list of gather addresses (the vertex at the other end of the edge) in shared memory and fetches them (`GetEdgeDest`). As with the previous `Expand` calls, the loop calls `ProcessNeighbor` with `advance_op` to write vertices that pass `advance_op` to the output.
 
-_I have no idea where intra-block load balance comes in to this (work stealing?)._
-
-In general, this strategy does well with graphs with a high variance in vertex degree. However, it has relatively large overhead for two reasons: (1) it sequentially runs the CTA, Warp, and Thread expand methods, and (2) it balances load across different CTAs by work stealing, which has high benefit but high setup cost.
+In general, this strategy does well with graphs with a high variance in vertex degree. However, it has relatively large overhead for two reasons: (1) it sequentially runs the CTA, Warp, and Thread expand methods, and (2) it may have load imbalance across CTAs, which we could address with work-stealing code but at additional cost.
 
 ## Load-Balanced Policy (`LB`)
 
 TWC balances load during its execution, dynamically assigning one thread or group of threads to one vertex, with efficiency gains from choosing the right granularity of work to process each vertex or group of vertices. **Big picture: LB is a two-phase technique, with the first phase computing a perfect load balance (requiring device-wide computation to ensure this load balance) and the second phase actually performing the advance in a load-balanced way. LB can load-balance over the input or the output.** Generally this strategy is better for more even distributions of vertex degree.
+
+<!-- YC: the tile and grain explanation should work for LB in addition to TWC, although it’s has not been done that way-->
+
+<!-- todo MG suggestion: we have the ability to address load balance in several ways, including changing algorithm, doing runtime load balancing, and separating out irregular stuff from regular stuff and LB the irregular stuff -->
+
+## Uniquify
+
+<!-- John: "where do we have "uniquify" code in our load balancers, by which I mean "we get a bunch of vertices? as output, we remove all the duplicates, we probably do this at CTA granularity not globally"?"
+YC: The uniquify part is in CULL_filter, https://github.com/gunrock/gunrock/blob/dev-refactor/gunrock/oprtr/CULL_filter/cta.cuh#L181 https://github.com/gunrock/gunrock/blob/dev-refactor/gunrock/oprtr/CULL_filter/cta.cuh#L315 and https://github.com/gunrock/gunrock/blob/dev-refactor/gunrock/oprtr/CULL_filter/cta.cuh#L344
+they are in use when ENABLE_IDEMPOTENCE is true
+otherwise filter will not remove the duplicates
+The CULL_filter uses 4 different methods to find the duplicates: 1) bitmast: check a global bit mast, 2) Warp: check whether any thread in the warp has encountered the vertex recently; 3) History: check whether any thread in the block has encountered the vertex recently; 4) label: check a global per-element label. 2 & 3 use some kind of hash table to store the most recent vertices-->
