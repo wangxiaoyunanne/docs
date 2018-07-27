@@ -1,0 +1,107 @@
+<h1 id='from-gunrock-to-json-gunrock_to_json'>From Gunrock to JSON {#gunrock_to_json}</h1><h2 id='how-do-we-export-information-from-gunrock'>How do we export information from Gunrock?</h2>
+<p>Typical programs use &quot;printf&quot; to emit a bunch of unstructured information. As the program gets more sophisticated, &quot;printf&quot; is augmented with command-line switches, perhaps a configuration file, but it&#39;s hard to easily parse random printf output.</p>
+
+<p>More structured is JSON format. JSON is a nested dict (hash) data structure with arbitrary keys (and arbitrary nesting). It can be used to hold scalar, vector, and key-value data. Many tools can input and output JSON. It is a good choice for exporting information from a Gunrock program.</p>
+
+<p>Ideally, we would declare a C++ struct or class and simply print it to stdout. The particular issue with C++, however, is that it poorly supports introspection: a running C++ executable does not know anything about the internals of the program that created it. Specifically, it doesn&#39;t know its own variable names, at least not without an incredible amount of pain. Maintaining a set of strings that map to variable names is undesirable since that can get out of sync.</p>
+
+<p>Instead, we&#39;ve elected to use a dict data structure that stores the JSON data, and we will write directly into it. We are using a <a href="http://www.codeproject.com/Articles/20027/JSON-Spirit-A-C-JSON-Parser-Generator-Implemented">header-only JSON generator</a> based on Boost Spirit. It&#39;s used like this:</p>
+
+<p>json_spirit::mObject info;
+    info[&quot;engine&quot;] = &quot;Gunrock&quot;;</p>
+
+<p>Currently we can output JSON data in one of three ways, controlled from the command line:</p>
+
+<ul>
+<li><code>--json</code> writes the JSON structure to stdout.</li>
+<li><code>--jsonfile=filename</code> writes the JSON structure to <em>filename</em>.</li>
+<li><code>--jsondir=dir</code> writes the JSON structure to an automatically-uniquely-named file in the <em>dir</em> directory. This is the preferred option, since presumably there is a single directory where all JSON output is stored, and all Gunrock runs can use the same <code>--jsondir=dir</code> command-line option.</li>
+</ul>
+
+<p>The current &quot;automatically-uniquely-named file&quot; producer creates <code>name_dataset_time.json</code>. By design, the file name should not matter, so long as it is unique (and thus doesn&#39;t stomp on other files in the same directory when it&#39;s written). <em>No program or person should rely on the contents of file names.</em></p>
+
+<p>The current JSON structure (<code>info</code>) is passed by reference between various routines. Yuechao suggests that putting <code>info</code> into the global <code>Test_Parameter</code> is a better idea, where it can be passed into the enactor&#39;s and problem&#39;s <code>Init()</code> routines.</p>
+
+<p>We don&#39;t have a fixed schema (yet), so what&#39;s below reflects what we put into the test_bfs code. Some of these are likely not useful for any analysis, but it&#39;s preferable to include too much info in the JSON output rather than not enough.</p>
+<h2 id='fields-that-should-be-in-any-gunrock-run'>Fields that should be in any Gunrock run</h2>
+<ul>
+<li><em>avg_duty</em>. Average kernel running duty, calculated by kernel run time / kernel lifetime.</li>
+<li><em>command_line</em>. Reflects how the program was run. Use <code>args.GetEntireCommandLine()</code>.</li>
+<li><em>dataset</em>. Short name of dataset, likely the stem of <code>foo.mtx</code> (in this case, <code>foo</code>). Examples: <code>ak2010</code> or <code>soc_liveJournal1</code>. Important to standardize dataset names to allow joins when compiling stats.</li>
+<li><em>elapsed</em>. Elapsed runtime, e.g., <code>0.25508800148963928</code>. Measured in ms.</li>
+<li><em>engine</em>. <code>Gunrock</code> for Gunrock runs.</li>
+<li><p><em>git_commit_sha1</em>. The git commit identifier, e.g., <code>6f775b82359c3c8529b8878cdae80e9dfbaf5330</code>. (Strategy from <a href="http://stackoverflow.com/questions/1435953/how-can-i-pass-git-sha1-to-compiler-as-definition-using-cmake">StackOverflow</a>, of course.) Settable by</p>
+
+<p>#include <gunrock/util/gitsha1.h>
+    info[&quot;git_commit_sha1&quot;] = g_GIT_SHA1;</p></li>
+<li><p><em>gpuinfo</em>. What GPU did we use? Use:</p>
+
+<p>#include <gunrock/util/sysinfo.h>
+    Gpuinfo gpuinfo;
+    info[&quot;gpuinfo&quot;] = gpuinfo.getGpuinfo();</p></li>
+<li><p><em>gunrock_version</em>. Reflects what&#39;s set in the top-level CMakeFiles; set as a constant &quot;#define&quot; using a compiler flag <code>-D</code> during compilation. (Since <em>gunrock_version</em> should not change often, this &quot;#define&quot; is acceptable; we only need rebuild when we update the version.) Example: <code>0.1.0</code>.</p>
+
+<p>#define STR(x) #x
+    #define XSTR(x) STR(x)
+    info[&quot;gunrock_version&quot;] = XSTR(GUNROCKVERSION);</p></li>
+<li><p><em>iterations</em>. The number of times we run the test, with runtime averaged over all runs. Yuduo suggests considering better names, e.g.:</p>
+
+<ul>
+<li><em>search_depth</em>. number of BSP super-steps</li>
+<li><em>max_iter</em>. Maximum allowed BSP super-steps, breaking after reaching this value</li>
+<li><em>iterations</em>. Number of runs of a primitive</li>
+</ul></li>
+<li><p><em>mark_predecessors</em>. Set by command-line flag; true or false. Can be set for any primitive, as long as when a primitive does advance, it keeps track of predecessors.</p></li>
+<li><p><em>name</em>. Name of primitive; I reused the <code>Stats</code> name <code>GPU BFS</code>. <code>BFS</code> is probably more appropriate. We definitely need canonical names here.</p></li>
+<li><p><em>num_gpus</em>. Integer. I think this only works with 1 now. We&#39;ll extend to multi-GPU later.</p></li>
+<li><p><em>quick</em>: Set by command-line flag; true or false. I don&#39;t know what this is.</p></li>
+<li><p><em>sysinfo</em>. What GPU/system did we use? Use:</p>
+
+<p>#include <gunrock/util/sysinfo.h>
+    Sysinfo sysinfo;
+    info[&quot;sysinfo&quot;] = sysinfo.getSysinfo();</p></li>
+<li><p><em>time</em>. When the test was run. This is a standard format from <code>ctime()</code>, e.g. <code>Wed Jul 22 09:04:05 2015\n</code>. (Oddly, the <code>\n</code> is part of the format.)</p>
+
+<p>time_t now = time(NULL);
+    info[&quot;time&quot;] = ctime(&amp;now);</p></li>
+<li><p><em>userinfo</em>. Who ran this test? Use:</p>
+
+<p>#include <gunrock/util/sysinfo.h>
+    Userinfo userinfo;
+    info[&quot;userinfo&quot;] = userinfo.getUserinfo();</p></li>
+<li><p><em>verbose</em>: Set by command-line flag; true or false. Presumably relates to logging output.</p></li>
+</ul>
+<h2 id='fields-for-any-traversal-based-primitive'>Fields for any traversal-based primitive</h2>
+<ul>
+<li><em>edges_visited</em>. Self-explanatory.</li>
+<li><em>m_temps</em>. Millions of edge-traversals per second, e.g., <code>0.40378222181564849</code>.</li>
+<li><em>nodes_visited</em>. Self-explanatory.</li>
+<li><p><em>redundant_work</em>. Percentage indicating concurrent discovery calculated by: <code>[(total edges we put into frontier - edge visited) / edge visited] * 100</code>.
+Actual code:</p>
+
+<p>// measure duplicate edges put through queue
+    redundant_work = ((double)total_queued - edges_visited) / edges_visited;</p></li>
+<li><p><em>total_queued</em>. Total elements put into the frontier.</p></li>
+</ul>
+<h2 id='bfs-specific-fields'>BFS-specific fields</h2>
+<ul>
+<li><em>impotence</em>: Set by command-line flag; true or false.</li>
+<li><em>instrumented</em>: Set by command-line flag; true or false.</li>
+<li><em>iterations</em>. Not entirely sure what this indicates. Example: <code>10</code>.</li>
+<li><em>max_grid_size</em>. Number of grids for GPU kernels, but sometimes the enactor itself will calculate a optimal number and ignore this setting.</li>
+<li><em>max_queue_sizing</em>. Used to calculate the initial size of frontiers (#vertices * queue-sizing, or #edges * queue-sizing). --<em>in-sizing</em> is for similar purpose, but for those buffers used by GPU-GPU communication.</li>
+<li><em>search_depth</em>. Presumably maximum distance from the source found in the graph. Integer.</li>
+<li><em>traversal_mode</em>. Switch for <em>advance</em> kernels. 0: load-balanced partitioning (Davidson); 1: Merrill&#39;s load-balance strategy. Default is currently dynamically choosing between the two.</li>
+<li><em>undirected</em>. Is the graph is undirected (true) or directed (false)? Command-line option.</li>
+<li><em>vertex_id</em>. Starting vertex ID. Integer.</li>
+</ul>
+<h1 id='thread-safety-quot-using-json-spirit-with-multiple-threads-quot'>Thread safety: &quot;Using JSON Spirit with Multiple Threads&quot;</h1>
+<p>&quot;If you intend to use JSON Spirit in more than one thread, you will need to uncomment the following line near the top of json_spirit_reader.cpp.</p>
+
+<p>&quot;//#define BOOST_SPIRIT_THREADSAFE&quot;</p>
+
+<p>&quot;In this case, Boost Spirit will require you to link against Boost Threads.&quot;</p>
+
+<p><a href="http://www.codeproject.com/KB/recipes/JSON_Spirit.aspx#threads">link</a></p>
+<h1 id='if-compilation-is-too-slow'>If compilation is too slow</h1>
+<p>Currently we&#39;re using the header-only version of JSON Spirit, which is easier to integrate but requires more compilation. The (docs)[http://www.codeproject.com/KB/recipes/JSON_Spirit.aspx#reduc] have ways to increase compilation speed.</p>

@@ -1,0 +1,451 @@
+<h2 id='mini-gunrock-study'>Mini Gunrock Study</h2><h3 id='important-data-structure'>Important data structure:</h3><pre class="highlight c tab-c"><code><span class="n">namespace</span> <span class="n">gunrock</span> <span class="p">{</span>
+
+<span class="k">struct</span> <span class="n">problem_t</span> <span class="p">{</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">graph_device_t</span><span class="o">&gt;</span> <span class="n">gslice</span><span class="p">;</span>
+
+  <span class="n">problem_t</span><span class="p">()</span> <span class="o">:</span> <span class="n">gslice</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">graph_device_t</span><span class="o">&gt;</span><span class="p">())</span>
+      <span class="p">{}</span>
+
+  <span class="c1">// Disable copy ctor and assignment operator. We don't want to let the
+</span>  <span class="c1">// user copy only a slice. (code hided by deleting...)
+</span>
+  <span class="n">problem_t</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">graph_device_t</span><span class="o">&gt;</span> <span class="n">rhs</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">gslice</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">;</span>
+  <span class="p">}</span>
+
+
+  <span class="kt">void</span> <span class="n">GetDegrees</span><span class="p">(</span><span class="n">mem_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">_degrees</span><span class="p">,</span> <span class="n">standard_context_t</span> <span class="o">&amp;</span><span class="n">context</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kt">int</span> <span class="o">*</span><span class="n">degrees</span> <span class="o">=</span> <span class="n">_degrees</span><span class="p">.</span><span class="n">data</span><span class="p">();</span>
+      <span class="kt">int</span> <span class="o">*</span><span class="n">offsets</span> <span class="o">=</span> <span class="n">gslice</span><span class="o">-&gt;</span><span class="n">d_row_offsets</span><span class="p">.</span><span class="n">data</span><span class="p">();</span>
+      <span class="k">auto</span> <span class="n">f</span> <span class="o">=</span> <span class="p">[</span><span class="o">=</span><span class="p">]</span><span class="n">__device__</span><span class="p">(</span><span class="kt">int</span> <span class="n">idx</span><span class="p">)</span> <span class="p">{</span>
+          <span class="n">degrees</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">offsets</span><span class="p">[</span><span class="n">idx</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">-</span><span class="n">offsets</span><span class="p">[</span><span class="n">idx</span><span class="p">];</span>
+      <span class="p">};</span>
+      <span class="n">transform</span><span class="p">(</span><span class="n">f</span><span class="p">,</span> <span class="n">gslice</span><span class="o">-&gt;</span><span class="n">num_nodes</span><span class="p">,</span> <span class="n">context</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="p">}</span>
+</code></pre>
+<p>problem_t is a general class which each primitive problem will inherit from, like BFS(Breadth-first-search) problem:
+```c
+namespace gunrock {
+namespace bfs {</p>
+
+<p>struct bfs_problem_t : problem_t {
+  mem_t<int> d_labels;
+  mem_t<int> d_preds;
+  std::vector<int> labels;
+  std::vector<int> preds;
+  int src;</p>
+
+<p>struct data_slice_t {
+      int *d_labels;
+      int *d_preds;</p>
+
+<p>void init(mem_t<int> &amp;_labels, mem_t<int> &amp;_preds) {
+        d_labels = _labels.data();
+        d_preds = _preds.data();
+      }
+  };</p>
+
+<p>mem_t<data_slice_t> d_data_slice;
+  std::vector<data_slice_t> data_slice;</p>
+
+<p>bfs_problem_t() {}</p>
+
+<p>bfs_problem_t(std::shared_ptr<graph_device_t> rhs, size_t src, standard_context_t&amp; context) :
+      problem_t(rhs),
+      src(src),
+      data_slice( std::vector<data_slice_t>(1) ) {
+          labels = std::vector<int>(rhs-&gt;num_nodes, -1);
+          preds = std::vector<int>(rhs-&gt;num_nodes, -1);
+          labels[src] = 0;
+          preds[src] = -1;
+          d_labels = to_mem(labels, context);
+          d_preds = to_mem(preds, context);
+          data_slice[0].init(d_labels, d_preds);
+          d_data_slice = to_mem(data_slice, context);
+      }
+};</p>
+
+<p>} //end bfs
+} // end gunrock
+```
+Based on general type problem_t, BFS defines its required data structure in data_slice_t which including label information (if visited) and preds information (who is the parent). The label and pred are set to -1 except source node(src: 0, -1 rpt). mem_T&lt;&gt; is a class defined by moderngpu which basically wrap a device pointer, its size, mem space and context. to_mem is copy command from host to device.</p>
+<pre class="highlight c tab-c"><code><span class="n">namespace</span> <span class="n">gunrock</span> <span class="p">{</span>
+
+<span class="k">enum</span> <span class="n">frontier_type_t</span> <span class="p">{</span>
+  <span class="n">edge_frontier</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+  <span class="n">node_frontier</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">};</span>
+
+<span class="n">template</span><span class="o">&lt;</span><span class="kr">typename</span> <span class="n">type_t</span><span class="o">&gt;</span>
+<span class="n">class</span> <span class="n">frontier_t</span> <span class="p">{</span>
+  <span class="kt">size_t</span> <span class="n">_size</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">_capacity</span><span class="p">;</span>
+  <span class="n">frontier_type_t</span> <span class="n">_type</span><span class="p">;</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">mem_t</span><span class="o">&lt;</span><span class="n">type_t</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">_data</span><span class="p">;</span>
+
+<span class="n">public</span><span class="o">:</span>
+  <span class="kt">void</span> <span class="n">swap</span><span class="p">(</span><span class="n">frontier_t</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="p">{</span><span class="o">---</span><span class="p">}</span>
+
+  <span class="n">frontier_t</span><span class="p">()</span> <span class="o">:</span> <span class="n">_size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">_capacity</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="n">_type</span><span class="p">(</span><span class="n">node_frontier</span><span class="p">),</span> <span class="n">_data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">type_t</span><span class="o">&gt;</span><span class="p">()){</span> <span class="p">}</span>
+
+  <span class="n">frontier_t</span><span class="p">(</span><span class="n">context_t</span> <span class="o">&amp;</span><span class="n">context</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">capacity</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">size</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">frontier_type_t</span> <span class="n">type</span> <span class="o">=</span> <span class="n">node_frontier</span><span class="p">)</span> <span class="o">:</span>
+      <span class="n">_capacity</span><span class="p">(</span><span class="n">capacity</span><span class="p">),</span>
+      <span class="n">_size</span><span class="p">(</span><span class="n">size</span><span class="p">),</span>
+      <span class="n">_type</span><span class="p">(</span><span class="n">type</span><span class="p">)</span>
+    <span class="p">{</span>
+        <span class="n">_data</span><span class="p">.</span><span class="n">reset</span><span class="p">(</span><span class="n">new</span> <span class="n">mem_t</span><span class="o">&lt;</span><span class="n">type_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">capacity</span><span class="p">,</span> <span class="n">context</span><span class="p">));</span>
+    <span class="p">}</span>
+
+  <span class="n">frontier_t</span><span class="p">(</span><span class="n">frontier_t</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="o">:</span> <span class="n">frontier_t</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">swap</span><span class="p">(</span><span class="n">rhs</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">frontier_t</span><span class="o">&amp;</span> <span class="n">operator</span><span class="o">=</span><span class="p">(</span><span class="n">frontier_t</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">swap</span><span class="p">(</span><span class="n">rhs</span><span class="p">);</span>
+    <span class="k">return</span> <span class="o">*</span><span class="n">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">cudaError_t</span> <span class="n">load</span><span class="p">(</span><span class="n">mem_t</span><span class="o">&lt;</span><span class="n">type_t</span><span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">target</span><span class="p">)</span> <span class="p">{</span><span class="o">----</span><span class="p">}</span>
+
+  <span class="n">cudaError_t</span> <span class="n">load</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">type_t</span><span class="o">&gt;</span> <span class="n">target</span><span class="p">)</span> <span class="p">{</span><span class="o">----</span><span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">resize</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">size</span><span class="p">)</span> <span class="p">{</span><span class="o">----</span><span class="p">}</span>
+
+  <span class="kt">size_t</span> <span class="n">capacity</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_capacity</span><span class="p">;</span> <span class="p">}</span>
+  <span class="kt">size_t</span> <span class="n">size</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">_size</span><span class="p">;</span> <span class="p">}</span>
+  <span class="n">frontier_type_t</span> <span class="n">type</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span><span class="k">return</span> <span class="n">_type</span><span class="p">;</span> <span class="p">}</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">mem_t</span><span class="o">&lt;</span><span class="n">type_t</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">data</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span><span class="k">return</span> <span class="n">_data</span><span class="p">;</span> <span class="p">}</span>
+
+<span class="p">};</span>
+
+<span class="p">}</span> <span class="c1">//end gunrock
+</span></code></pre>
+<p>All operators are applied on frontier_t. Before getting into the operators, have a look at graph data structure:
+```c
+namespace gunrock {</p>
+
+<p>struct csr_t {
+  int num_nodes;
+  int num_edges;
+  std::vector<int> offsets;
+  std::vector<int> indices;
+  std::vector<float> edge_weights;
+  std::vector<int> sources;
+};</p>
+
+<p>struct graph_t {
+  bool undirected;
+  int num_nodes;
+  int num_edges;</p>
+
+<p>std::shared_ptr<csr_t> csr;
+  std::shared_ptr<csr_t> csc;
+};</p>
+
+<p>struct graph_device_t {
+  int num_nodes;
+  int num_edges;
+  mem_t<int> d_row_offsets;
+  mem_t<int> d_col_indices;
+  mem_t<float> d_col_values;
+  mem_t<int> d_col_offsets;
+  mem_t<int> d_row_indices;
+  mem_t<float> d_row_values;
+  mem_t<int> d_csr_srcs;
+  mem_t<int> d_csc_srcs;</p>
+
+<p>// update during each advance iteration
+  // to store the scaned row offsets of
+  // the current frontier
+  mem_t<int> d_scanned_row_offsets;</p>
+
+<p>graph_device_t() :
+      num_nodes(0),
+      num_edges(0)
+      {}
+};</p>
+
+<p>void graph_to_device(std::shared_ptr<graph_device_t> d_graph, std::shared_ptr<graph_t> graph,
+standard_context_t &amp;context) { -----} // copy graph data to device</p>
+
+<p>std::shared_ptr<graph_t> load_graph(const char *_name, bool _undir = false,
+bool _random_edge_value = false) {-----}</p>
+
+<p>} //end gunrock
+```
+I am a soul painter:
+<img src="https://github.com/YuxinxinChen/YuxinxinChen.github.io/blob/master/images/soal_painter_csr.jpg" alt="alt text" />
+By the way, the length of value array is number of edges in the graph, the value can be the edge weights. In this graph, I only 1,0 to show if there is a edge between. Note this is undirected graph, then only save the upper part of matrix since the matrix is symetric. Then length of col_indices array is number of edges in the graph. The length of row_offset is number of nodes + 1 with the last element saves the total number of edges in the graph. Csr is row based compression format and csc is col based compression format. A discussion favors a column based format since it is more mem-efficent for GPU. Anyway, the picture is a good illustration I believe otherwise google it. </p>
+
+<p>d_scanned_row_offsets is an array for frontier, so if this iteration the input queue is node 0, node 3, and node 6, the input forntier will be 0 3 6, and suppose the original row_offsets is 0, 2, 10, 100, 150, 180, 900, 1000...., the neighbor list length of node 0, node 3 and node 6 will be, 2, 50, and 100. So the scanned_row_offsets will be 0, 2, 52, the output frontier length should be 152.</p>
+<h2 id='operators'>Operators</h2><h3 id='advance'>Advance</h3><pre class="highlight c tab-c"><code><span class="n">namespace</span> <span class="n">gunrock</span> <span class="p">{</span>
+<span class="n">namespace</span> <span class="n">oprtr</span> <span class="p">{</span>
+<span class="n">namespace</span> <span class="n">advance</span> <span class="p">{</span>
+
+    <span class="c1">//first scan
+</span>    <span class="c1">//then lbs (given the option to idempotence or not)
+</span><span class="n">template</span><span class="o">&lt;</span><span class="kr">typename</span> <span class="n">Problem</span><span class="p">,</span> <span class="kr">typename</span> <span class="n">Functor</span><span class="p">,</span> <span class="n">bool</span> <span class="n">idempotence</span><span class="p">,</span> <span class="n">bool</span> <span class="n">has_output</span><span class="o">&gt;</span>
+<span class="kt">int</span> <span class="n">advance_forward_kernel</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Problem</span><span class="o">&gt;</span> <span class="n">problem</span><span class="p">,</span>
+              <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">input</span><span class="p">,</span>
+              <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">output</span><span class="p">,</span>
+              <span class="kt">int</span> <span class="n">iteration</span><span class="p">,</span>
+              <span class="n">standard_context_t</span> <span class="o">&amp;</span><span class="n">context</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="kt">int</span> <span class="o">*</span><span class="n">input_data</span> <span class="o">=</span> <span class="n">input</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">();</span> <span class="c1">//first data() for frontier, second data() for mem_t
+</span>    <span class="kt">int</span> <span class="o">*</span><span class="n">scanned_row_offsets</span> <span class="o">=</span> <span class="n">problem</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">gslice</span><span class="o">-&gt;</span><span class="n">d_scanned_row_offsets</span><span class="p">.</span><span class="n">data</span><span class="p">();</span>
+    <span class="kt">int</span> <span class="o">*</span><span class="n">row_offsets</span> <span class="o">=</span> <span class="n">problem</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">gslice</span><span class="o">-&gt;</span><span class="n">d_row_offsets</span><span class="p">.</span><span class="n">data</span><span class="p">();</span>
+    <span class="n">mem_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">count</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">context</span><span class="p">);</span>
+
+    <span class="k">auto</span> <span class="n">segment_sizes</span> <span class="o">=</span> <span class="p">[</span><span class="o">=</span><span class="p">]</span><span class="n">__device__</span><span class="p">(</span><span class="kt">int</span> <span class="n">idx</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// this lambda function compute the neighbor list length of each node in input frontier
+</span>        <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="kt">int</span> <span class="n">v</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="n">idx</span><span class="p">];</span>
+        <span class="kt">int</span> <span class="n">begin</span> <span class="o">=</span> <span class="n">row_offsets</span><span class="p">[</span><span class="n">v</span><span class="p">];</span>
+        <span class="kt">int</span> <span class="n">end</span> <span class="o">=</span> <span class="n">row_offsets</span><span class="p">[</span><span class="n">v</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span>
+        <span class="n">count</span> <span class="o">=</span> <span class="n">end</span> <span class="o">-</span> <span class="n">begin</span><span class="p">;</span>
+        <span class="k">return</span> <span class="n">count</span><span class="p">;</span>
+    <span class="p">};</span>
+    <span class="n">transform_scan</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="n">segment_sizes</span><span class="p">,</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">input</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">size</span><span class="p">(),</span> <span class="n">scanned_row_offsets</span><span class="p">,</span> <span class="n">plus_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(),</span> 
+            <span class="n">count</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span> <span class="n">context</span><span class="p">);</span>                                                  
+
+    <span class="c1">//transform_scan is a function in mgpu: first argument is a lambda function operated on each element 
+</span>    <span class="c1">//of an input array (input array is given by lambda function), the second argument is the size of 
+</span>    <span class="c1">//the input array, third is the output place, forth is reduction operator. fifth stores the reduction 
+</span>    <span class="c1">//of all result from segment_sizes. So you get scan of the neighbor list length of each node in input frontier according to nodeId
+</span>
+    <span class="kt">int</span> <span class="n">front</span> <span class="o">=</span> <span class="n">from_mem</span><span class="p">(</span><span class="n">count</span><span class="p">)[</span><span class="mi">0</span><span class="p">];</span>
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">front</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">has_output</span><span class="p">)</span> <span class="n">output</span><span class="o">-&gt;</span><span class="n">resize</span><span class="p">(</span><span class="n">front</span><span class="p">);</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="kt">int</span> <span class="o">*</span><span class="n">col_indices</span> <span class="o">=</span> <span class="n">problem</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">gslice</span><span class="o">-&gt;</span><span class="n">d_col_indices</span><span class="p">.</span><span class="n">data</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">has_output</span><span class="p">)</span> <span class="n">output</span><span class="o">-&gt;</span><span class="n">resize</span><span class="p">(</span><span class="n">front</span><span class="p">);</span>
+    <span class="kt">int</span> <span class="o">*</span><span class="n">output_data</span> <span class="o">=</span> <span class="n">has_output</span><span class="o">?</span> <span class="n">output</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">()</span> <span class="o">:</span> <span class="n">nullptr</span><span class="p">;</span>
+    <span class="kr">typename</span> <span class="n">Problem</span><span class="o">::</span><span class="n">data_slice_t</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="n">problem</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">d_data_slice</span><span class="p">.</span><span class="n">data</span><span class="p">();</span> <span class="c1">//data_slice stores the data related to the primitive, 
+</span>    <span class="k">auto</span> <span class="n">neighbors_expand</span> <span class="o">=</span> <span class="p">[</span><span class="o">=</span><span class="p">]</span><span class="n">__device__</span><span class="p">(</span><span class="kt">int</span> <span class="n">idx</span><span class="p">,</span> <span class="kt">int</span> <span class="n">seg</span><span class="p">,</span> <span class="kt">int</span> <span class="n">rank</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">int</span> <span class="n">v</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="n">seg</span><span class="p">];</span>
+        <span class="kt">int</span> <span class="n">start_idx</span> <span class="o">=</span> <span class="n">row_offsets</span><span class="p">[</span><span class="n">v</span><span class="p">];</span>
+        <span class="kt">int</span> <span class="n">neighbor</span> <span class="o">=</span> <span class="n">col_indices</span><span class="p">[</span><span class="n">start_idx</span><span class="o">+</span><span class="n">rank</span><span class="p">];</span>
+        <span class="n">bool</span> <span class="n">cond</span> <span class="o">=</span> <span class="n">Functor</span><span class="o">::</span><span class="n">cond_advance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">neighbor</span><span class="p">,</span> <span class="n">start_idx</span><span class="o">+</span><span class="n">rank</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">iteration</span><span class="p">);</span> 
+        <span class="k">if</span> <span class="p">(</span><span class="n">has_output</span><span class="p">)</span>
+            <span class="n">output_data</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">idempotence</span> <span class="o">?</span> <span class="n">neighbor</span> <span class="o">:</span> <span class="p">((</span><span class="n">cond</span> <span class="o">&amp;&amp;</span> <span class="n">Functor</span><span class="o">::</span><span class="n">apply_advance</span><span class="p">(</span><span class="n">v</span><span class="p">,</span> <span class="n">neighbor</span><span class="p">,</span> <span class="n">start_idx</span><span class="o">+</span><span class="n">rank</span><span class="p">,</span> <span class="n">rank</span><span class="p">,</span> <span class="n">idx</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">iteration</span><span class="p">))</span> <span class="o">?</span> <span class="n">neighbor</span> <span class="o">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+    <span class="p">};</span>
+    <span class="n">transform_lbs</span><span class="p">(</span><span class="n">neighbors_expand</span><span class="p">,</span> <span class="n">front</span><span class="p">,</span> <span class="n">scanned_row_offsets</span><span class="p">,</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">input</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">size</span><span class="p">(),</span> <span class="n">context</span><span class="p">);</span>
+
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="n">has_output</span><span class="p">)</span> <span class="n">front</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+    <span class="k">return</span> <span class="n">front</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">//end advance
+</span><span class="p">}</span> <span class="c1">//end oprtr
+</span><span class="p">}</span> <span class="c1">//end gunrock
+</span></code></pre>
+<p>There are two frontier_t: input, output, working like a rendering buffer: input-&gt;output-&gt;input-&gt;output....
+transform_lbs:
+```c
+template&lt;
+  typename launch_arg_t = empty_t, // provides (nt, vt, vt0)
+  typename func_t,         // load-balancing search callback implements
+                           //   void operator()(int index,   // work-item
+                           //                   int seg,     // segment ID
+                           //                   int rank,    // rank within seg
+                           //                   tuple&lt;...&gt; cached_values).
+  typename segments_it,    // segments-descriptor array.
+  typename tpl_t           // tuple&lt;&gt; of iterators for caching loads.</p>
+
+<blockquote>
+<p>void transform_lbs(func_t f, int count, segments_it segments, 
+  int num_segments, tpl_t caching_iterators, context_t&amp; context);
+```
+transform_lbs apply f on each element of an array, but it uses the new front-end to the load-balancing search pattern which is robust with respect to the shape of the problem. The caller describes a collection of irregularly-sized segments with an array that indexes into the start of each segment. (This is identical to the prefix sum of the segment sizes.) Load-balancing search restores shape to this flattened array by calling your lambda once for each element in each segment and passing the segment identifier and the rank of the element within that segment.
+So the scanned_row_offsets we compute before is used for transform_lbs to do load balancing...</p>
+</blockquote>
+
+<p>Then in the advance operator, neighbors_expand uses Functor::cond_advance and apply_advance to define the actually compute(the lambda function). Take BFS as an example:
+In bfs_functor:
+```c
+static <strong>device</strong> <strong>forceinline</strong> bool cond_advance(int src, int dst, int edge_id, int rank, int output_idx, bfs_problem_t::data_slice_t *data, int iteration) {
+    return (data-&gt;d_labels[dst] == -1);
+}</p>
+
+<p>static <strong>device</strong> <strong>forceinline</strong> bool apply_advance(int src, int dst, int edge_id, int rank, int output_idx, bfs_problem_t::data_slice_t *data, int iteration) {</p>
+
+<p>return (atomicCAS(&amp;data-&gt;d_labels[dst], -1, iteration + 1) == -1);
+}
+```
+Then advance operator does is: giving the nodeId, finding the neighbors, writting to a cond as a bitmap if that neighbor has been visited (data-&gt;d_labels[dst] == -1) then writting to the output_data -1 if visited or setting label with iteration+1 fails or nodeId of the neighbor if not visited and setting label successfully. </p>
+<h3 id='filter'>filter</h3><pre class="highlight c tab-c"><code><span class="n">namespace</span> <span class="n">gunrock</span> <span class="p">{</span>
+<span class="n">namespace</span> <span class="n">oprtr</span> <span class="p">{</span>
+<span class="n">namespace</span> <span class="n">filter</span> <span class="p">{</span>
+
+<span class="c1">// filter kernel using transform_compact with full uniquification
+// (remove all the failed condition items)
+//
+</span><span class="n">template</span><span class="o">&lt;</span><span class="kr">typename</span> <span class="n">Problem</span><span class="p">,</span> <span class="kr">typename</span> <span class="n">Functor</span><span class="o">&gt;</span>
+<span class="kt">int</span> <span class="n">filter_kernel</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Problem</span><span class="o">&gt;</span> <span class="n">problem</span><span class="p">,</span>
+              <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">input</span><span class="p">,</span>
+              <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="o">&amp;</span><span class="n">output</span><span class="p">,</span>
+              <span class="kt">int</span> <span class="n">iteration</span><span class="p">,</span>
+              <span class="n">standard_context_t</span> <span class="o">&amp;</span><span class="n">context</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">auto</span> <span class="n">compact</span> <span class="o">=</span> <span class="n">transform_compact</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">size</span><span class="p">(),</span> <span class="n">context</span><span class="p">);</span>
+    <span class="kt">int</span> <span class="o">*</span><span class="n">input_data</span> <span class="o">=</span> <span class="n">input</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">();</span>
+    <span class="kr">typename</span> <span class="n">Problem</span><span class="o">::</span><span class="n">data_slice_t</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="n">problem</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">d_data_slice</span><span class="p">.</span><span class="n">data</span><span class="p">();</span>
+    <span class="kt">int</span> <span class="n">stream_count</span> <span class="o">=</span> <span class="n">compact</span><span class="p">.</span><span class="n">upsweep</span><span class="p">([</span><span class="o">=</span><span class="p">]</span><span class="n">__device__</span><span class="p">(</span><span class="kt">int</span> <span class="n">idx</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kt">int</span> <span class="n">item</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="n">idx</span><span class="p">];</span>
+                <span class="k">return</span> <span class="n">Functor</span><span class="o">::</span><span class="n">cond_filter</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">iteration</span><span class="p">);</span>
+            <span class="p">});</span>
+    <span class="n">output</span><span class="o">-&gt;</span><span class="n">resize</span><span class="p">(</span><span class="n">stream_count</span><span class="p">);</span>
+    <span class="kt">int</span> <span class="o">*</span><span class="n">output_data</span> <span class="o">=</span> <span class="n">output</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">();</span>
+    <span class="n">compact</span><span class="p">.</span><span class="n">downsweep</span><span class="p">([</span><span class="o">=</span><span class="p">]</span><span class="n">__device__</span><span class="p">(</span><span class="kt">int</span> <span class="n">dest_idx</span><span class="p">,</span> <span class="kt">int</span> <span class="n">source_idx</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">output_data</span><span class="p">[</span><span class="n">dest_idx</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_data</span><span class="p">[</span><span class="n">source_idx</span><span class="p">];</span>
+        <span class="p">});</span>
+    <span class="k">return</span> <span class="n">stream_count</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">//end filter
+</span><span class="p">}</span> <span class="c1">//end oprtr
+</span><span class="p">}</span> <span class="c1">//end gunrock
+</span></code></pre>
+<p>transform_compact is from mgpu:
+```c
+template<typename launch_arg_t = empty_t>
+stream_compact_t<launch_arg_t> 
+transform_compact(int count, context_t&amp; context);</p>
+
+<p>template<typename launch_arg_t>
+struct stream_compact_t {
+  ...
+public:
+  // upsweep of stream compaction. 
+  // func_t implements bool operator(int index);
+  // The return value is flag for indicating that we want to <em>keep</em> the data
+  // in the compacted stream.
+  template<typename func_t>
+  int upsweep(func_t f);</p>
+
+<p>// downsweep of stream compaction.
+  // func_t implements void operator(int dest_index, int source_index).
+  // The user can stream from data[source_index] to compacted[dest_index].
+  template<typename func_t>
+  void downsweep(func_t f);
+};
+```
+transform_compact is a two-pass pattern for space-efficient stream compaction. The user constructs a stream_compact_t object by calling transform_compact. On the upsweep, the user provides a lambda function which returns true to retain the specified index in the streamed output. On the downsweep, the user implements a void-returning lambda which takes the index to stream to and the index to stream from. The user may implement any element-wise copy or transformation in the body of this lambda. Same as scala filter.</p>
+
+<p>Then in the filter code, it first constract a transform_compact object, then do upsweep and downsweep. Take BFS as an example. Here is the code in the bfs_functor:
+<code>c
+static __device__ __forceinline__ bool cond_filter(int idx, bfs_problem_t::data_slice_t *data, int iteration) {
+    return idx != -1;
+}
+</code>
+We know from advance, we have a frontier whose data is either nodeId or -1. Now we want to filter out the -1, in the upsweep, we get the data and see if it equals to -1 and in the downsweep, it filters out those -1 and reconstruct the frontier in the output frontier.</p>
+
+<p>Then for BFS problem, it is clear how to map it to mini gunrock: we start from the source node as the first frontier, expand to find all the neighers of the frontier (reconstruct frontier) and filter the neigher who are visited (reconstruct frontier). Then we do this again and again. This relate to the last part: putting things together</p>
+<h3 id='enactor'>enactor</h3><pre class="highlight c tab-c"><code><span class="n">namespace</span> <span class="n">gunrock</span> <span class="p">{</span>
+
+<span class="k">struct</span> <span class="n">enactor_t</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">buffers</span><span class="p">;</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">indices</span><span class="p">;</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">filtered_indices</span><span class="p">;</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">unvisited</span><span class="p">;</span>
+
+    <span class="n">enactor_t</span><span class="p">(</span><span class="n">standard_context_t</span> <span class="o">&amp;</span><span class="n">context</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num_nodes</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num_edges</span><span class="p">,</span> <span class="kt">float</span> <span class="n">queue_sizing</span><span class="o">=</span><span class="mi">1</span><span class="p">.</span><span class="mi">0</span><span class="n">f</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">init</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">num_nodes</span><span class="p">,</span> <span class="n">num_edges</span><span class="p">,</span> <span class="n">queue_sizing</span><span class="p">);</span>
+      <span class="p">}</span>
+
+    <span class="kt">void</span> <span class="n">init</span><span class="p">(</span><span class="n">standard_context_t</span> <span class="o">&amp;</span><span class="n">context</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num_nodes</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num_edges</span><span class="p">,</span> <span class="kt">float</span> <span class="n">queue_sizing</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">input_frontier</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="p">(</span><span class="kt">int</span><span class="p">)(</span><span class="n">num_edges</span><span class="o">*</span><span class="n">queue_sizing</span><span class="p">)));</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span> <span class="n">output_frontier</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="p">(</span><span class="kt">int</span><span class="p">)(</span><span class="n">num_edges</span><span class="o">*</span><span class="n">queue_sizing</span><span class="p">)));</span>
+        <span class="n">buffers</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">input_frontier</span><span class="p">);</span>
+        <span class="n">buffers</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">output_frontier</span><span class="p">);</span>
+
+        <span class="n">indices</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">num_nodes</span><span class="p">);</span>
+        <span class="n">filtered_indices</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">frontier_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="o">&gt;</span><span class="p">(</span><span class="n">context</span><span class="p">,</span> <span class="n">num_nodes</span><span class="p">);</span>
+        <span class="k">auto</span> <span class="n">gen_idx</span> <span class="o">=</span> <span class="p">[</span><span class="o">=</span><span class="p">]</span><span class="n">__device__</span><span class="p">(</span><span class="kt">int</span> <span class="n">index</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">return</span> <span class="n">index</span><span class="p">;</span>
+        <span class="p">};</span>
+        <span class="n">mem_t</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">indices_array</span> <span class="o">=</span> <span class="n">mgpu</span><span class="o">::</span><span class="n">fill_function</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="n">gen_idx</span><span class="p">,</span> <span class="n">num_nodes</span><span class="p">,</span> <span class="n">context</span><span class="p">);</span>
+        <span class="n">indices</span><span class="o">-&gt;</span><span class="n">load</span><span class="p">(</span><span class="n">indices_array</span><span class="p">);</span>
+        <span class="n">filtered_indices</span><span class="o">-&gt;</span><span class="n">load</span><span class="p">(</span><span class="n">indices_array</span><span class="p">);</span>
+
+        <span class="n">unvisited</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">indices</span><span class="p">);</span>
+        <span class="n">unvisited</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">filtered_indices</span><span class="p">);</span>
+
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// end enactor_t
+</span><span class="p">}</span> <span class="c1">// end gunrock
+</span></code></pre>
+<p>A buffers contains two frontier: input frontier and output frontier. The indices, filtered_indices and unvisited are used for pull style advance. See the 3.5 part of paper: <a href="http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&amp;arnumber=7965101">mini-gunrock</a></p>
+
+<p>Let&#39;s look BFS enactor (only the push-style advance):
+```c
+namespace gunrock {
+namespace bfs {</p>
+
+<p>struct bfs_enactor_t : enactor_t {</p>
+
+<p>//Constructor
+    bfs_enactor_t(standard_context_t &amp;context, int num_nodes, int num_edges) :
+        enactor_t(context, num_nodes, num_edges)
+    {
+    }</p>
+
+<p>void init_frontier(std::shared_ptr<bfs_problem_t> bfs_problem) {
+        int src = bfs_problem-&gt;src; // get the source nodeId
+        std::vector<int> node_idx(1, src); // construct it into an array then used as argument
+        buffers[0]-&gt;load(node_idx); // load source node to device
+    }</p>
+
+<p>//Enact
+    void enact_pushpull(std::shared_ptr<bfs_problem_t> bfs_problem, float threshold, standard_context_t &amp;context) {
+        init_frontier(bfs_problem);</p>
+
+<p>int frontier_length = 1;
+        int selector = 0;
+        int num_nodes = bfs_problem.get()-&gt;gslice-&gt;num_nodes;
+        int iteration;</p>
+
+<p>for (iteration = 0; ; ++iteration) {
+            frontier_length = advance_forward_kernel<bfs_problem_t, bfs_functor_t, false, true>
+                (bfs_problem,
+                 buffers[selector],
+                 buffers[selector^1],
+                 iteration,
+                 context);
+            selector ^= 1;
+            if (!frontier_length) break;
+            frontier_length = filter_kernel<bfs_problem_t, bfs_functor_t>
+                (bfs_problem,
+                 buffers[selector],
+                 buffers[selector^1],
+                 iteration,
+                 context);</p>
+
+<p>if (!frontier_length) break;
+            selector ^= 1;
+        }
+        std::cout &lt;&lt; &quot;pushed iterations: &quot; &lt;&lt; iteration &lt;&lt; std::endl;
+   }</p>
+
+<p>};
+} //end bfs
+} //end gunrock
+<code>
+BFS is finished by loading the source node into the frontier, advance on that frontier and filter that frontier. Doing this iteration untill all the nodes are visited and frontier length becomes 0. The switching between input frontier and outpu frontier is achieved by: selector ^=1
+</code>bash
+0 ^ 1 = 1
+1 ^ 1 = 0
+2 ^ 1 = 3
+3 ^ 1 = 2
+4 ^ 1 = 5
+5 ^ 1 = 4
+6 ^ 1 = 7
+7 ^ 1 = 6
+8 ^ 1 = 9
+9 ^ 1 = 8
+```
+Hope you see my point.</p>

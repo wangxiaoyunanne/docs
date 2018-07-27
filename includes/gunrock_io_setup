@@ -1,0 +1,117 @@
+<h1 id='how-to-setup-and-use-gunrock-io-on-a-server-machine'>How to setup and use gunrock/io on a server/machine</h1>
+<p>gunrock/io can be used to generate visual representation of graph engine performance, for exmaple, Gunrock. 
+It takes output of a graph algorithm run and can produce visual output in svg, pdf, png, html and md format. </p>
+
+<p><strong>Grunrock/io Dependencies</strong></p>
+
+<p>To use gunrock/io to produce visual output of any graph algorithm, (as of Dec.2016), below are dependencies overview:</p>
+
+<ul>
+<li>python 2.7.6</li>
+<li>gcc 4.8.4</li>
+<li>nodejs/node</li>
+<li>npm</li>
+<li>pandas 0.19.2</li>
+<li>numpy 1.11.3</li>
+<li>altair 1.2.0</li>
+<li>vega 2.6.3</li>
+<li>vega-lite 1.3.1</li>
+<li>inkscape 0.91</li>
+</ul>
+
+<p>Below are the instructions to to install dependencies, </p>
+
+<p><strong>Assume the machine has the following env setup:</strong></p>
+
+<ul>
+<li>OS: Ubuntu 14.04 </li>
+<li>Python 2.7.x</li>
+<li>GCC 4.8.x</li>
+</ul>
+
+<p><strong>Nodejs and Npm</strong></p>
+
+<p>First check if node and npm have been installed:</p>
+
+<p>On command line type:
+    node -v
+    npm -v
+If there is node and npm version output, move on to install altair</p>
+
+<p>Install nodejs and npm on root:</p>
+
+<p>sudo apt-get install libcairo2-dev libjpeg8-dev libpango1.0-dev libgif-dev build-essential g++
+    sudo apt-get install nodejs
+    sudo apt-get install npm
+    #Create a symbolic link for node, as many Node.js tools use this name to execute.
+    sudo ln -s /usr/bin/nodejs /usr/bin/node</p>
+
+<p><strong>Install altair</strong></p>
+
+<p>sudo pip install altair</p>
+
+<p>If no root access, use following command:</p>
+
+<p>pip install --user altair
+    vim ~/.bashrc
+    HOME=/home/user
+    PYTHONPATH=$HOME/.local/lib/python2.7/site-packages
+    source ~/.bashrc</p>
+
+<p><strong>More altair depencies to save figures</strong></p>
+
+<p>npm install -g vega@2.6.3 vega-lite
+    #&quot;-g&quot; option install npm/node_modules in /usr/local/bin
+    npm -g bin
+    #returns directory of installed binary files
+    ls [returned directory]
+    #check if {vg2png  vg2svg  vl2png  vl2svg  vl2vg} exist in [returned directory]</p>
+
+<p>If no root access, use following command:</p>
+
+<p>npm install vega@2.6.3 vega-lite
+    npm bin
+    ls [returned directory]
+    #npm install /node_modules in current directory
+    #check if {vg2png  vg2svg  vl2png  vl2svg  vl2vg} exist in /bin or /.bin
+    #Open .bashrc add: 
+    NPM_PACKAGES=/where/node_modules/folder/is/
+    PATH=$NPM_PACKAGES/.bin:$PATH
+    source ~/.bashrc</p>
+
+<p><strong>More dependencies to save figure as pdf: inkscape</strong></p>
+
+<p>sudo add-apt-repository ppa:inkscape.dev/stable
+    sudo apt-get update
+    sudo apt-get install inkscape</p>
+<h1 id='how-to-use-gunrock-io'>How to use gunrock/io</h1>
+<p>With all the dependencies installed, to use gunrock/io, below is a guide of how to reproduce the performance figures from JSON in gunrock/io:</p>
+
+<ol>
+<li><p>Parses the engine outputs (in txt format) and generates jsons containing important information regarding the output results using <strong>text2json.py</strong>. (Instructions @ <a href="https://github.com/gunrock/io/blob/master/scripts/README.md">README</a>)</p></li>
+<li><p>Make a folder for output visual representation files. </p></li>
+<li><p>One can use exsiting scripts to generate different visualization output from JSON files. For example, altair_engines.py generates performance comparison visualization from different graph engines. Below is an example makefile to generate different engines performance comparison figures into .md file into gunrock/doc:</p></li>
+</ol>
+<pre class="highlight plaintext"><code>    ENGINES_OUTPUTS = output/engines_topc.md \
+    output/engines_topc_table_html.md
+    PLOTTING_FILES = fileops.py filters.py logic.py
+    DEST = "../../gunrock/doc/stats"
+    ALL = $(ENGINES_OUTPUTS) \
+    all: $(ALL)
+    $(ENGINES_OUTPUTS): altair_engines.py $(PLOTTING_FILES)
+            ./altair_engines.py
+    install: $(ALL)
+            cp $(ALL) $(DEST)
+    clean:
+            rm $(ALL)
+</code></pre>
+<p>After running these commands, output .md files will be copied into gunrock/doc/stats, in the output directory made in step 2, there will also be .html, .svg, .png, .pdf, .eps and .json output files generated. To start a new python scripts that will output other visualization output, please follow (script @ <a href="https://github.com/gunrock/io/scripts/altair_engines.py">altair_engines.py</a>).</p>
+
+<p>Reference:</p>
+
+<ul>
+<li>https://altair-viz.github.io/documentation/displaying.html</li>
+<li>http://wiki.inkscape.org/wiki/index.php/Installing_Inkscape</li>
+<li>https://altair-viz.github.io/installation.html</li>
+<li>http://www.hostingadvice.com/how-to/install-nodejs-ubuntu-14-04/</li>
+</ul>
