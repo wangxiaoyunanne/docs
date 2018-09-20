@@ -1,0 +1,320 @@
+
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="icon" type="image/ico" href="images/favicon.ico">
+    <title>Template for HIVE workflow report</title>
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+    <style>
+      .highlight table td { padding: 5px; }
+.highlight table pre { margin: 0; }
+.highlight .gh {
+  color: #999999;
+}
+.highlight .sr {
+  color: #f6aa11;
+}
+.highlight .go {
+  color: #888888;
+}
+.highlight .gp {
+  color: #555555;
+}
+.highlight .gs {
+}
+.highlight .gu {
+  color: #aaaaaa;
+}
+.highlight .nb {
+  color: #f6aa11;
+}
+.highlight .cm {
+  color: #75715e;
+}
+.highlight .cp {
+  color: #75715e;
+}
+.highlight .c1 {
+  color: #75715e;
+}
+.highlight .cs {
+  color: #75715e;
+}
+.highlight .c, .highlight .cd {
+  color: #75715e;
+}
+.highlight .err {
+  color: #960050;
+}
+.highlight .gr {
+  color: #960050;
+}
+.highlight .gt {
+  color: #960050;
+}
+.highlight .gd {
+  color: #49483e;
+}
+.highlight .gi {
+  color: #49483e;
+}
+.highlight .ge {
+  color: #49483e;
+}
+.highlight .kc {
+  color: #66d9ef;
+}
+.highlight .kd {
+  color: #66d9ef;
+}
+.highlight .kr {
+  color: #66d9ef;
+}
+.highlight .no {
+  color: #66d9ef;
+}
+.highlight .kt {
+  color: #66d9ef;
+}
+.highlight .mf {
+  color: #ae81ff;
+}
+.highlight .mh {
+  color: #ae81ff;
+}
+.highlight .il {
+  color: #ae81ff;
+}
+.highlight .mi {
+  color: #ae81ff;
+}
+.highlight .mo {
+  color: #ae81ff;
+}
+.highlight .m, .highlight .mb, .highlight .mx {
+  color: #ae81ff;
+}
+.highlight .sc {
+  color: #ae81ff;
+}
+.highlight .se {
+  color: #ae81ff;
+}
+.highlight .ss {
+  color: #ae81ff;
+}
+.highlight .sd {
+  color: #e6db74;
+}
+.highlight .s2 {
+  color: #e6db74;
+}
+.highlight .sb {
+  color: #e6db74;
+}
+.highlight .sh {
+  color: #e6db74;
+}
+.highlight .si {
+  color: #e6db74;
+}
+.highlight .sx {
+  color: #e6db74;
+}
+.highlight .s1 {
+  color: #e6db74;
+}
+.highlight .s {
+  color: #e6db74;
+}
+.highlight .na {
+  color: #a6e22e;
+}
+.highlight .nc {
+  color: #a6e22e;
+}
+.highlight .nd {
+  color: #a6e22e;
+}
+.highlight .ne {
+  color: #a6e22e;
+}
+.highlight .nf {
+  color: #a6e22e;
+}
+.highlight .vc {
+  color: #ffffff;
+}
+.highlight .nn {
+  color: #ffffff;
+}
+.highlight .nl {
+  color: #ffffff;
+}
+.highlight .ni {
+  color: #ffffff;
+}
+.highlight .bp {
+  color: #ffffff;
+}
+.highlight .vg {
+  color: #ffffff;
+}
+.highlight .vi {
+  color: #ffffff;
+}
+.highlight .nv {
+  color: #ffffff;
+}
+.highlight .w {
+  color: #ffffff;
+}
+.highlight {
+  color: #ffffff;
+}
+.highlight .n, .highlight .py, .highlight .nx {
+  color: #ffffff;
+}
+.highlight .ow {
+  color: #f92672;
+}
+.highlight .nt {
+  color: #f92672;
+}
+.highlight .k, .highlight .kv {
+  color: #f92672;
+}
+.highlight .kn {
+  color: #f92672;
+}
+.highlight .kp {
+  color: #f92672;
+}
+.highlight .o {
+  color: #f92672;
+}
+    </style>
+    <link href="stylesheets/screen.css" rel="stylesheet" media="screen" />
+    <link href="stylesheets/print.css" rel="stylesheet" media="print" />
+      <script src="javascripts/all.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/vega@3"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@3"></script>
+
+    <style media="screen">
+      /* Add space between vega-embed links */
+      /* http://vega.github.io/vega-tutorials/airports/ */
+      .vega-embed .vega-actions a {
+        margin-left: 1em;
+        visibility: hidden;
+      }
+      .vega-embed:hover .vega-actions a {
+        visibility: visible;
+      }
+    </style>
+  </head>
+
+  <body class="hive_template" data-languages="[]">
+    <a href="#" id="nav-button">
+      <span>
+        NAV
+        <img src="images/navbar.png" alt="Navbar" />
+      </span>
+    </a>
+    <div class="toc-wrapper">
+      <img src="images/logo.png" class="logo" alt="Logo" />
+        <div class="search">
+          <input type="text" class="search" id="input-search" placeholder="Search">
+        </div>
+        <ul class="search-results"></ul>
+      <div id="toc" class="toc-list-h1">
+          <li>
+            <a href="#name-of-application" class="toc-h1 toc-link" data-title="Name Of Application">NAME OF APPLICATION</a>
+              <ul class="toc-list-h2">
+                  <li>
+                    <a href="#summary-of-gunrock-implementation" class="toc-h2 toc-link" data-title="Summary of Gunrock Implementation">Summary of Gunrock Implementation</a>
+                  </li>
+                  <li>
+                    <a href="#how-to-run-this-application-on-darpa-39-s-dgx-1" class="toc-h2 toc-link" data-title="How To Run This Application on DARPA's DGX-1">How To Run This Application on DARPA's DGX-1</a>
+                  </li>
+                  <li>
+                    <a href="#performance-and-analysis" class="toc-h2 toc-link" data-title="Performance and Analysis">Performance and Analysis</a>
+                  </li>
+                  <li>
+                    <a href="#next-steps" class="toc-h2 toc-link" data-title="Next Steps">Next Steps</a>
+                  </li>
+              </ul>
+          </li>
+      </div>
+        <ul class="toc-footer">
+            <li><a href='https://github.com/gunrock/gunrock'>Gunrock&colon; GPU Graph Analytics</a></li>
+            <li>Gunrock &copy; 2018 The Regents of the University of California.</li>
+        </ul>
+    </div>
+    <div class="page-wrapper">
+
+        <!-- <div class="dark-box"></div> -->
+
+      <div class="content">
+        <p>(JDO notes, delete these when you copy this to <code>hive_yourworkflowname</code>: The goal of this report is to be useful to DARPA and to your colleagues. This is not a research paper. Be very honest. If there are limitations, spell them out. If something is broken or works poorly, say so. Above all else, make sure that the instructions to replicate the results you report are good instructions, and the process to replicate are as simple as possible; we want anyone to be able to replicate these results in a straightforward way.)</p>
+<h1 id='name-of-application'>Name Of Application</h1>
+<p>One-paragraph summary of application, written at a high level.</p>
+<h2 id='summary-of-gunrock-implementation'>Summary of Gunrock Implementation</h2>
+<p>As long as you need. Provide links (say, to papers) where appropriate. What was the approach you took to implementing this on a GPU / in Gunrock? Pseudocode is fine but not necessary. Whatever is clear.</p>
+
+<p>Be specific about what you actually implemented with respect to the entire workflow (most workflows have non-graph components; as a reminder, our goal is implementing single-GPU code on only the graph components where the graph is static).</p>
+<h2 id='how-to-run-this-application-on-darpa-39-s-dgx-1'>How To Run This Application on DARPA's DGX-1</h2><h3 id='prereqs-input'>Prereqs/input</h3>
+<p>(e.g., "build Gunrock's <code>dev-refactor</code> branch", "this particular dataset needs to be in this particular directory")</p>
+<h3 id='running-the-application'>Running the application</h3><pre class="highlight plaintext"><code>include a transcript
+</code></pre>
+<p>Note: This run / these runs need to be on DARPA's DGX-1.</p>
+<h3 id='output'>Output</h3>
+<p>What is output when you run? Output file? JSON? Anything else? How do you extract relevant statistics from the output?</p>
+
+<p>How do you make sure your output is correct/meaningful? (What are you comparing against?)</p>
+<h2 id='performance-and-analysis'>Performance and Analysis</h2>
+<p>How do you measure performance? What are the relevant metrics? Runtime? Throughput? Some sort of accuracy/quality metric?</p>
+<h3 id='implementation-limitations'>Implementation limitations</h3>
+<p>e.g.:</p>
+
+<ul>
+<li>Size of dataset that fits into GPU memory (what is the specific limitation?)</li>
+<li>Restrictions on the type/nature of the dataset</li>
+</ul>
+<h3 id='comparison-against-existing-implementations'>Comparison against existing implementations</h3>
+<ul>
+<li>Reference implementation (python? Matlab?)</li>
+<li>OpenMP reference</li>
+</ul>
+
+<p>Comparison is both performance and accuracy/quality.</p>
+<h3 id='performance-limitations'>Performance limitations</h3>
+<p>e.g., random memory access?</p>
+<h2 id='next-steps'>Next Steps</h2><h3 id='alternate-approaches'>Alternate approaches</h3>
+<p>If you had an infinite amount of time, is there another way (algorithm/approach) we should consider to implement this?</p>
+<h3 id='gunrock-implications'>Gunrock implications</h3>
+<p>What did we learn about Gunrock? What is hard to use, or slow? What potential Gunrock features would have been helpful in implementing this workflow?</p>
+<h3 id='notes-on-multi-gpu-parallelization'>Notes on multi-GPU parallelization</h3>
+<p>What will be the challenges in parallelizing this to multiple GPUs on the same node?</p>
+
+<p>Can the dataset be effectively divided across multiple GPUs, or must it be replicated?</p>
+<h3 id='notes-on-dynamic-graphs'>Notes on dynamic graphs</h3>
+<p>(Only if appropriate)</p>
+
+<p>Does this workload have a dynamic-graph component? If so, what are the implications of that? How would your implementation change? What support would Gunrock need to add?</p>
+<h3 id='notes-on-larger-datasets'>Notes on larger datasets</h3>
+<p>What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?</p>
+<h3 id='notes-on-other-pieces-of-this-workload'>Notes on other pieces of this workload</h3>
+<p>Briefly: What are the important other (non-graph) pieces of this workload? Any thoughts on how we might implement them / what existing approaches/libraries might implement them?</p>
+
+      </div>
+
+        <!-- <div class="dark-box"></div> -->
+    </div>
+  </body>
+</html>
