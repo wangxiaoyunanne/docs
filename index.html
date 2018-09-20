@@ -237,6 +237,9 @@
             <a href="#gunrock-gpu-graph-analytics" class="toc-h1 toc-link" data-title="Gunrock: GPU Graph Analytics">GUNROCK: GPU GRAPH ANALYTICS</a>
               <ul class="toc-list-h2">
                   <li>
+                    <a href="#quickstart" class="toc-h2 toc-link" data-title="Quickstart">Quickstart</a>
+                  </li>
+                  <li>
                     <a href="#gunrock-source-code" class="toc-h2 toc-link" data-title="Gunrock Source Code">Gunrock Source Code</a>
                   </li>
                   <li>
@@ -460,7 +463,14 @@
   <td><a href="http://mario.ece.ucdavis.edu:8080/job/gunrock/job/dev/"><img src="http://mario.ece.ucdavis.edu:8080/buildStatus/icon?job=gunrock/dev" alt="Build Status"></a></td>
 </tr>
 </tbody></table>
-<h2 id='gunrock-source-code'>Gunrock Source Code</h2>
+<h2 id='quickstart'>Quickstart</h2><pre class="highlight plaintext"><code>git clone --recursive https://github.com/gunrock/gunrock/
+cd gunrock
+mkdir build
+cd build
+cmake ..
+make -j$(nproc)
+make test
+</code></pre><h2 id='gunrock-source-code'>Gunrock Source Code</h2>
 <table style="font-size: 12px;"><thead>
 <tr>
   <th><a href="http://gunrock.github.io/gunrock/doc/latest/pages.html">Related Pages</a></th>
