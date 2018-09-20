@@ -1,8 +1,6 @@
 ---
 title: Template for HIVE workflow report
 
-# language_tabs: # must be one of https://git.io/vQNgJ
-
 toc_footers:
   - <a href='https://github.com/gunrock/gunrock'>Gunrock&colon; GPU Graph Analytics</a>
   - Gunrock &copy; 2018 The Regents of the University of California.
@@ -34,9 +32,9 @@ Be specific about what you actually implemented with respect to the entire workf
 
 ### Running the application
 
-```
+<code>
 include a transcript
-```
+</code>
 
 Note: This run / these runs need to be on DARPA's DGX-1.
 
