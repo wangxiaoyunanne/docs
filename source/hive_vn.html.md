@@ -125,7 +125,7 @@ Performance is measured by runtime.
 
 ### Implementation limitations
 
-<TODO>
+__TODO__
 Size of dataset that fits into GPU memory (what is the specific limitation?)
 
 The Gunrock VN algorithm works on weighted/unweighted directed/undirected graphs.  No particular graph topology or node/edge metadata is required.  In general, vertex nomination is run on graphs with node/edge attributes, but since the Gunrock implementation only implements the graph analytic portion of the workflow, we are not subject to those restrictions.
