@@ -8,6 +8,8 @@ For any discussion on these, please use the existing Github issue (or make one).
 
 - Containerize Gunrock (a Docker container) [[issue](https://github.com/gunrock/gunrock/issues/349)]
 - Support a Windows build [[issue](https://github.com/gunrock/gunrock/issues/213)]
+- Develop a procedure to go from "How does Gunrock do on dataset X" to actually getting results and the right command lines for dataset X. Right now we do this manually with lots of iterations every time. We can automate and document this much better.
+- Many apps have minimal documentation; we need better text when a user runs `./bin/primitive --help`.
 
 ## Research projects
 
