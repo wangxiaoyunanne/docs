@@ -73,6 +73,23 @@ make
 ```
 
 ### Running the application
+Application specific parameters:
+```
+    --walk-mode
+        0 = uniform
+        1 = greedy
+        2 = stochastic_greedy !! NOTIMPLEMENTED
+    --node-value-path
+        If --walk-mode != 0, this is the path to node scores
+    --walk-length
+        Length of each walk
+    --walks-per-node
+        Number of walks to do per seed node
+    --seed
+        Seed for random number generator
+```
+
+Example:
 ```bash
 # generate random features
 python random-values.py 39 > chesapeake.values
@@ -84,9 +101,10 @@ python random-values.py 39 > chesapeake.values
 ./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values --walk-mode 1
 
 # stochastic greedy
-# !!! TODO
+# !! NOTIMPLEMENTED
 # ./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values --walk-mode 2
 ```
+
 Output:
 ```
 # ------------------------------------------------------------------------

@@ -41,7 +41,9 @@ make
 ```
 
 ### Running the application
+Application specific parameters: NONE
 
+Example:
 ```bash
 ./bin/test_proj_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx
 ```
@@ -106,7 +108,8 @@ We compared the results of the Gunrock implementation to the [HIVE reference imp
 
 ## Performance and Analysis
 
-We measure the runtime of the app.
+Performance is measured by the runtime of the app, given:
+ - an input graph
 
 ### Implementation limitations
 
@@ -152,7 +155,7 @@ Can the dataset be effectively divided across multiple GPUs, or must it be repli
 
 ### Notes on dynamic graphs
 
-The description of this workflow does not have an explicit dynamic component.  However, the graph projection operation seems like it would be fairly straightforward to adapt to dynamic graphs -- as nodes/edges are added to `G`, we create/increment the weight of the appropriate edges in `H`.
+This workflow does not have an explicit dynamic component.  However, the graph projection operation seems like it would be fairly straightforward to adapt to dynamic graphs -- as nodes/edges are added to `G`, we create/increment the weight of the appropriate edges in `H`.
 
 ### Notes on larger datasets
 
