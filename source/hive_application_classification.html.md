@@ -1,5 +1,5 @@
 ---
-title: Template for HIVE workflow report
+title: Application Classification (HIVE)
 
 toc_footers:
   - <a href='https://github.com/gunrock/gunrock'>Gunrock&colon; GPU Graph Analytics</a>
@@ -10,11 +10,7 @@ search: true
 full_length: true
 ---
 
-<aside class="notice">
-  JDO notes, delete these when you copy this to `hive_yourworkflowname`: The goal of this report is to be useful to DARPA and to your colleagues. This is not a research paper. Be very honest. If there are limitations, spell them out. If something is broken or works poorly, say so. Above all else, make sure that the instructions to replicate the results you report are good instructions, and the process to replicate are as simple as possible; we want anyone to be able to replicate these results in a straightforward way.
-</aside>
-
-# Name Of Application
+# Application Classification
 
 One-paragraph summary of application, written at a high level.
 

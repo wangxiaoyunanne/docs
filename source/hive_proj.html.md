@@ -1,5 +1,5 @@
 ---
-title: Template for HIVE workflow report
+title: Graph Projections (HIVE)
 
 toc_footers:
   - <a href='https://github.com/gunrock/gunrock'>Gunrock&colon; GPU Graph Analytics</a>
@@ -10,90 +10,158 @@ search: true
 full_length: true
 ---
 
-<aside class="notice">
-  JDO notes, delete these when you copy this to `hive_yourworkflowname`: The goal of this report is to be useful to DARPA and to your colleagues. This is not a research paper. Be very honest. If there are limitations, spell them out. If something is broken or works poorly, say so. Above all else, make sure that the instructions to replicate the results you report are good instructions, and the process to replicate are as simple as possible; we want anyone to be able to replicate these results in a straightforward way.
-</aside>
+# Graph Projections
 
-# Name Of Application
+Given a graph `G`, graph projection outputs a graph `H` such that `H` contains edge `(u, v)` iff `G` contains edges `(u, w)` and `(v, w)` for some node `w`.  That is, graph projection creates a new graph where nodes are connected iff they share an (outgoing) neighbor in the original graph.
 
-One-paragraph summary of application, written at a high level.
+Graph projection is most commonly used when the input graph `G` is bipartitite with node sets `U` and `V` and directed edges `(u, v)`.  In this case, the operation yields a unipartite projection onto one of the node sets.
 
 ## Summary of Gunrock Implementation
 
-As long as you need. Provide links (say, to papers) where appropriate. What was the approach you took to implementing this on a GPU / in Gunrock? Pseudocode is fine but not necessary. Whatever is clear.
+We implement graph projections in Gunrock as a single `advance` operation from all nodes w/ nonzero outgoing degree:
+```
+def _advance_op(self, G, H_edges, src, dest):
+    for neib in G.neighbors(src):
+        if dest != neib:
+            H.edges[(dest, neib)] += 1
+```
+That is, for each edge in the graph, we fetch the neighbors of the source node in `G`, then increment the weight of the edge between `dest` and each of the neighbors in `H`.
 
-Be specific about what you actually implemented with respect to the entire workflow (most workflows have non-graph components; as a reminder, our goal is implementing single-GPU code on only the graph components where the graph is static).
+To store the edges of the output matrix `H`, we use a dense `|V|x|V|` array.  This is simple and fast, but uses an unreasonably large amount of memory (60k nodes -> 16gb).
 
 ## How To Run This Application on DARPA's DGX-1
 
 ### Prereqs/input
 
-(e.g., "build Gunrock's `dev-refactor` branch", "this particular dataset needs to be in this particular directory")
+```bash
+git clone --recursive https://github.com/gunrock/gunrock -b dev-refactor
+cd gunrock/tests/proj/
+make clean
+make
+```
 
 ### Running the application
 
-<code>
-include a transcript
-</code>
+```bash
+./bin/test_proj_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx
+```
+Output:
+```
+Loading Matrix-market coordinate-formatted graph ...
+Reading from ../../dataset/small/chesapeake.mtx:
+  Parsing MARKET COO format edge-value-seed = 1539110067
+ (39 nodes, 340 directed edges)... 
+Done parsing (0 s).
+  Converting 39 vertices, 340 directed edges ( ordered tuples) to CSR format...
+Done converting (0s).
+__________________________
+--------------------------
+ Elapsed: 0.026941
+Using advance mode LB
+Using filter mode CULL
+__________________________
+0    0   0   queue3      oversize :  234 ->  342
+0    0   0   queue3      oversize :  234 ->  342
+--------------------------
+Run 0 elapsed: 0.199080, #iterations = 1
+edge_counter=1372
+0->1 | GPU=9.000000 CPU=9.000000
+0->2 | GPU=1.000000 CPU=1.000000
+0->3 | GPU=2.000000 CPU=2.000000
+0->4 | GPU=3.000000 CPU=3.000000
+0->5 | GPU=3.000000 CPU=3.000000
+0->6 | GPU=6.000000 CPU=6.000000
+0->7 | GPU=5.000000 CPU=5.000000
+0->8 | GPU=4.000000 CPU=4.000000
+0->9 | GPU=3.000000 CPU=3.000000
+...
+38->33 | GPU=2.000000 CPU=2.000000
+38->34 | GPU=13.000000 CPU=13.000000
+38->35 | GPU=28.000000 CPU=28.000000
+38->36 | GPU=2.000000 CPU=2.000000
+38->37 | GPU=18.000000 CPU=18.000000
+======= PASSED ======
+[proj] finished.
+ avg. elapsed: 0.199080 ms
+ iterations: 38594739
+ min. elapsed: 0.199080 ms
+ max. elapsed: 0.199080 ms
+ src: 0
+ nodes_visited: 38578864
+ edges_visited: 38578832
+ nodes queued: 140734466796512
+ edges queued: 140734466795232
+ load time: 85.5711 ms
+ preprocess time: 955.861000 ms
+ postprocess time: 3.808022 ms
+ total time: 960.005045 ms
+```
 
-Note: This run / these runs need to be on DARPA's DGX-1.
 
 ### Output
 
-What is output when you run? Output file? JSON? Anything else? How do you extract relevant statistics from the output?
+When run in `verbose` mode, the app outputs the weighted edgelist of the projected graph.  When run in `quiet` mode, it outputs performance statistics and the results of a correctness check.
 
-How do you make sure your output is correct/meaningful? (What are you comparing against?)
+We compared the results of the Gunrock implementation to the [HIVE reference implementation](https://hiveprogram.com/wiki/display/WOR/V0+-+Application+Classification) and the [PNNL implementation](https://gitlab.hiveprogram.com/jfiroz/graph_projection).  These two implementations vary slightly in their output -- we remained faithful to the HIVE reference implementation.  
 
 ## Performance and Analysis
 
-How do you measure performance? What are the relevant metrics? Runtime? Throughput? Some sort of accuracy/quality metric?
+We measure the runtime of the app.
 
 ### Implementation limitations
 
-e.g.:
+The primary limitation of the current implementation is that it allocates a `|V|x|V|` array, where `|V|` is the number of nodes in the network.  This means that the memory requirements of the app can easily exceed the memory available on a single GPU.  The size of this array reflects the _worst case_ memory requirements of the graph projection workflow; while some graphs can become exceptionally large and dense when projected, we would likely be able to run the app on larger graphs if we stored the output in a sparse data structure (eg a hashmap). 
 
-- Size of dataset that fits into GPU memory (what is the specific limitation?)
-- Restrictions on the type/nature of the dataset
+Graph projection is often used for bipartite graphs, but this app does not make any assumptions about the topology of the graph.  This choice was made in order to remain consistent with the [HIVE reference implementation](https://hiveprogram.com/wiki/display/WOR/V0+-+Application+Classification).
+
+There are various ways that the edges of the output graph `H` can be weighted.  We only implement graph projections for unweighted graphs.  The weights of the edges `(u, v)` in the output graph `H` are simply the number of (outgoing) neighbors that `u` and `v` have in common in the original graph.  Implementation of other weight functions would be fairly straightforward.
 
 ### Comparison against existing implementations
 
-- Reference implementation (python? Matlab?)
-- OpenMP reference
+- [HIVE reference implementation](https://hiveprogram.com/wiki/display/WOR/V0+-+Application+Classification)
+- [PNNL implementation](https://gitlab.hiveprogram.com/jfiroz/graph_projection)
 
-Comparison is both performance and accuracy/quality.
-
-
+<TODO>
+    show runtime on LANL and Movielens datasets vs the above two implementations
+</TODO>
 
 ### Performance limitations
 
-e.g., random memory access?
+<TODO>
+    e.g., random memory access?
+</TODO>
 
 ## Next Steps
 
 ### Alternate approaches
 
-If you had an infinite amount of time, is there another way (algorithm/approach) we should consider to implement this?
+Another straightforward way to implement graph projections would be as a single sparse matrix multiplication `G.dot(G.T)` -- it would be interesting to compare the performance of this Gunrock implementation with a high-quality GPU SpMM-based implementation.
+
+As mentioned above, it would also be worthwhile to implement a version that does not require allocating the `|V|x|V|` array.  This could be accomplished by using a sparse data structure (eg, a hashmap or a mutable graph), or possibly by moving intermediate results from GPU to CPU memory during the computation.
 
 ### Gunrock implications
 
-What did we learn about Gunrock? What is hard to use, or slow? What potential Gunrock features would have been helpful in implementing this workflow?
+If Gunrock implemented a mutable graph structure that allowed for fast edge insertion, we could avoid allocating the `|V|x|V|` array.  This does not impact _worst case_ memory usage, but ikely would give us better scalability in practice.
 
 ### Notes on multi-GPU parallelization
 
+<TODO>
 What will be the challenges in parallelizing this to multiple GPUs on the same node?
-
 Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
+</TODO>
 
 ### Notes on dynamic graphs
 
-(Only if appropriate)
-
-Does this workload have a dynamic-graph component? If so, what are the implications of that? How would your implementation change? What support would Gunrock need to add?
+The description of this workflow does not have an explicit dynamic component.  However, the graph projection operation seems like it would be fairly straightforward to adapt to dynamic graphs -- as nodes/edges are added to `G`, we create/increment the weight of the appropriate edges in `H`.
 
 ### Notes on larger datasets
 
+<TODO>
 What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
+</TODO>
 
 ### Notes on other pieces of this workload
 
-Briefly: What are the important other (non-graph) pieces of this workload? Any thoughts on how we might implement them / what existing approaches/libraries might implement them?
+This workload does not involve any non-graph components.
+
+
