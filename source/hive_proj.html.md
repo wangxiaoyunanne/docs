@@ -121,15 +121,15 @@ There are various ways that the edges of the output graph `H` can be weighted.  
 - [HIVE reference implementation](https://hiveprogram.com/wiki/display/WOR/V0+-+Application+Classification)
 - [PNNL implementation](https://gitlab.hiveprogram.com/jfiroz/graph_projection)
 
-<todo>
+<still-todo>
     show runtime on LANL and Movielens datasets vs the above two implementations
-</todo>
+</still-todo>
 
 ### Performance limitations
 
-<todo>
+<still-todo>
     e.g., random memory access?
-</todo>
+</still-todo>
 
 ## Next Steps
 
@@ -145,10 +145,10 @@ If Gunrock implemented a mutable graph structure that allowed for fast edge inse
 
 ### Notes on multi-GPU parallelization
 
-<todo>
+<still-todo>
 What will be the challenges in parallelizing this to multiple GPUs on the same node?
 Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
-</todo>
+</still-todo>
 
 ### Notes on dynamic graphs
 
@@ -156,9 +156,9 @@ The description of this workflow does not have an explicit dynamic component.  H
 
 ### Notes on larger datasets
 
-<todo>
+<still-todo>
 What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
-</todo>
+</still-todo>
 
 ### Notes on other pieces of this workload
 
