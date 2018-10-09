@@ -1,5 +1,5 @@
 ---
-title: Template for HIVE workflow report
+title: Graph Search (HIVE)
 
 toc_footers:
   - <a href='https://github.com/gunrock/gunrock'>Gunrock&colon; GPU Graph Analytics</a>
@@ -10,90 +10,244 @@ search: true
 full_length: true
 ---
 
-<aside class="notice">
-  JDO notes, delete these when you copy this to `hive_yourworkflowname`: The goal of this report is to be useful to DARPA and to your colleagues. This is not a research paper. Be very honest. If there are limitations, spell them out. If something is broken or works poorly, say so. Above all else, make sure that the instructions to replicate the results you report are good instructions, and the process to replicate are as simple as possible; we want anyone to be able to replicate these results in a straightforward way.
-</aside>
+# `GraphSearch`
 
-# Name Of Application
+The `GraphSearch` workflow walks the graph searching for nodes that score highly on some indicator of interest.
 
-One-paragraph summary of application, written at a high level.
+The use case given by the HIVE government partner was sampling a graph: given some seen nodes, and some model that can score a node, find lots of "interesting" nodes as quickyy as possible.  Their `GraphSearch` algorithm attempts to solve this problem by implementing several different strategies for walking the graph.
+ - `uniform`: given a node `u`, randomly move to one of `u`'s neighbors (ignoring scores)
+ - `greedy`: given a node `u`, walk to neighbor with maximum score
+ - `stochastic_greedy`: given a node `u`, choose neighbor to walk to with probability proportional to score
 
 ## Summary of Gunrock Implementation
 
-As long as you need. Provide links (say, to papers) where appropriate. What was the approach you took to implementing this on a GPU / in Gunrock? Pseudocode is fine but not necessary. Whatever is clear.
+The scoring model is an arbitrary function of graph structure and/or node metadata.  For example, if we were running `GraphSearch` on the Twitter friends/followers graph, the scoring model might be the output of a text classifier on each users' messages.  Thus, we do not implement the scoring model in our Gunrock implementation -- we read scores from an input file and access them as necessary.
 
-Be specific about what you actually implemented with respect to the entire workflow (most workflows have non-graph components; as a reminder, our goal is implementing single-GPU code on only the graph components where the graph is static).
+`GraphSearch` is a generalization of a typical random walk algorithm, where there can be more variety in the transition function between nodes.  The `GraphSearch` `uniform` case is exactly a uniform random walk, so we can use the pre-existing Gunrock application.  Given a node, we compute the node to walk to as:
+```python
+r = random.uniform(0, 1)
+neighbors = graph.get_neighbors(node)
+next_node = neighbors[floor(r * len(neighbors))]
+```
+
+Both the `GraphSearch` `greedy` and `stochastic_greedy` consist of small modifications to this transition function.  For `greedy`, we find the neighbor with maximum score:
+```python
+neighbors = graph.get_neighbors(node)
+next_node = neighbors[0]
+next_node_score = scores[next_node]
+for neighbor in neighbors:
+    neighbor_score = scores[neighbor]
+    if neighbor_score > next_node_score:
+        next_node = neighbor
+        next_node_score = neighbor_score
+```
+
+For `stochastic_greedy`, we sample neighbors proportional to their score:
+```python
+sum_neighbor_scores = 0
+for neighbor in graph.neighbors(node):
+   sum_neighbor_scores += scores[neighbor]
+
+r *= sum_neighbor_scores
+
+tmp = 0
+for neighbor in graph.neighbors(node):
+   tmp += scores[neighbor]
+   if r < tmp:
+       next_node = neighbor
+       break
+```
+
+In `Gunrock`, we create a frontier containing all of the nodes we want to walk from (currently, hardcoded to all the nodes in the graph).  Then we map the transition function over the frontier using `Gunrock`'s `ForEach` operator, replacing the current nodes in the frontier w/ the chosen neighbor, and recording the random walk in an output array.
+
+Because this is such a straightforward modification, we implement `GraphSearch` inside of the existing `RandomWalk` Gunrock application.  This just requires adding a couple of extra flags and one extra array of size `|V|` to store the node values.
 
 ## How To Run This Application on DARPA's DGX-1
 
 ### Prereqs/input
-
-(e.g., "build Gunrock's `dev-refactor` branch", "this particular dataset needs to be in this particular directory")
+```
+git clone --recursive https://github.com/gunrock/gunrock -b dev-refactor
+cd gunrock/tests/rw/
+make clean
+make
+```
 
 ### Running the application
+```bash
+# generate random features
+python random-values.py 39 > chesapeake.values
 
-<code>
-include a transcript
-</code>
+# uniform random
+./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --walk-mode 0
 
-Note: This run / these runs need to be on DARPA's DGX-1.
+# greedy
+./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values --walk-mode 1
+
+# stochastic greedy
+# !!! TODO
+# ./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values --walk-mode 2
+```
+Output:
+```
+# ------------------------------------------------------------------------
+# uniform random
+
+Loading Matrix-market coordinate-formatted graph ...
+Reading from ../../dataset/small/chesapeake.mtx:
+  Parsing MARKET COO format
+ (39 nodes, 340 directed edges)... 
+Done parsing (0 s).
+  Converting 39 vertices, 340 directed edges ( ordered tuples) to CSR format...
+Done converting (0s).
+__________________________
+--------------------------
+ Elapsed: 0.001907
+Using advance mode LB
+Using filter mode CULL
+num_nodes=39
+__________________________
+0    0   0   queue3      oversize :  234 ->  682
+0    0   0   queue3      oversize :  234 ->  682
+0    1   0   queue3      oversize :  682 ->  1085
+0    1   0   queue3      oversize :  682 ->  1085
+0    5   0   queue3      oversize :  1085 ->     1166
+0    5   0   queue3      oversize :  1085 ->     1166
+--------------------------
+Run 0 elapsed: 4.551888, #iterations = 10
+[[0, 38, 8, 35, 11, 25, 13, 27, 37, 7, ],
+[1, 34, 1, 38, 30, 38, 29, 37, 7, 37, ],
+[2, 17, 2, 38, 4, 38, 10, 18, 14, 28, ],
+[3, 16, 3, 35, 14, 27, 38, 32, 37, 11, ],
+...
+[36, 33, 0, 22, 38, 27, 37, 18, 38, 8, ],
+[37, 21, 31, 17, 25, 17, 18, 32, 37, 26, ],
+[38, 7, 8, 34, 6, 5, 6, 5, 38, 19, ]]
+-------- NO VALIDATION -----[rw] finished.
+ avg. elapsed: 4.551888 ms
+ iterations: 10
+ min. elapsed: 4.551888 ms
+ max. elapsed: 4.551888 ms
+ load time: 60.925 ms
+ preprocess time: 964.890000 ms
+ postprocess time: 0.715017 ms
+ total time: 970.350027 ms
+
+# ------------------------------------------------------------------------
+# greedy
+# !! In this case, the output is formatted as `GPU_result:CPU_result`, for correctness checking
+
+Loading Matrix-market coordinate-formatted graph ...
+Reading from ../../dataset/small/chesapeake.mtx:
+  Parsing MARKET COO format
+ (39 nodes, 340 directed edges)... 
+Done parsing (0 s).
+  Converting 39 vertices, 340 directed edges ( ordered tuples) to CSR format...
+Done converting (0s).
+__________________________
+--------------------------
+ Elapsed: 0.085831
+Using advance mode LB
+Using filter mode CULL
+num_nodes=39
+__________________________
+0    0   0   queue3      oversize :  234 ->  682
+0    0   0   queue3      oversize :  234 ->  682
+0    1   0   queue3      oversize :  682 ->  770
+0    1   0   queue3      oversize :  682 ->  770
+--------------------------
+Run 0 elapsed: 0.695944, #iterations = 10
+[[0:0, 22:22, 32:32, 18:18, 11:11, 18:18, 11:11, 18:18, 11:11, 18:18, ],
+[1:1, 22:22, 32:32, 18:18, 11:11, 18:18, 11:11, 18:18, 11:11, 18:18, ],
+[2:2, 17:17, 2:2, 17:17, 2:2, 17:17, 2:2, 17:17, 2:2, 17:17, ],
+[3:3, 16:16, 2:2, 17:17, 2:2, 17:17, 2:2, 17:17, 2:2, 17:17, ],
+...
+[36:36, 33:33, 36:36, 33:33, 36:36, 33:33, 36:36, 33:33, 36:36, 33:33, ],
+[37:37, 18:18, 11:11, 18:18, 11:11, 18:18, 11:11, 18:18, 11:11, 18:18, ],
+[38:38, 2:2, 17:17, 2:2, 17:17, 2:2, 17:17, 2:2, 17:17, 2:2, ]]
+0 errors occurred.
+[rw] finished.
+ avg. elapsed: 0.695944 ms
+ iterations: 10
+ min. elapsed: 0.695944 ms
+ max. elapsed: 0.695944 ms
+ load time: 44.2419 ms
+ preprocess time: 974.721000 ms
+ postprocess time: 0.731945 ms
+ total time: 976.338863 ms
+
+
+# stochastic greedy
+# !! TODO
+```
+
 
 ### Output
 
-What is output when you run? Output file? JSON? Anything else? How do you extract relevant statistics from the output?
+When run in `verbose` mode, the app outputs the walks.  When run in `quiet` mode, it outputs performance statistics.  If running `greedy` `GraphSearch`, the app also outputs the results of a correctness check.
 
-How do you make sure your output is correct/meaningful? (What are you comparing against?)
+Because of the stochasticity of the app, we do not have correctness checks for `uniform` or `stochastic_greedy`.  However, we have validated the underlying algorithms in outside experiments.
 
 ## Performance and Analysis
 
-How do you measure performance? What are the relevant metrics? Runtime? Throughput? Some sort of accuracy/quality metric?
+Performance is measured by the runtime of the app, given
+ - an input graph
+ - set of seed nodes (hardcoded to all nodes in Graph)
+ - number of walks per seed
+ - number of steps per walk
+ - a transition function (eg `uniform|greedy|stochastic_greedy`)
 
 ### Implementation limitations
 
-e.g.:
+The output of the random walk is a dense array of size `(# seeds) * (steps per walk) * (walks per seed)`.  For a large graph _or_ long walks _or_ multiple walks per seed, this array may exceed the size of GPU memory. 
 
-- Size of dataset that fits into GPU memory (what is the specific limitation?)
-- Restrictions on the type/nature of the dataset
+This app can only be used for graphs that have scores associated w/ each node.  In order to run benchmarks, if scores are not available we often assign uniformly random scores to nodes.
 
 ### Comparison against existing implementations
 
-- Reference implementation (python? Matlab?)
-- OpenMP reference
-
-Comparison is both performance and accuracy/quality.
-
-
+<TODO>
+    HIVE reference implementations
+    PNNL reference implementation?
+    
+    Compare on 
+        - standard Gunrock datasets w/ random scores
+        - HIVE Twitter dataset
+</TODO>
 
 ### Performance limitations
 
+<TODO>
 e.g., random memory access?
+</TODO>
 
 ## Next Steps
 
 ### Alternate approaches
 
-If you had an infinite amount of time, is there another way (algorithm/approach) we should consider to implement this?
+The size of the output array may become a significant bottleneck for large graphs.  However, since all of the transition functions do not depend on anything besides the current node, we could reasonably move the results of the walk from GPU to CPU memory every N iterations.  Properly executed, this should eliminate the largest bottleneck without unduely impacting performance.
 
 ### Gunrock implications
 
-What did we learn about Gunrock? What is hard to use, or slow? What potential Gunrock features would have been helpful in implementing this workflow?
+For the `greedy` and `stochastic_greedy` transition function, we have to sequentially iterate over all of a node's neighbors.  Simple wrappers for computing eg. the maximum of node scores across all of a nodes neighbors could be helpful, both for ease of programming and performance.
 
 ### Notes on multi-GPU parallelization
 
+<TODO>
 What will be the challenges in parallelizing this to multiple GPUs on the same node?
-
 Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
+</TODO>
 
 ### Notes on dynamic graphs
 
-(Only if appropriate)
-
-Does this workload have a dynamic-graph component? If so, what are the implications of that? How would your implementation change? What support would Gunrock need to add?
+This workflow does not have an explicit dynamic component. However, because steps only depend on the current node, the underlying graph could be changing as the walks are happening without causing too much trouble.
 
 ### Notes on larger datasets
 
+<TODO>
 What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
+</TODO>
 
 ### Notes on other pieces of this workload
 
-Briefly: What are the important other (non-graph) pieces of this workload? Any thoughts on how we might implement them / what existing approaches/libraries might implement them?
+In real use cases, the scoring function would be computed lazily -- that is, we wouldn't have a precomputed array with scores for each of the nodes.  Thus, it would be critical for us to be able to call the scoring function from within Gunrock a) quickly and b) without excessive programmer overhead.
+
+
