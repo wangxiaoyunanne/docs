@@ -12,9 +12,9 @@ full_length: true
 
 # Graph Projections
 
-Given a graph `G`, graph projection outputs a graph `H` such that `H` contains edge `(u, v)` iff `G` contains edges `(u, w)` and `(v, w)` for some node `w`.  That is, graph projection creates a new graph where nodes are connected iff they share an (outgoing) neighbor in the original graph.
+Given a (directed) graph `G`, graph projection outputs a graph `H` such that `H` contains edge `(u, v)` iff `G` contains edges `(w, u)` and `(w, v)` for some node `w`.  That is, graph projection creates a new graph where nodes are connected iff they are neighbors of the same node in the original graph.  Typically, the edge weights of `H` are computed via some (simple) function of the corresponding edge weights of `G`.
 
-Graph projection is most commonly used when the input graph `G` is bipartitite with node sets `U` and `V` and directed edges `(u, v)`.  In this case, the operation yields a unipartite projection onto one of the node sets.
+Graph projection is most commonly used when the input graph `G` is bipartitite with node sets `U1` and `U2` and directed edges `(u, v)`.  In this case, the operation yields a unipartite projection onto one of the node sets.
 
 ## Summary of Gunrock Implementation
 
@@ -23,11 +23,13 @@ We implement graph projections in Gunrock as a single `advance` operation from a
 def _advance_op(self, G, H_edges, src, dest):
     for neib in G.neighbors(src):
         if dest != neib:
-            H.edges[(dest, neib)] += 1
+            H_edges[dest * G.num_nodes + neib] += 1
 ```
-That is, for each edge in the graph, we fetch the neighbors of the source node in `G`, then increment the weight of the edge between `dest` and each of the neighbors in `H`.
+That is, for each edge in the graph, we fetch the neighbors of the source node in `G`, then increment the weight of the edge between `dest` and each of the neighbors in `H`. 
 
-To store the edges of the output matrix `H`, we use a dense `|V|x|V|` array.  This is simple and fast, but uses an unreasonably large amount of memory (60k nodes -> 16gb).
+Note that we have only considered the unweighted case and a single method for computing the edgeweights of `H`, but the extension to weighted graphs and different weighting functions would be straightforward.
+
+We use a dense `|V|x|V|` array to store the edges of the output matrix `H`.  This is simple and fast, but uses an unrealistically large amount of memory (60k nodes -> 16gb).  Though, in the worst case, `H` may actually have all `|V|x|V|` possible edges, many real world graphs have far fewer.
 
 ## How To Run This Application on DARPA's DGX-1
 
@@ -104,7 +106,7 @@ edge_counter=1372
 
 When run in `verbose` mode, the app outputs the weighted edgelist of the projected graph.  When run in `quiet` mode, it outputs performance statistics and the results of a correctness check.
 
-We compared the results of the Gunrock implementation to the [HIVE reference implementation](https://hiveprogram.com/wiki/display/WOR/V0+-+Application+Classification) and the [PNNL implementation](https://gitlab.hiveprogram.com/jfiroz/graph_projection).  These two implementations vary slightly in their output -- we remained faithful to the HIVE reference implementation.  
+We compared the results of the Gunrock implementation to the [HIVE reference implementation](https://hiveprogram.com/wiki/display/WOR/V0+-+Application+Classification) and the [PNNL implementation](https://gitlab.hiveprogram.com/jfiroz/graph_projection).  These two implementations vary slightly in their output -- we validated our results against the HIVE reference implementation.  
 
 ## Performance and Analysis
 
@@ -117,7 +119,7 @@ The primary limitation of the current implementation is that it allocates a `|V|
 
 Graph projection is often used for bipartite graphs, but this app does not make any assumptions about the topology of the graph.  This choice was made in order to remain consistent with the [HIVE reference implementation](https://hiveprogram.com/wiki/display/WOR/V0+-+Application+Classification).
 
-There are various ways that the edges of the output graph `H` can be weighted.  We only implement graph projections for unweighted graphs.  The weights of the edges `(u, v)` in the output graph `H` are simply the number of (outgoing) neighbors that `u` and `v` have in common in the original graph.  Implementation of other weight functions would be fairly straightforward.
+There are various ways that the edges of the output graph `H` can be weighted.  We only implement graph projections for unweighted graphs.  The weights of the edges `(u, v)` in the output graph `H` are simply the number of (incoming) neighbors that `u` and `v` have in common in the original graph.  Implementation of other weight functions would be fairly straightforward.
 
 ### Comparison against existing implementations
 
@@ -138,7 +140,7 @@ There are various ways that the edges of the output graph `H` can be weighted.  
 
 ### Alternate approaches
 
-Another straightforward way to implement graph projections would be as a single sparse matrix multiplication `G.dot(G.T)` -- it would be interesting to compare the performance of this Gunrock implementation with a high-quality GPU SpMM-based implementation.
+Another straightforward way to implement graph projections would be as a single sparse matrix multiplication `G.T.dot(G)` -- it would be interesting to compare the performance of this Gunrock implementation with a high-quality GPU SpMM-based implementation.
 
 As mentioned above, it would also be worthwhile to implement a version that does not require allocating the `|V|x|V|` array.  This could be accomplished by using a sparse data structure (eg, a hashmap or a mutable graph), or possibly by moving intermediate results from GPU to CPU memory during the computation.
 
