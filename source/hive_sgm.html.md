@@ -124,50 +124,61 @@ Bertsekas' auction algorithm allows us make the trade off between runtime and ac
 
 ### Implementation limitations
 
-e.g.:
+Currently, our implementation of SGM only supports undirected graphs -- extension to directed graphs is mathematically straightforward, but require a bit of code refactoring.  We've only tested on unweighted graphs, but the code _should_ work on weighted graphs as well.
 
-- Size of dataset that fits into GPU memory (what is the specific limitation?)
-- Restrictions on the type/nature of the dataset
+At the moment, the primary scaling bottleneck is that we're allocating a `|V|x|V|` array as part of the auction algorithm.  This could be replaced w/ 2 `|E|` arrays without much trouble.
+
+SGM is only appropriate for pairs of graphs w/ some kind of correspondence between the nodes.  This could be an explicit correspondance (users on Twitter and users on Instagram, people in a cell phone network and people on an email network), or an implcit correspondence (two people play similar roles at similar companies).
 
 ### Comparison against existing implementations
 
+<TODO>
 - Reference implementation (python? Matlab?)
 - OpenMP reference
 
 Comparison is both performance and accuracy/quality.
-
+</TODO>
 
 
 ### Performance limitations
 
+<TODO>
 e.g., random memory access?
+
+@ctcyang
+</TODO>
 
 ## Next Steps
 
 ### Alternate approaches
 
-If you had an infinite amount of time, is there another way (algorithm/approach) we should consider to implement this?
+It would be worthwhile to look into parallel versions of the Hungarian or JV algorithms, as even a single-threaded CPU version of those algorithms is somewhat competitive with Berteseka's auction algorithm implemented on the GPU.  It's unclear whether it would be better to implement parallel JV/Hungarian as multi-threaded CPU programs or GPU programs.  If the former, SGM would be a good example of an application that makes good use of both the CPU (for LSAP) and GPU (for SpMM) at different steps.
 
 ### Gunrock implications
 
-What did we learn about Gunrock? What is hard to use, or slow? What potential Gunrock features would have been helpful in implementing this workflow?
+N/A
 
 ### Notes on multi-GPU parallelization
 
+<TODO>
 What will be the challenges in parallelizing this to multiple GPUs on the same node?
-
 Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
+
+@ctcyang -- can you address this for GraphBLAS?
+</TODO>
 
 ### Notes on dynamic graphs
 
-(Only if appropriate)
-
-Does this workload have a dynamic-graph component? If so, what are the implications of that? How would your implementation change? What support would Gunrock need to add?
+N/A
 
 ### Notes on larger datasets
 
+<TODO>
 What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
+
+@ctcyang?
+</TODO>
 
 ### Notes on other pieces of this workload
 
-Briefly: What are the important other (non-graph) pieces of this workload? Any thoughts on how we might implement them / what existing approaches/libraries might implement them?
+N/A
