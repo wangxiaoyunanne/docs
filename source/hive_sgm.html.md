@@ -42,7 +42,7 @@ Because SGM consists of linear algebra plus an LSAP solver, we implement it in o
 
 ### Prereqs/input
 
-```
+```bash
 git clone https://github.com/owensgroup/csgm
 cd csgm
 
@@ -51,30 +51,76 @@ export GRAPHBLAS_PATH=$HOME/path/to/GraphBLAS/ (eg /home/bjohnson/projects/davis
 make clean
 make
 
-# make data
-python data/make-random.py
+# make data (A = random sparse matrix, B = permuted version of A, except first `num-seeds` vertices)
+python data/make-random.py --num-seeds 100
 wc -l data/{A,B}.mtx
-
 
 ```
 
 ### Running the application
+Command:
+```bash
+./csgm --A data/A.mtx --B data/B.mtx --num-seeds 100 --sgm-debug 1
+```
 
-<code>
-include a transcript
-</code>
+Output:
+```
+===== iter=0 ================================
+counter=542
+run_num=0 | h_numAssign=4096 | milliseconds=448.343
+ps_grad_P=  394026
+ps_grad_T=  16125242
+ps_gradt_P= 409324
+ps_gradt_T= 15892744
+alpha=      -30.77314
+falpha=     234659376
+f1=         -15498718
+num_diff=   16383190
+------------
+timer=725.362488
+===== iter=1 ================================
+counter=1
+run_num=0 | h_numAssign=4096 | milliseconds=4.27913618
+ps_grad_P=  15892744
+ps_grad_T=  16205804
+ps_gradt_P= 16205804
+ps_gradt_T= 16777216
+alpha=      2.21175766
+falpha=     -1263824.88
+f1=         -884472
+num_diff=   884472
+------------
+timer=410.524384
+===== iter=2 ================================
+counter=1
+run_num=0 | h_numAssign=4096 | milliseconds=4.2815361
+ps_grad_P=  16777216
+ps_grad_T=  16777216
+ps_gradt_P= 16777216
+ps_gradt_T= 16777216
+alpha=      0
+falpha=     -1
+f1=         0
+num_diff=   0
+------------
+timer=556.371033
+```
 
-Note: This run / these runs need to be on DARPA's DGX-1.
+__Note:__ Here, the final `num_diff` indicates that the algorithm has found a perfect match between the input graphs.
 
 ### Output
 
-What is output when you run? Output file? JSON? Anything else? How do you extract relevant statistics from the output?
+When run with `--sgm-debug 1`, we output information about the quality of the match in each iteration.  The most important number is `num_diff`, which gives the number of disagreements between `A` and `PBP'`.  `num_diff=0` indicates that SGM has found a perfect matching between `A` and `B` (no adjacency disagreements).
 
-How do you make sure your output is correct/meaningful? (What are you comparing against?)
+This implementation is validated against the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/seeded_graph_matching_brain_connectome/blob/master/sgm.py).  Additionally, since the original reference implementation code was posted, Ben Johnson has worked with John's Hopkins to produce other (more performant) implementations of SGM, found [here](https://github.com/bkj/sgm/tree/v2).
+
+We can also do a simple test to verify that SGM is working, by permuting a matrix and trying to match it with itself.  (This is what we did in the simple example above.)
 
 ## Performance and Analysis
 
-How do you measure performance? What are the relevant metrics? Runtime? Throughput? Some sort of accuracy/quality metric?
+Performance is primarily measured in runtime of the entire SGM procedure.  Per-iteration runtime is not meaningful, because difference iterations present dramatically more difficult LSAP instances than others.  In particular, the LSAP solver in the first iteration tends to take 10-100x longer than in subsequent iterations.
+
+Bertsekas' auction algorithm allows us make the trade off between runtime and accuracy.  Used in a certain way, it produces the exact same answer as the JV or Hungarian algorithms.  However, with a different parameter setting, the auction algorithm may run substantically faster (>10x), at the cost of a lower quality assignment.  Since SGM is already an approximate algorithm, _we do not currently know the sensitivity of the SGM algorithm to this kind of approximation._  Running experiments to explore these tradeoffs would be an interesting direction for future research.
 
 ### Implementation limitations
 
