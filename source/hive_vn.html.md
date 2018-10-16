@@ -123,6 +123,23 @@ The Gunrock VN implementation was tested against the [HIVE reference implementat
 
 Performance is measured by runtime.
 
+#### Python reference implementation
+The Python+SNAP reference implementation is found [here](https://gitlab.hiveprogram.com/ggillary/vertex_nomination_Enron/blob/master/snap_vertex_nomination.py).  This implementation does 10 runs w/ 5 random seeds each on the Enron email dataset.  Runtimes in ms are as follows:
+```
+4239.80593681
+3326.16710663
+3951.03907585
+4371.74320221
+3791.98694229
+3920.63999176
+6871.20199203
+3738.28697205
+3509.23800468
+3435.40382385
+```
+
+#### Our CPU reimplementation
+
 ### Implementation limitations
 
 __TODO__
