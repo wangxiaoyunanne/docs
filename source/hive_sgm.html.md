@@ -45,8 +45,15 @@ Because SGM consists of linear algebra plus an LSAP solver, we implement it in o
 ```
 git clone https://github.com/owensgroup/csgm
 cd csgm
+
+# build
+export GRAPHBLAS_PATH=$HOME/path/to/GraphBLAS/ (eg /home/bjohnson/projects/davis/GraphBLAS/)
 make clean
 make
+
+# make data
+python data/make-random.py
+wc -l data/{A,B}.mtx
 
 
 ```
