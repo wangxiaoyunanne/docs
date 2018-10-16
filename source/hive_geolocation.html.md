@@ -20,9 +20,9 @@ One or two sentences that summarize "if you had one or two sentences to sum up y
 
 ## Summary of Gunrock Implementation
 
-We implemented Geolocation using two `compute` operators with the help of `ForAll()`. The first `ForAll()` is a `gather` operation, gathering all the values of neighbors with known locations for an active vertex `v`, and the second `ForAll()` uses those values to compute the `spatial_center`.
+We implemented Geolocation using two `compute` operators with the help of `ForAll()`. The first `ForAll()` is a `gather` operation, gathering all the values of neighbors with known locations for an active vertex `v`, and the second `ForAll()` uses those values to compute the `spatial_center` where the spatial center of a list points is the center of those points on earth's surface.
 
-<code>
+<pre>
 def gather_op(Vertex v):
     for neighbor in G.neighbors(v):
 	if isValid(neigbor.location):
@@ -31,31 +31,163 @@ def gather_op(Vertex v):
 def compute_op(Vertex v):
     if !isValid(v.location):
 	v.location = spatial_center(locations_list[v])
-</code>
+</pre>
 
 
 ## How To Run This Application on DARPA's DGX-1
 
 ### Prereqs/input
 
-<code>
+<pre>
 git clone --recursive https://github.com/gunrock/gunrock -b dev-refactor
 cd gunrock
 mkdir build
 ctest ..
 cd ../tests/geo/
 make clean && make
-</code>
+</pre>
 
 ### Running the application
 
-<code>
+Application specific parameters:
 
-</code>
+<pre>
+    --labels-file
+	file name containing node ids and their locations.
+</pre>
+
+Example command-line:
+
+<pre>
+# geolocation.mtx is a graph based on chesapeake.mtx dataset
+./bin/test_geo_10.0_x86_64 --graph-type=market --graph-file=./geolocation.mtx --labels-file=./locations.labels
+</pre>
+
+Sample output:
+
+<pre>
+Loading Matrix-market coordinate-formatted graph ...
+Reading from ./geolocation.mtx:
+  Parsing MARKET COO format edge-value-seed = 1539674096
+ (39 nodes, 340 directed edges)...
+Done parsing (0 s).
+  Converting 39 vertices, 340 directed edges ( ordered tuples) to CSR format...
+Done converting (0s).
+Labels File Input: ./locations.labels
+Loading Labels into an array ...
+Reading from ./locations.labels:
+  Parsing LABELS
+ (39 nodes)
+Done parsing (0 s).
+Debugging Labels -------------
+    locations[ 0 ] = < 37.744907 , -122.009430 >
+    locations[ 1 ] = < 37.866806 , -122.257973 >
+    locations[ 2 ] = < nan , nan >
+    locations[ 3 ] = < 37.869114 , -122.259109 >
+    locations[ 4 ] = < nan , nan >
+    locations[ 5 ] = < 37.643185 , -121.816154 >
+    locations[ 6 ] = < nan , nan >
+    locations[ 7 ] = < nan , nan >
+    locations[ 8 ] = < nan , nan >
+    locations[ 9 ] = < nan , nan >
+    locations[ 10 ] = < 37.865234 , -122.250633 >
+    locations[ 11 ] = < nan , nan >
+    locations[ 12 ] = < nan , nan >
+    locations[ 13 ] = < nan , nan >
+    locations[ 14 ] = < nan , nan >
+    locations[ 15 ] = < nan , nan >
+    locations[ 16 ] = < nan , nan >
+    locations[ 17 ] = < nan , nan >
+    locations[ 18 ] = < 38.204342 , -114.300339 >
+    locations[ 19 ] = < nan , nan >
+    locations[ 20 ] = < 36.758221 , -118.167915 >
+    locations[ 21 ] = < 33.977467 , -114.886513 >
+    locations[ 22 ] = < nan , nan >
+    locations[ 23 ] = < nan , nan >
+    locations[ 24 ] = < nan , nan >
+    locations[ 25 ] = < nan , nan >
+    locations[ 26 ] = < nan , nan >
+    locations[ 27 ] = < nan , nan >
+    locations[ 28 ] = < nan , nan >
+    locations[ 29 ] = < 39.259888 , -106.804665 >
+    locations[ 30 ] = < 37.880444 , -122.230148 >
+    locations[ 31 ] = < nan , nan >
+    locations[ 32 ] = < nan , nan >
+    locations[ 33 ] = < nan , nan >
+    locations[ 34 ] = < nan , nan >
+    locations[ 35 ] = < nan , nan >
+    locations[ 36 ] = < nan , nan >
+    locations[ 37 ] = < nan , nan >
+    locations[ 38 ] = < 9.427616 , -110.640709 >
+__________________________
+______ CPU Reference _____
+--------------------------
+ Elapsed: 0.267029
+Initializing problem ...
+Number of nodes for allocation: 39
+Initializing enactor ...
+Using advance mode LB
+Using filter mode CULL
+nodes=39
+__________________________
+0        0       0       queue3          oversize :      234 ->  342
+0        0       0       queue3          oversize :      234 ->  342
+--------------------------
+Run 0 elapsed: 11.322021, #iterations = 2
+Node [ 0 ]: Predicted = < 37.744907 , -122.009430 > Reference = < 37.744907 , -122.009430 >
+Node [ 1 ]: Predicted = < 37.866806 , -122.257973 > Reference = < 37.866806 , -122.257973 >
+Node [ 2 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
+Node [ 3 ]: Predicted = < 37.869114 , -122.259109 > Reference = < 37.869114 , -122.259109 >
+Node [ 4 ]: Predicted = < 23.634264 , -115.614845 > Reference = < 23.634264 , -115.614845 >
+Node [ 5 ]: Predicted = < 37.643185 , -121.816154 > Reference = < 37.643185 , -121.816154 >
+Node [ 6 ]: Predicted = < 37.743797 , -122.011337 > Reference = < 37.864948 , -122.250595 >
+Node [ 7 ]: Predicted = < 33.535606 , -116.003227 > Reference = < 33.535610 , -116.003235 >
+Node [ 8 ]: Predicted = < 23.754425 , -115.802628 > Reference = < 23.754425 , -115.802628 >
+Node [ 9 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
+Node [ 10 ]: Predicted = < 37.865234 , -122.250633 > Reference = < 37.865234 , -122.250633 >
+Node [ 11 ]: Predicted = < 10.187306 , -110.838608 > Reference = < 37.744308 , -122.008415 >
+Node [ 12 ]: Predicted = < 37.744141 , -122.010750 > Reference = < 37.744141 , -122.010750 >
+Node [ 13 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
+Node [ 14 ]: Predicted = < 23.826635 , -112.263268 > Reference = < 23.826635 , -112.263268 >
+Node [ 15 ]: Predicted = < 23.826635 , -112.263268 > Reference = < 23.826635 , -112.263268 >
+Node [ 16 ]: Predicted = < 9.427615 , -110.640709 > Reference = < 23.755602 , -115.803055 >
+Node [ 17 ]: Predicted = < 23.826635 , -112.263268 > Reference = < 23.826635 , -112.263268 >
+Node [ 18 ]: Predicted = < 38.204342 , -114.300339 > Reference = < 38.204342 , -114.300339 >
+Node [ 19 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
+Node [ 20 ]: Predicted = < 36.758221 , -118.167915 > Reference = < 36.758221 , -118.167915 >
+Node [ 21 ]: Predicted = < 33.977467 , -114.886513 > Reference = < 33.977467 , -114.886513 >
+Node [ 22 ]: Predicted = < 37.744621 , -122.008858 > Reference = < 37.744621 , -122.008873 >
+Node [ 23 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
+Node [ 24 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 37.744907 , -122.009430 >
+Node [ 25 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
+Node [ 26 ]: Predicted = < 33.934067 , -114.746063 > Reference = < 33.933800 , -114.745186 >
+Node [ 27 ]: Predicted = < 21.715958 , -112.579689 > Reference = < 21.715958 , -112.579689 >
+Node [ 28 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
+Node [ 29 ]: Predicted = < 39.259888 , -106.804665 > Reference = < 39.259888 , -106.804665 >
+Node [ 30 ]: Predicted = < 37.880444 , -122.230148 > Reference = < 37.880444 , -122.230148 >
+Node [ 31 ]: Predicted = < 33.975193 , -114.890976 > Reference = < 33.975193 , -114.890976 >
+Node [ 32 ]: Predicted = < 33.981956 , -114.889862 > Reference = < 33.981964 , -114.889854 >
+Node [ 33 ]: Predicted = < 37.744907 , -122.009430 > Reference = < 37.744907 , -122.009430 >
+Node [ 34 ]: Predicted = < 37.744907 , -122.009430 > Reference = < 37.744907 , -122.009430 >
+Node [ 35 ]: Predicted = < 37.864429 , -122.199409 > Reference = < 37.864429 , -122.199409 >
+Node [ 36 ]: Predicted = < 23.755602 , -115.803055 > Reference = < 37.807079 , -122.134163 >
+Node [ 37 ]: Predicted = < 37.053715 , -115.913658 > Reference = < 37.053719 , -115.913628 >
+Node [ 38 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
+0 errors occurred.
+[geolocation] finished.
+ avg. elapsed: 11.322021 ms
+ iterations: 2
+ min. elapsed: 11.322021 ms
+ max. elapsed: 11.322021 ms
+ load time: 68.671 ms
+ preprocess time: 496.136000 ms
+ postprocess time: 0.463009 ms
+ total time: 508.110046 ms
+</pre>
 
 ### Output
 
-How do you make sure your output is correct/meaningful? (What are you comparing against?)
+When `quick` mode is disabled, the application performs the CPU Reference implementation, which is used to validate the results from the GPU implementation. Geolocation application also supports the `quiet` mode, which allows user to skip the output and just report the performance metrics (note, this will run CPU implementation in the background without any output).
 
 ## Performance and Analysis
 
@@ -63,16 +195,12 @@ How do you measure performance? What are the relevant metrics? Runtime? Throughp
 
 ### Implementation limitations
 
-e.g.:
-
-- Size of dataset that fits into GPU memory (what is the specific limitation?)
-- Restrictions on the type/nature of the dataset
+One of the biggest limitation is that we are currently using `|V|x|V|` to store all the neighbors locations for all the vertices. For a graph of size `60K` nodes, it can take approximately `16GB` of a GPU memory. In the worst case scenario, we have a fully connected graph, but in most real world we won't see this connectivity within a network. Some tricks can be done to determine the degree of each vertex before hand and allocate just enough memory required to store the locations of valid neighbors. For the sake of complexity and time, we currently using `|V|x|V|` size array.
 
 ### Comparison against existing implementations
 
 - [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git)
 - [GTUSC implementation](https://gitlab.hiveprogram.com/gtusc/geotagging)
-
 
 Comparison is both performance and accuracy/quality.
 
@@ -85,23 +213,21 @@ e.g., random memory access?
 
 ### Alternate approaches
 
-If you had an infinite amount of time, is there another way (algorithm/approach) we should consider to implement this?
+- Neighborhood Reduce w/ Spatial Center: We can perform better load balancing by opting in for nighbor reduce (advance operator + CUB::SegmentedReduce) instead of using a compute operator. In graphs where the degree of a nodes could vary a lot, the compute operator will significantly be slower than a load balanced advance + segmented reduce.
+
+- Push Based Approach: Instead of gathering all the locations from all the neighbors of an active vertex, we perform a scatter of valid locations of all active vertices to their neighbors; push vs. pull approach.
 
 ### Gunrock implications
 
-What did we learn about Gunrock? What is hard to use, or slow? What potential Gunrock features would have been helpful in implementing this workflow?
+- The `predicted` atomic: Geolocation and some other application exhibit the same behavior where the stop condition of the algorithm is when all vertices have some label determined through some computation. In Geolocation's case, when all nodes have a predicted location stop the algorithm. This is currently being done with an atomic and it needs to be more of a core operation (mini-operator) such that when `isValidCount(labels|V|) == |V|)` stop condition is met.
 
 ### Notes on multi-GPU parallelization
 
-What will be the challenges in parallelizing this to multiple GPUs on the same node?
-
-Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
+No complicated partitioning scheme is required for multi-GPU implementation; the challenging part for a multi-GPU Geolocation would be to obtain the updated node location from a seperate device if the two vertices on different devices share an edge. An interesting approach here would be leveraging the P2P memory bandwidth with the new NVLink connectors to exchange small amount of updates across the NVLink's memory lane.
 
 ### Notes on dynamic graphs
 
-(Only if appropriate)
-
-Does this workload have a dynamic-graph component? If so, what are the implications of that? How would your implementation change? What support would Gunrock need to add?
+Streaming graphs is an interesting problem for Geolocation application, because when predicting a location of a certain node, if another edge is introduced the location of the vertex has to be recomputed entirely. This can still be done in an iterative manner, where if a node was inserted as a neighbor to a vertex, that vertex's predicted location will be marked invalid and during the next iteration it will be computed again along with all the other invalid vertices (locations).
 
 ### Notes on larger datasets
 
@@ -109,4 +235,4 @@ What if the dataset was larger than can fit into GPU memory or the aggregate GPU
 
 ### Notes on other pieces of this workload
 
-Briefly: What are the important other (non-graph) pieces of this workload? Any thoughts on how we might implement them / what existing approaches/libraries might implement them?
+Geolocation application leveraged a lot of math functions (sin, cos, atan, atan2, median, mean, etc.), and I believe some of these micro workloads can also leverage GPU's parallelism; for example, a mean could be implemented using `reduce-mean/sum`. We currently don't have these math operators within gunrock that can be used in graph applications.
