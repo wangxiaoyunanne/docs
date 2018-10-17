@@ -68,6 +68,7 @@ Because this is such a straightforward modification, we implement `GraphSearch` 
 ```
 git clone --recursive https://github.com/gunrock/gunrock -b dev-refactor
 cd gunrock/tests/rw/
+cp ../../gunrock/util/gitsha1.c.in ../../gunrock/util/gitsha1.c
 make clean
 make
 ```

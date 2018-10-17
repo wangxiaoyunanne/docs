@@ -38,8 +38,10 @@ We use a dense `|V|x|V|` array to store the edges of the output matrix `H`.  Thi
 ```bash
 git clone --recursive https://github.com/gunrock/gunrock -b dev-refactor
 cd gunrock/tests/proj/
+cp ../../gunrock/util/gitsha1.c.in ../../gunrock/util/gitsha1.c
 make clean
 make
+# !! May need to change compute capability in `gunrock/tests/BaseMakefile.mk`
 ```
 
 ### Running the application

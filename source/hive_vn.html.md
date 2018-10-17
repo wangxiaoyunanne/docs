@@ -53,6 +53,7 @@ Note we could have used the Gunrock SSSP implementation directly by
 git clone --recursive https://github.com/gunrock/gunrock -b dev-refactor
 cd gunrock/tests/vn
 cp ../../gunrock/util/gitsha1.c.in ../../gunrock/util/gitsha1.c
+make clean
 make
 # !! May need to change compute capability in `gunrock/tests/BaseMakefile.mk`
 ```
