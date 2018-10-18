@@ -482,6 +482,8 @@ e.g., random memory access?
 
 The size of the output array may become a significant bottleneck for large graphs.  However, since all of the transition functions do not depend on anything besides the current node, we could reasonably move the results of the walk from GPU to CPU memory every N iterations.  Properly executed, this should eliminate the largest bottleneck without unduely impacting performance.
 
+__Optimization:__ In a directed walk, once we hit a node with no outgoing neighbors, we halt the walk.  In the current Gunrock implementation, the enactor runs for a fixed number of iterations, regardless of whether any of the nodes are still active.  It would be very easy to add a check that terminates the app when no "living" nodes are left.
+
 ### Gunrock implications
 
 For the `greedy` and `stochastic_greedy` transition function, we have to sequentially iterate over all of a node's neighbors.  Simple wrappers for computing eg. the maximum of node scores across all of a nodes neighbors could be helpful, both for ease of programming and performance.
