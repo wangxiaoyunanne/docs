@@ -79,7 +79,7 @@ Application specific parameters:
     --walk-mode
         0 = uniform
         1 = greedy
-        2 = stochastic_greedy !! NOTIMPLEMENTED
+        2 = stochastic_greedy
     --node-value-path
         If --walk-mode != 0, this is the path to node scores
     --walk-length
@@ -96,14 +96,13 @@ Example:
 python random-values.py 39 > chesapeake.values
 
 # uniform random
-./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --walk-mode 0
+./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --walk-mode 0 --seed 123
 
 # greedy
 ./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values --walk-mode 1
 
 # stochastic greedy
-# !! NOTIMPLEMENTED
-# ./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values --walk-mode 2
+./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values --walk-mode 2 --seed 123
 ```
 
 Output:
@@ -223,14 +222,44 @@ This app can only be used for graphs that have scores associated w/ each node.  
 
 ### Comparison against existing implementations
 
-<TODO>
-    HIVE reference implementations
-    PNNL reference implementation?
-    
-    Compare on 
-        - standard Gunrock datasets w/ random scores
-        - HIVE Twitter dataset
-</TODO>
+We measure runtime on the [HIVE graphsearch Twitter dataset](https://hiveprogram.com/data/_v0/graph_search/).
+ - Nodes: 9291392
+ - Edges: 21741663
+
+#### HIVE Python reference implementation
+
+We run the HIVE Python reference implementation w/ the following settings:
+ - undirected graph
+ - 100 random seeds
+ - 10000 steps per walk
+
+With the `greedy` transition function, the run took `139.31s`.
+With the `uniform` transition function, the run took `310.25s`.
+
+!! Could flesh this out more, but it's so slow it's not very interesting
+
+#### PNNL OpenMP implementation
+
+We run the PNNL OpenMP implementation on the Twitter graph w/ the following settings:
+ - 1,2,4,8,16,32 or 64 threads
+ - `greedy` or `uniform` transition function
+ - directed or undirected graph
+
+```
+threads | transition | num_nodes | num_edges | num_seeds | total_seconds | total_steps | steps_per_second | total_neighbors | neighbors_per_second
+1 argmax 7199978 21741663 7199978 3.02876 16325873 5.39027e+06 298668024 9.86105e+07
+2 argmax 7199978 21741663 7199978 2.83467 16325873 5.75936e+06 298668024 1.05363e+08
+4 argmax 7199978 21741663 7199978 1.64405 16325873 9.9303e+06 298668024 1.81666e+08
+8 argmax 7199978 21741663 7199978 0.870028 16325873 1.87648e+07 298668024 3.43286e+08
+16 argmax 7199978 21741663 7199978 0.605769 16325873 2.69507e+07 298668024 4.93039e+08
+32 argmax 7199978 21741663 7199978 0.43742 16325873 3.73231e+07 298668024 6.82794e+08
+64 argmax 7199978 21741663 7199978 0.236701 16325873 6.89725e+07 298668024 1.26179e+09
+
+```
+
+We omit the `greedy` undirected case because the algorithm gets stuck jumping between a local maximum and it's highest scoring neighbor.
+
+All experiments conducted on the HIVE DGX-1.
 
 ### Performance limitations
 
