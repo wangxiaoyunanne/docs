@@ -241,7 +241,7 @@ With the `uniform` transition function, the run took `310.25s`.
 #### PNNL OpenMP implementation
 
 We run the PNNL OpenMP implementation on the Twitter graph w/ the following settings:
- - commit: 69864383f0fc0e8aace52be34b329a2f8a58afb6
+ - commit: 69864383f0fc0e8aace52be34b329a2f8a58afb6 __Is this right?__
  - 1,2,4,8,16,32 or 64 threads
  - `greedy` or `uniform` transition function
  - directed or undirected graph
