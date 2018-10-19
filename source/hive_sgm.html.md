@@ -10,6 +10,8 @@ search: true
 full_length: true
 ---
 
+!! Results don't replicate the reference implementation _exactly_, because the LAP solvers are not the same and do eg tiebreaking differently.
+
 # Seeded Graph Matching (SGM)
 
 From (Fishkind et al](https://arxiv.org/pdf/1209.0367.pdf):
