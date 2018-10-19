@@ -14,16 +14,16 @@ full_length: true
 
 The `GraphSearch` workflow walks the graph searching for nodes that score highly on some indicator of interest.
 
-The use case given by the HIVE government partner was sampling a graph: given some seen nodes, and some model that can score a node, find lots of "interesting" nodes as quickyy as possible.  Their `GraphSearch` algorithm attempts to solve this problem by implementing several different strategies for walking the graph.
+The use case given by the HIVE government partner was sampling a graph: given some seed nodes, and some model that can score a node as "interesting", find lots of "interesting" nodes as quickly as possible.  Their `GraphSearch` algorithm attempts to solve this problem by implementing several different strategies for walking the graph.
  - `uniform`: given a node `u`, randomly move to one of `u`'s neighbors (ignoring scores)
  - `greedy`: given a node `u`, walk to neighbor with maximum score
  - `stochastic_greedy`: given a node `u`, choose neighbor to walk to with probability proportional to score
 
 ## Summary of Gunrock Implementation
 
-The scoring model is an arbitrary function of graph structure and/or node metadata.  For example, if we were running `GraphSearch` on the Twitter friends/followers graph, the scoring model might be the output of a text classifier on each users' messages.  Thus, we do not implement the scoring model in our Gunrock implementation -- we read scores from an input file and access them as necessary.
+The scoring model can be an arbitrary function, eg of node metadata.  For example, if we were running `GraphSearch` on the Twitter friends/followers graph, the scoring model might be the output of a text classifier on each users' messages.  Thus, we do not implement the scoring model in our Gunrock implementation -- we read scores from an input file and access them as necessary.
 
-`GraphSearch` is a generalization of a typical random walk algorithm, where there can be more variety in the transition function between nodes.  The `GraphSearch` `uniform` case is exactly a uniform random walk, so we can use the pre-existing Gunrock application.  Given a node, we compute the node to walk to as:
+`GraphSearch` is a generalization of a random walk algorithm, where there can be more variety in the transition function between nodes.  The `GraphSearch` `uniform` case is exactly a uniform random walk, so we can use the pre-existing Gunrock application.  Given a node, we compute the node to walk to as:
 ```python
 r = random.uniform(0, 1)
 neighbors = graph.get_neighbors(node)
