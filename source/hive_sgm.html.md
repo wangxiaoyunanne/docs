@@ -12,6 +12,8 @@ full_length: true
 
 !! Results don't replicate the reference implementation _exactly_, because the LAP solvers are not the same and do eg tiebreaking differently.
 
+!! Have verified manually that these are mathematically the same, but you could run the experiments multiple times to verify they give the same results.  It's _possible_ there's some very subtle thing hiding in the LAP solver that _statistically_ makes one of the approaches better (eg, it's better to break ties by going with tthe node w/ larger/smaller degree).
+
 # Seeded Graph Matching (SGM)
 
 From (Fishkind et al](https://arxiv.org/pdf/1209.0367.pdf):
