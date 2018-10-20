@@ -48,7 +48,7 @@ cd ../tests/geo/
 make clean && make
 </pre>
 
-### Data Preparation
+### HIVE Data Preparation
 
 Prepare the data, skip this step if you are just running the sample dataset. Assuming we are in `tests/geo` directory:
 
@@ -90,7 +90,7 @@ Example command-line:
 Sample input (labels):
 
 <pre>
-% Node Label Label(optional)
+% Nodes Latitude Longitude
 39 2 2
 1 37.7449063493 -122.009432884
 2 37.8668048274 -122.257973253
@@ -239,6 +239,10 @@ How do you measure performance? What are the relevant metrics? Runtime? Throughp
 
 One of the biggest limitation is that we are currently using `|V|x|V|` to store all the neighbors locations for all the vertices. For a graph of size `60K` nodes, it can take approximately `16GB` of a GPU memory. In the worst case scenario, we have a fully connected graph, but in most real world we won't see this connectivity within a network. Some tricks can be done to determine the degree of each vertex before hand and allocate just enough memory required to store the locations of valid neighbors. For the sake of complexity and time, we currently using `|V|x|V|` size array.
 
+### [Optimization] Reducing Memory footprint
+
+In the new version of Geolocation, we aim to address the memory limitations of the problem, where `locations_list` array being `|V|x|V|` is not a viable size GPUs can handle for larger dataset. Devised solution is that the `gather` and `spatial_center` operators are fused together such that now there are few more gathers within the spatial median calculations. Instead of storing the locations in a huge locations array, they are now fetch as needed within the `spatial_center` operator. Now, the largest allocated array size is of `|E|`, which is way more viable than a `|V|x|V|`.
+
 ### Comparison against existing implementations
 
 - [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git)
@@ -277,4 +281,3 @@ If the datasets are larger than a single or multi-GPU's aggregate memory, an eas
 ### Notes on other pieces of this workload
 
 Geolocation application calls a lot of  CUDA math functions (`sin`, `cos`, `atan`, `atan2`, `median`, `mean`, `fminf`, `fmaxf`, etc.), and I believe some of these micro workloads can also leverage GPU's parallelism; for example, a mean could be implemented using `reduce-mean/sum`. We currently don't have these math operators within gunrock that can be used in graph applications.
-
