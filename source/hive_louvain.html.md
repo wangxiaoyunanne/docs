@@ -1,4 +1,4 @@
----
+assignmentscalabilityscalability---
 title: HIVE workflow report for Louvain GPU implementation
 
 toc_footers:
@@ -118,7 +118,7 @@ While pass stop condition not met
 
 CUDA should have been installed; `$PATH` and `$LD_LIBRARY_PATH` should have been
 set correctly to use CUDA. The current Gunrock configuration assumes boost
-(1.58.0 or 1.59.0) and metis are installed; if not, changes need to be made in
+(1.58.0 or 1.59.0) and Metis are installed; if not, changes need to be made in
 the Makefiles. DARPA's DGX-1 has both installed when the tests are performed.
 
 ```
@@ -185,22 +185,24 @@ communities minus dangling vertices.
 | amazon  | 548551 | 1851744 | 213688            | 7667 / 0.908073 | 213 / 0.925721 | 240 / 0.926442 | 298 / 0.923728 | 251 / 0.925557 |
 | ca      | 108299 | 186878  | 85166             | 1120 / 0.711971 | 616 / 0.730217 | 617 / 0.731292 | 654 / 0.713885 | 623 / 0.727127 |
 
-Note for these kind of small graphs, more parallelism could hurt the modularity. Multi-thread
-CPU implementations by both Gunrock and PNNL yield modularities a little less than the serial
-versions, and the GPU implementation sees ~0.02 drop. The reason could be concurrent updates to
-the communities: vertex A moves to community C, thinking vertex B is in C; but B may have
-moved to other communities. The modularity gain could be inaccurate, without heavy workload
-increase. When the graph is larger in size, this issue seems to disappear, and modularities
+Note for these kind of small graphs, more parallelism could hurt the modularity.
+Multi-thread CPU implementations by both Gunrock and PNNL yield modularities a
+little less than the serial versions, and the GPU implementation sees ~0.02 drop.
+The reason could be concurrent updates to the communities: vertex A moves to
+community C, thinking vertex B is in C; but B may have moved to other communities.
+The modularity gain could be inaccurate, without heavy workload increase. When
+the graph is larger in size, this issue seems to disappear, and modularities
 from the GPU implementation could be even bigger than the serial implementation.
 
 ## Performance and Analysis
-The Louvain performance is measured by three metrics: the number of resulted communities (#Comm),
-the modularity of resulted communities (Q), and the running time (Time, in seconds). Higher Q and
-lower running time are better. * indicates the graph is given as undirected, and the number of
-edges is counted after edge doubling and removing of self loops or duplicate edges; otherwise,
-the graph is taken as directed, and self loops or duplicate edges are also removed. If edge
-weights are available in the input graph, they follow the input; otherwise, the initial edge
-weights are set to 1.
+The Louvain performance is measured by three metrics: the number of resulted
+communities (#Comm), the modularity of resulted communities (Q), and the running
+time (Time, in seconds). Higher Q and lower running time are better. * indicates
+the graph is given as undirected, and the number of edges is counted after edge
+doubling and removing of self loops or duplicate edges; otherwise, the graph is
+taken as directed, and self loops or duplicate edges are also removed. If edge
+weights are available in the input graph, they follow the input; otherwise, the
+initial edge weights are set to 1.
 
 | GPU  | DataSet          | #V    | #E | #dangling vertices| GPU #Comm |     Q | Time  | OMP #Comm | Q     | Time  | Serial #Comm | Q  | Time   |
 |------|------------------|---------:|-----------:|-------:|-------:|---------:|------:|-------:|---------:|-------|-------:|---------:|-------:|
@@ -267,7 +269,8 @@ pervious works on GPU. The OMP implementation is a bit faster than PNNL's, and
 much faster than pervious works using multiple CPU threads. The sequential CPU
 is an order faster than pervious sequential CPU work. Comparing across different
 Gunrock implementations, the GPU is not always the fastest: on small graphs, GPU
-could actually be slower, caused by GPU kernel overheads and hardware under utilizations; so for small graphs, the OpenMP implementation may be a better choice.
+could actually be slower, caused by GPU kernel overheads and hardware under
+utilizations; so for small graphs, the OpenMP implementation may be a better choice.
 
 ### Performance limitations
 
@@ -320,28 +323,109 @@ by about 50%.
 
 ### Alternate approaches
 
-If you had an infinite amount of time, is there another way (algorithm/approach) we should consider to implement this?
+** Things tried but not really work **
+
+Segmented sort and CUB segmented reduce: the original idea for modularity
+optimization is to use CUB's segmented sort and segmented reduce within each
+vertex's neighborhood to get the vertex-community weights. However, CUB uses
+one block per each segment in these two routines, and that creates huge load
+unbalance, as the neighbor list length can have large differences. The solution
+is 1) use vertex-community pairs as keys, and CUB's unsegmented sort; 2)
+implement a load balanced segmented reduce kernel. This solution reduces the
+sort-reduce time by a few X, and can be enabled by `--unify-segments` flag in
+the command line.
+
+STL hash table on CPU: the std::map class has some performance issue when used
+in multi-threading environment, and yields poor scalability; it might be caused
+by using locks in the STL. The solution is to use a size |V| array per thread
+for the vertices that thread processes. Since within a thread, vertices are
+processed one by one, and the maximum number of communities is |V|, so instead
+of hash table, a flat size |V| array can replace the hash table. This solution
+significantly reduces the running time, even using a single thread. The
+multi-thread scalability is also much better.
+
+Vanilla hash table on GPU: this can't be used, as keys (vertex-community or
+community-community pair) and the values (edge weights) are both 64-bit, and
+there is currently no support of atomic-compare-and-exchange operations for
+128-bit data. Even if that's available, a vanilla table only provides insert
+and query operations, but not accumulation of values for the same key.
+
+** Custom hash table **
+
+Hash table can be used to accumulate the vertex to community weights during modularity
+optimization iterations, and to get the community to community edge weights during
+the graph contraction part of the algorithm. Pervious implementations use hash tables
+as a common practice. However, as mentioned above, vanilla hash tables storing
+key-value pairs is not a good choice for Louvain.
+
+Because Louvain not only needs to store the key-value pairs, it also needs to
+accumulate the values associated with the same key: let the key be the same
+vertex-community pair for modularity optimization, or the same community-community
+pair for graph contraction. Ideally, if the hash table provides the
+following functionalities, it would be much more suitable for Louvain:
+
+- Only insert the key, in the first phase of using the hash table.
+- In the next phase, query the **positions** of the keys, and use atomic function
+to accumulate the values belonging to the same key, in a separate array.
+- There is a barrier between the two phases, all insertions of the first phase
+need to be visible to the second phase.
+
+This kind of hash table removes the strong restriction that the key-value pair
+needs to be able to handle by an atomic compare and exchange operation, which
+imposed by vanilla hash table implementations. The custom hash table is also
+more value accumulation friendly. It replaces the sort-segmented reduce part,
+and can reduces the workload from about O(6|E|) to O(2|E|), and the memory
+requirement from 48|E| bytes to 24|E|. However, the memory access pattern now
+become irregular and uncoalesced, it's still unknown whether it can actually
+give performance gain.
 
 ### Gunrock implications
 
-What did we learn about Gunrock? What is hard to use, or slow? What potential Gunrock features would have been helpful in implementing this workflow?
+The core of Louvain implementation mainly uses: all-edges advance, sort, segmented
+reduce, and for loops. The sort-segmented reduce operation is actually a
+segmented keyed reduce; if that's a common operation shows up in more
+algorithms, it could be made into a new operator. The all-edges advance is used
+quite often in several applications, so warping it with a simpler operator
+interface can be helpful.
 
 ### Notes on multi-GPU parallelization
 
-What will be the challenges in parallelizing this to multiple GPUs on the same node?
+When parallelizing across multiple GPUs, the community assignment of local
+vertices and their neighbors need to available locally, either explicitly by
+moving them using communication functions, or implicitly by peer memory access
+or unify virtual memory. The communication volume is in the order of O(|V|) and
+the computation workload is at least in O(|E|), so the scalability should be
+manageable.
 
-Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
+When the number of GPUs is small, 1D partitioning can be used to divide the
+edges, and replicate the vertices; so there is no need to do vertex id
+conversion across multiple GPUs. When the number of GPUs is large, the high-low
+degree vertex separation and partitioning scheme can be used: edges are still
+distributed across GPUs, high degree vertices are duplicated, and low degree
+vertices are owned by one GPU each.
 
 ### Notes on dynamic graphs
 
-(Only if appropriate)
-
-Does this workload have a dynamic-graph component? If so, what are the implications of that? How would your implementation change? What support would Gunrock need to add?
+Louvain is not directly related to dynamic graph. But it should be able to run
+on a dynamic graph, provided the way to access all the edges is the same.
+Community assignment from the pervious graph can be used as a good starting
+point, if the vertex Ids are consistent and the graph is not dramatically changed.
 
 ### Notes on larger datasets
 
-What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
+The bottleneck of memory usage of the current implementation is on the edge
+pair-weight sort function: that makes up about half of the memory usage.
+Replace sort-segmented reduce with custom hash table can significantly lower
+the memory usage.
+
+Louvain needs to go over the whole graph once in each modularity optimization
+iteration. If the graph is larger than the combined GPU memory space, which
+forces streaming of the graph in each modularity optimization iteration, the
+performance bottleneck will be the CPU-GPU bandwidth. That can be an order
+slower than when the graph can be fully fit in GPU memory. Considering the OpenMP
+implementation is not that slow, using that may well be faster than moving the
+graph multiple times across the CPU-GPU bridge.
 
 ### Notes on other pieces of this workload
 
-Briefly: What are the important other (non-graph) pieces of this workload? Any thoughts on how we might implement them / what existing approaches/libraries might implement them?
+All parts of Louvain are graph related, and fully implemented in Gunrock.
