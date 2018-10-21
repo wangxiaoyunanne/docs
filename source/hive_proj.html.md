@@ -314,7 +314,9 @@ What will be the challenges in parallelizing this to multiple GPUs on the same n
 Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
 </TODO>
 
-The GraphBLAS chunked matrix multiply is trivially extended to multiple GPUs.  
+Multiple GPU support for GraphBLAS is on the roadmap. Unlike the Seeded Graph Matching problem which requires the `mxm`, `mxv` and `vxm` primitives, which necessitates possible changes in data layout, this problem only requires the `mxm` primitive, so multiple GPU support is easier here.
+
+Even though extending matrix-multiplication to multiple GPUs can be straightforward, doing so in a backend-agnostic fashion that abstracts away the placement (i.e. which part of matrix A goes on which GPU) from the user may still be quite challenging.
 
 ### Notes on dynamic graphs
 
@@ -322,9 +324,9 @@ This workflow does not have an explicit dynamic component.  However, the graph p
 
 ### Notes on larger datasets
 
-<TODO>
-What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
-</TODO>
+If the dataset were too big to fit into the aggregate GPU memory of multiple GPUs on a node, then two directions can be taken in order to be able to tackle these larger datasets:
+1. Out-of-memory: Compute using part of the dataset at a time on the GPU, and save your completed result to CPU memory. When all completed results on the CPU is ready to perform the next step, copy back to GPU (slower than distributed, but cheaper and easier to implement).
+2. Distributed memory: If GPU memory of a single node is not enough, use multiple nodes. This method can be made to scale for infinitely large datasets provided the implementation is good enough (faster than out-of-memory, but more expensive and difficult).
 
 ### Notes on other pieces of this workload
 
