@@ -287,7 +287,7 @@ _When the dataset can fit into memory_, Gunrock is \~ 4x faster than GraphBLAS. 
 #### Gunrock
   - Results of profiling indicate that the Gunrock implementation is bound by memory latency.
   - The device memory bandwidth is 297GB/s -- within the expected range for Gunrock graph analytics.
-  - 92% of the runtime is spent in the advance operater.
+  - 92% of the runtime is spent in the advance operator.
 
 #### GraphBLAS
  - 99% of time is spent in cuSPARSE's `csrgemm` routines
