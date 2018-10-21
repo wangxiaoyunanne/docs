@@ -309,11 +309,6 @@ If Gunrock implemented a mutable graph structure that allowed for fast edge inse
 
 ### Notes on multi-GPU parallelization
 
-<TODO>
-What will be the challenges in parallelizing this to multiple GPUs on the same node?
-Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
-</TODO>
-
 Multiple GPU support for GraphBLAS is on the roadmap. Unlike the Seeded Graph Matching problem which requires the `mxm`, `mxv` and `vxm` primitives, which necessitates possible changes in data layout, this problem only requires the `mxm` primitive, so multiple GPU support is easier here.
 
 Even though extending matrix-multiplication to multiple GPUs can be straightforward, doing so in a backend-agnostic fashion that abstracts away the placement (i.e. which part of matrix A goes on which GPU) from the user may still be quite challenging.
