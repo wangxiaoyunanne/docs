@@ -233,7 +233,7 @@ When `quick` mode is disabled, the application performs the CPU Reference implem
 
 ## Performance and Analysis
 
-How do you measure performance? What are the relevant metrics? Runtime? Throughput? Some sort of accuracy/quality metric?
+Runtime is the key metric for measuring performance for Geolocation. We also check for prediction accuracy of the labels, but that is a threshold for correctness. If a certain threshold is not met (while comparing results to the CPU reference code), the output is considered incorrect and that run is invalid. Therefore, for the report I will just be focusing on runtime.
 
 ### Implementation limitations
 
@@ -245,14 +245,21 @@ In the new version of Geolocation, we aim to address the memory limitations of t
 
 ### Comparison against existing implementations
 
+| Dataset            |  [V]     |  [E]     | Iterations | GT CPU (8 threads) | GT CPU (serial) | Gunrock  |
+|--------------------|----------|----------|------------|-----------------|--------------------|----------|
+| geolocation-sample | 39       | 170      | 3          | 0.466108        | N/A                | 0.286102 |
+| instagram          | 23731995 | 41355870 | 3          | 10.643214       | 63.821812          | 1.910632 |
+
+On a GPU filling workload, gunrock out performs GT's C++ implementation using OpenMP by 5.5x. There is a lack of available dataset to test the performance against, so we are restricted to only using the provided instagram dataset, and a toy sample for sanity check. All tested implementations meet the criteria of accuracy, which is compared against the output of the original python implementation.
+
 - [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git)
 - [GTUSC implementation](https://gitlab.hiveprogram.com/gtusc/geotagging)
 
-Comparison is both performance and accuracy/quality.
-
 ### Performance limitations
 
-e.g., random memory access?
+As discussed later in the "Alternate approaches" section, current implementation of geolocation uses a compute operator with minimum load balancing. In cases where the graph is not so nicely distributed (where there is a great deal of difference in degrees of vertices), the entire application will suffer significantly from load imbalance.
+
+Profiling the application shows 98.78% of the compute time in GPU activities is the `spatial_median` kernel, which gives us a good direction to focus our efforts on load balancing the workloads within the operator. Specifically, the for loops iterating over the neighbor list for spatial center calculations.
 
 ## Next Steps
 
@@ -281,3 +288,4 @@ If the datasets are larger than a single or multi-GPU's aggregate memory, an eas
 ### Notes on other pieces of this workload
 
 Geolocation application calls a lot of  CUDA math functions (`sin`, `cos`, `atan`, `atan2`, `median`, `mean`, `fminf`, `fmaxf`, etc.), and I believe some of these micro workloads can also leverage GPU's parallelism; for example, a mean could be implemented using `reduce-mean/sum`. We currently don't have these math operators within gunrock that can be used in graph applications.
+
