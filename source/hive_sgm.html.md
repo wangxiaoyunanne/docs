@@ -69,42 +69,47 @@ Command:
 Output:
 ```
 ===== iter=0 ================================
-counter=547
-run_num=0 | h_numAssign=4096 | milliseconds=469.121
+APB_num_entries=659238
+counter=17
+run_num=0 | h_numAssign=4096 | milliseconds=21.3737
 APPB_trace = 196
-APTB_trace = 8108
-ATPB_trace = 8108
-ATTB_trace = 118296
+APTB_trace = 7760
+ATPB_trace = 7760
+ATTB_trace = 109460
 ps_grad_P  = 393620
-ps_grad_T  = 16125600
-ps_gradt_P = 409288
-ps_gradt_T = 15915048
-alpha      = -33.8060455
-falpha     = 258535264
-f1         = -15521428
-num_diff   = 16383596
+ps_grad_T  = 16124208
+ps_gradt_P = 407896
+ps_gradt_T = 15879704
+alpha      = -29.4213314
+falpha     = 224003776
+f1         = -15486084
+num_diff   = 448756
 ------------
-timer=522.680054
+f1 < 0
+iter_timer=74.0615005
 ===== iter=1 ================================
+APB_num_entries=13466405
 counter=1
-run_num=0 | h_numAssign=4096 | milliseconds=3.92006397
-APPB_trace = 118296
-APTB_trace = 195792
-ATPB_trace = 195792
+run_num=0 | h_numAssign=4096 | milliseconds=5.72806406
+APPB_trace = 109460
+APTB_trace = 189910
+ATPB_trace = 189910
 ATTB_trace = 333838
-ps_grad_P  = 15915048
-ps_grad_T  = 16225032
-ps_gradt_P = 16225032
+ps_grad_P  = 15879704
+ps_grad_T  = 16201504
+ps_gradt_P = 16201504
 ps_gradt_T = 16777216
-alpha      = 2.27986789
-falpha     = -1258906.62
-f1         = -862168
-num_diff   = 862168
+alpha      = 2.26736832
+falpha     = -1305351
+f1         = -897512
+num_diff   = 0
 ------------
-timer=39.3967361
+f1 < 0
+iter_timer=50.2999039
 ===== iter=2 ================================
+APB_num_entries=13464050
 counter=1
-run_num=0 | h_numAssign=4096 | milliseconds=3.91375995
+run_num=0 | h_numAssign=4096 | milliseconds=5.71267223
 APPB_trace = 333838
 APTB_trace = 333838
 ATPB_trace = 333838
@@ -118,7 +123,8 @@ falpha     = -1
 f1         = 0
 num_diff   = 0
 ------------
-timer=35.5387535 | num_diff=0
+iter_timer=45.222271
+total_timer=170.153473 | num_diff=0
 ```
 
 __Note:__ Here, the final `num_diff` indicates that the algorithm has found a perfect match between the input graphs.
@@ -157,10 +163,12 @@ Comparison is both performance and accuracy/quality.
 
 ### Performance limitations
 
-- 84% of time is spent in the auction algorithm. Of this 84%:
-  - 77% of time is spent in bidding
-  - 23% of time is spent in assignment
-- 16% of time is spent in sparse-sparse matrix-multiply, which is a memory latency bound problem
+- Results from profiling indicate that these kernels are memory latency bound.
+- 50% of time is spent in sparse-sparse matrix-multiply (SpMM)
+- 39% of time is spent in the auction algorithm. Of this 39%:
+  - 65% of time is spent in `run_bidding`
+  - 26% of time is spent in `cudaMemset`
+  - 9% of time is spent in `run_assignment`
 
 ## Next Steps
 
