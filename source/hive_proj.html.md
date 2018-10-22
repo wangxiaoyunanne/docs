@@ -51,7 +51,9 @@ The chunked matrix multiply clearly incurs a performance penalty, but allows us 
 
 ## How To Run This Application on DARPA's DGX-1
 
-### Prereqs/input
+### Gunrock
+
+#### Prereqs/input
 
 ```bash
 git clone --recursive https://github.com/gunrock/gunrock -b dev-refactor
@@ -59,19 +61,19 @@ cd gunrock/tests/proj/
 cp ../../gunrock/util/gitsha1.c.in ../../gunrock/util/gitsha1.c
 make clean
 make
-# !! May need to change compute capability in `gunrock/tests/BaseMakefile.mk`
 ```
 
-### Running the application
-Application specific parameters: NONE
+#### Application specific parameters
+```
+N/A
+```
 
-#### Gunrock
-
-Example:
+#### Example Command
 ```bash
 ./bin/test_proj_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx
 ```
-Output:
+
+#### Example Output
 ```
 Loading Matrix-market coordinate-formatted graph ...
 Reading from ../../dataset/small/chesapeake.mtx:
@@ -123,20 +125,69 @@ edge_counter=1372
  total time: 960.005045 ms
 ```
 
-#### GraphBLAS
-
-<TODO>
-</TODO>
-
-### Output
-
-#### Gunrock
+#### Expected Output
 
 When run in `verbose` mode, the app outputs the weighted edgelist of the projected graph.  When run in `quiet` mode, it outputs performance statistics and the results of a correctness check.
 
-We compared the results of the Gunrock implementation to the [HIVE reference implementation](https://hiveprogram.com/wiki/display/WOR/V0+-+Application+Classification) and the [PNNL implementation](https://gitlab.hiveprogram.com/jfiroz/graph_projection).  These two implementations vary slightly in their output -- we validated our results against the HIVE reference implementation.  
+### GraphBLAS
 
-#### GraphBLAS
+#### Prereqs/input
+```bash
+git clone --recursive https://github.com/bkj/graphblas_proj
+cd graphblas_proj
+make clean
+make
+```
+
+#### Application specific parameters
+```
+--unweighted
+ 1 = convert entries of adjacency matrix 
+ 0 = leave entries of adjacency matrix as-is
+--proj-debug
+ 1 = print debug information
+ 0 = don't print debug information
+--print-results
+ 1 = print the edges of the projected graph
+ 0 = don't print edges
+--onto-cols
+ 1 = given adjacency matrix A w/ `A.shape = (m, n)`, compute projection P w/ `P.shape = (n, n)`
+ 0 = given adjacency matrix A w/ `A.shape = (m, n)`, compute projection P w/ `P.shape = (m, m)`
+--num-chunks
+ <= 1 = do matrix multiply in one step
+ >= 1 = break matrix multiply into multiple chunks (eg, so we can compute projections larger than GPU memory)
+```
+
+#### Example Command
+```bash
+python data/make-random.py --seed 111 --num-rows 1000 --num-cols 1000 --density 0.1 # generate some random data
+./proj --X data/X.mtx --unweighted 1 --proj-debug 1
+```
+
+#### Example Output
+```
+proj.cu: loading data/X.mtx
+  done
+proj.cu: computing transpose
+  done
+proj.cu: computing projection
+mxm analyze successful!
+mxm compute successful!
+  done
+proj_num_edges          = 999946  # number of edges in projected graph, including self loops
+dim_out                 = 1000    # dimension of projected graph
+proj_num_edges (noloop) = 998946  # number of edges in projected graph, excluding self loops
+timer                   = 208.98  # elapsed time (no IO)
+```
+#### Output
+The app will print the number of edges in the projected graph.
+Additionally, 
+ - When run w/ `--print-results=1`, the app prints the edges of the the projected matrix `A.T.dot(A)`.
+ - When run w/ `--proj-debug=1`, the app prints a small number of progress messages.
+
+## Validation
+
+We compared the results of the Gunrock implementation to the [HIVE reference implementation](https://hiveprogram.com/wiki/display/WOR/V0+-+Application+Classification) and the [PNNL implementation](https://gitlab.hiveprogram.com/jfiroz/graph_projection).  These two implementations vary slightly in their output -- we validated our results against the HIVE reference implementation.    
 
 ## Performance and Analysis
 
@@ -187,6 +238,8 @@ There is a `simple` flag in PNNLs code, but examining the code reveals that it j
 A very simple baseline is sparse matrix-matrix multiplication as implemented in the popular `scipy` python package.  This is a single-threaded C++ implementation with a Python wrapper.
 
 #### Experiments
+
+##### MovieLens
 
 MovieLens is a bipartite graph w/ `|U|=138493`, `|V|=26744` and `|E|=20000264`. We report results on the full graph, as well as several random subgraphs.
 
@@ -254,6 +307,8 @@ Gunrock: out-of-memory error
 
 GraphBLAS: 5.012s
 ```
+
+##### RMAT
 
 Next we test on a [scale 18 RMAT graph](https://graphchallenge.s3.amazonaws.com/synthetic/graph500-scale18-ef16/graph500-scale18-ef16_adj.tsv.gz).  This is _not_ a bipartite graph, but the graph projection algorithm can still be applied.
 

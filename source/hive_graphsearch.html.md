@@ -74,23 +74,24 @@ make
 ```
 
 ### Running the application
-Application specific parameters:
+
+#### Application specific parameters
 ```
-    --walk-mode
-        0 = uniform
-        1 = greedy
-        2 = stochastic_greedy
-    --node-value-path
-        If --walk-mode != 0, this is the path to node scores
-    --walk-length
-        Length of each walk
-    --walks-per-node
-        Number of walks to do per seed node
-    --seed
-        Seed for random number generator
+  --walk-mode
+      0 = uniform
+      1 = greedy
+      2 = stochastic_greedy
+  --node-value-path
+      If --walk-mode != 0, this is the path to node scores
+  --walk-length
+      Length of each walk
+  --walks-per-node
+      Number of walks to do per seed node
+  --seed
+      Seed for random number generator
 ```
 
-Example:
+#### Example Command
 ```bash
 # generate random features
 python random-values.py 39 > chesapeake.values
@@ -105,7 +106,7 @@ python random-values.py 39 > chesapeake.values
 ./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values --walk-mode 2 --seed 123
 ```
 
-Output:
+#### Example Output
 ```
 # ------------------------------------------------------------------------
 # uniform random
@@ -198,10 +199,11 @@ Run 0 elapsed: 0.695944, #iterations = 10
 # !! TODO
 ```
 
-
-### Output
+#### Expected Output
 
 When run in `verbose` mode, the app outputs the walks.  When run in `quiet` mode, it outputs performance statistics.  If running `greedy` `GraphSearch`, the app also outputs the results of a correctness check.
+
+### Validation
 
 Because of the stochasticity of the app, we do not have correctness checks for `uniform` or `stochastic_greedy`.  However, we have validated the underlying algorithms in outside experiments.
 
