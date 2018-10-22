@@ -1,4 +1,4 @@
-assignmentscalabilityscalability---
+implementation---
 title: HIVE workflow report for Louvain GPU implementation
 
 toc_footers:
@@ -26,8 +26,16 @@ Write it last, probably.
 
 ## Summary of Gunrock Implementation
 
-The Gunrock implementation uses sort and segmented reduction, instead of the
-commonly used hash table approach. The Pseudocode is listed below:
+The commonly used approach to implement the Louvain algorithm is using hash table.
+However, the memory access patter resulted from hash table is almost totally
+random, and not GPU-friendly (more in the Alternative approaches section).
+Instead of using hash table to accumulate the values of the same key, the
+gunrock implementation on GPU us tries another method: sort all key-value
+pairs, and use segmented reduce to accumulate the values in the continuous
+segments. Because Louvain always visits all edges in the graph, there is no
+need to use the frontiers, and the `advance` operator with `ALL_EDGES` advance
+mode or a simple `ForAll` loop should be sufficient. The Pseudocode is listed below:
+
 ```
 m2 <- sum(edge_weights);
 //Outer-loop
@@ -178,12 +186,15 @@ and 10 GPU runs.
 The output was compared against PNNL's results on the number of communities and
 modularity, for amazon and ca datasets. Note that PNNL's code does not count
 dangling vertices in the communities. Results are listed below use the number of
-communities minus dangling vertices.
+communities minus dangling vertices; the dataset details are can be found in
+the next section.
 
-| DataSet | #V     | #E      | #dangling vertices | Gunrock GPU     | OMP (32T)      | Serial         | PNNL (8T)      | PNNL (serial)  |
-|---------|--------|---------|-------------------|-----------------|----------------|----------------|----------------|----------------|
-| amazon  | 548551 | 1851744 | 213688            | 7667 / 0.908073 | 213 / 0.925721 | 240 / 0.926442 | 298 / 0.923728 | 251 / 0.925557 |
-| ca      | 108299 | 186878  | 85166             | 1120 / 0.711971 | 616 / 0.730217 | 617 / 0.731292 | 654 / 0.713885 | 623 / 0.727127 |
+The modularity of resulted communities:
+
+| DataSet | Gunrock GPU | OMP (32T) | Serial | PNNL (8T) | PNNL (serial) |
+|---------|----------|----------|----------|----------|----------|
+| amazon  | 0.908073 | 0.925721 | 0.926442 | 0.923728 | 0.925557 |
+| ca      | 0.711971 | 0.730217 | 0.731292 | 0.713885 | 0.727127 |
 
 Note for these kind of small graphs, more parallelism could hurt the modularity.
 Multi-thread CPU implementations by both Gunrock and PNNL yield modularities a
@@ -192,9 +203,28 @@ The reason could be concurrent updates to the communities: vertex A moves to
 community C, thinking vertex B is in C; but B may have moved to other communities.
 The modularity gain could be inaccurate, without heavy workload increase. When
 the graph is larger in size, this issue seems to disappear, and modularities
-from the GPU implementation could be even bigger than the serial implementation.
+from the GPU implementation could be even better than the serial implementation.
+
+The number of resulted communities:
+
+| DataSet | Gunrock GPU | OMP (32T) | Serial | PNNL (8T) | PNNL (serial) |
+|---------|------|-----|-----|-----|-----|
+| amazon  | 7667 | 213 | 240 | 298 | 251 |
+| ca      | 1120 | 616 | 617 | 654 | 623 |
+
+More parallelism also affects the number of resulted communities. On these two
+small datasets, the GPU implementation produces significantly more communities
+than all CPU implementations; on large datasets, the differences in the number
+of communities are much smaller. The reason behind may also be the concurrent
+community updates, especially sometimes whole community migration happens: all
+vertices in community A decide to move to community B, and all vertices in
+community B decide to move to community A; when running in massively parallel
+environment such as GPU, community A and B just swap their labels, and
+won't combine together as a single community, which happens in the serial
+implementation.
 
 ## Performance and Analysis
+
 The Louvain performance is measured by three metrics: the number of resulted
 communities (#Comm), the modularity of resulted communities (Q), and the running
 time (Time, in seconds). Higher Q and lower running time are better. * indicates
@@ -204,34 +234,113 @@ taken as directed, and self loops or duplicate edges are also removed. If edge
 weights are available in the input graph, they follow the input; otherwise, the
 initial edge weights are set to 1.
 
-| GPU  | DataSet          | #V    | #E | #dangling vertices| GPU #Comm |     Q | Time  | OMP #Comm | Q     | Time  | Serial #Comm | Q  | Time   |
-|------|------------------|---------:|-----------:|-------:|-------:|---------:|------:|-------:|---------:|-------|-------:|---------:|-------:|
-| P100 | amazon           |   548551 |    1851744 | 213688 |   7667 | 0.908073 | 0.160 |    213 | 0.925721 | 0.203 |    240 | 0.926442 |  0.648 |
-| P100 | ca               |   108299 |     186878 |  85166 |   1120 | 0.711971 | 0.108 |    616 | 0.730217 | 0.026 |    617 | 0.731292 |  0.065 |
-| P100 | akamai           | 16956250 |   53300364 |      0 |  90285 | 0.933362 | 1.278 | 130639 | 0.907232 | 6.560 | 145785 | 0.900488 | 14.427 |
-| P100 | pokec            |  1632803 |   30622564 |      0 | 154988 | 0.693353 | 0.929 | 161709 | 0.691351 | 1.244 | 166156 | 0.694540 |  6.521 |
-| V100 | amazon           |   548551 |    1851744 | 213688 | 221359 | 0.908944 | 0.122 | 213921 | 0.925799 | 0.198 | 213928 | 0.926442 |  0.631 |
-| V100 | ca               |   108299 |     186878 |  85166 |  86242 | 0.716568 | 0.089 |  85781 | 0.728962 | 0.029 |  85783 | 0.731292 |  0.067 |
-| V100 | akamai           | 16956250 |   53300364 |      0 |  90245 | 0.933281 | 0.934 | 127843 | 0.907444 | 6.343 | 145785 | 0.900488 | 13.266 |
-| V100 | pokec            |  1632803 |   30622564 |      0 | 155100 | 0.674148 | 0.624 | 162464 | 0.676286 | 1.083 | 166156 | 0.694540 |  6.110 |
-| V100 | cnr-2000         |   325557 |    3128710 |      0 |  65621 | 0.876618 | 0.235 |  59219 | 0.878374 | 0.133 |  59253 | 0.879678 |  0.388 |
-| V100 | coPapersDBLP     |   540486 |  *30481458 |      0 |     70 | 0.849409 | 0.358 |    111 | 0.843996 | 0.437 |    237 | 0.849065 |  1.860 |
-| V100 | soc-LiveJournal1 |  4847571 |   68475391 |    962 | 506826 | 0.733556 | 1.548 | 434272 | 0.545648 | 4.016 | 447426 | 0.723852 | 16.311 |
-| V100 | channel-500x100x100-b050 | 4802000 | 85362744 | 0 |     24 | 0.900354 | 1.133 |     54 | 0.951188 | 0.768 |     12 | 0.850520 |  4.449 |
-| V100 | uk-2002          | 18520486 |  292243663 |  37300 | 2402560| 0.950671 | 4.921 | 2245355| 0.960437 | 5.682 | 2245678| 0.960437 | 31.006 |
-| V100 | europe_osm       | 50912018 | *108109320 |      0 |  17320 | 0.997856 | 4.902 | 784171 | 0.984438 | 34.875| 828662 | 0.983616 | 101.320|
-| V100 | rgg_n_2_24_s0    | 16777216 | *265114400 |      1 |    344 | 0.992145 | 3.378 |    359 | 0.991991 | 2.664 |    311 | 0.989576 | 17.816 |
-| V100 | webbase-1M       |  1000005 |   2105531  |   2453 |   4430 | 0.894534 | 0.107 |   1469 | 0.947102 | 0.168 |   1362 | 0.955795 |  0.318 |
-| V100 | preferentialAttachment | 100000 | *999970 |     0 |     18 | 0.175757 | 0.076 |     14 | 0.228699 | 0.096 |     39 | 0.285213 |  0.235 |
-| V100 | caidaRouterLevel |   192244 |   *1218132 |      0 |    410 | 0.850029 | 0.063 |    467 | 0.836249 | 0.065 |    745 | 0.843553 |  0.229 |
-| V100 | citationCiteseer |   268495 |   *2313294 |      0 |     67 | 0.788792 | 0.074 |     48 | 0.760494 | 0.111 |    141 | 0.802499 |  0.432 |
-| V100 | coAuthorsDBLP    |   299067 |   *1955352 |      0 |     95 | 0.809231 | 0.082 |    138 | 0.813649 | 0.133 |    273 | 0.827131 |  0.414 |
-| V100 | coPapersCiteseer |   434102 |  *32073440 |      0 |    108 | 0.907459 | 0.353 |    110 | 0.905869 | 0.391 |    358 | 0.911000 |  1.592 |
-| V100 | hollywood-2009   | 11399905 | *112751422 |  32662 |  12218 | 0.743242 | 1.230 |  12593 | 0.750153 | 1.721 |  12741 | 0.751122 |  9.419 |
-| V100 | as-Skitter       |  1696415 |  *22190596 |      0 |    924 | 0.836608 | 0.376 |   1945 | 0.822323 | 0.660 |   2531 | 0.813229 |  2.480 |
+Details of the datasets:
 
-Published results (timing and modularity) are included in the `Reference.xlsx`
-file in the `louvain` directory.
+| DataSet          | #V    | #E | #dangling vertices|
+|------------------|---------:|-----------:|-------:|
+| amazon           |   548551 |    1851744 | 213688 |
+| ca               |   108299 |     186878 |  85166 |
+| akamai           | 16956250 |   53300364 |      0 |
+| pokec            |  1632803 |   30622564 |      0 |
+| cnr-2000         |   325557 |    3128710 |      0 |
+| coPapersDBLP     |   540486 |  *30481458 |      0 |
+| soc-LiveJournal1 |  4847571 |   68475391 |    962 |
+| channel-500x100x100-b050 | 4802000 | 85362744 | 0 |
+| uk-2002          | 18520486 |  292243663 |  37300 |
+| europe_osm       | 50912018 | *108109320 |      0 |
+| rgg_n_2_24_s0    | 16777216 | *265114400 |      1 |
+| webbase-1M       |  1000005 |   2105531  |   2453 |
+| preferentialAttachment | 100000 | *999970 |     0 |
+| caidaRouterLevel |   192244 |   *1218132 |      0 |
+| citationCiteseer |   268495 |   *2313294 |      0 |
+| coAuthorsDBLP    |   299067 |   *1955352 |      0 |
+| coPapersCiteseer |   434102 |  *32073440 |      0 |
+| hollywood-2009   | 11399905 | *112751422 |  32662 |
+| as-Skitter       |  1696415 |  *22190596 |      0 |
+
+Running time in seconds:
+
+| GPU  | Dataset          | Gunrock GPU | OMP    | Serial |
+|------|------------------|------------:|-------:|-------:|
+| P100 | amazon           |       0.160 |  0.203 |  0.648 |
+| P100 | ca               |       0.108 |  0.026 |  0.065 |
+| P100 | akamai           |       1.278 |  6.560 | 14.427 |
+| P100 | pokec            |       0.929 |  1.244 |  6.521 |
+| V100 | amazon           |       0.122 |  0.198 |  0.631 |
+| V100 | ca               |       0.089 |  0.029 |  0.067 |
+| V100 | akamai           |       0.934 |  6.343 | 13.266 |
+| V100 | pokec            |       0.624 |  1.083 |  6.110 |
+| V100 | cnr-2000         |       0.235 |  0.133 |  0.388 |
+| V100 | coPapersDBLP     |       0.358 |  0.437 |  1.860 |
+| V100 | soc-LiveJournal1 |       1.548 |  4.016 | 16.311 |
+| V100 | channel-500x100x100-b050 | 1.133 | 0.768 | 4.449 |
+| V100 | uk-2002          |       4.921 |  5.682 | 31.006 |
+| V100 | europe_osm       |       4.902 | 34.875 |101.320 |
+| V100 | rgg_n_2_24_s0    |       3.378 |  2.664 | 17.816 |
+| V100 | webbase-1M       |       0.107 |  0.168 |  0.318 |
+| V100 | preferentialAttachment | 0.076 |  0.096 |  0.235 |
+| V100 | caidaRouterLevel |       0.063 |  0.065 |  0.229 |
+| V100 | citationCiteseer |       0.074 |  0.111 |  0.432 |
+| V100 | coAuthorsDBLP    |       0.082 |  0.133 |  0.414 |
+| V100 | coPapersCiteseer |       0.353 |  0.391 |  1.592 |
+| V100 | hollywood-2009   |       1.230 |  1.721 |  9.419 |
+| V100 | as-Skitter       |       0.376 |  0.660 |  2.480 |
+
+Resulted modularity:
+
+| GPU  | DataSet          | Gunrock GPU | OMP   | Serial   |
+|------|------------------|---------:|---------:|---------:|
+| P100 | amazon           | 0.908073 | 0.925721 | 0.926442 |
+| P100 | ca               | 0.711971 | 0.730217 | 0.731292 |
+| P100 | akamai           | 0.933362 | 0.907232 | 0.900488 |
+| P100 | pokec            | 0.693353 | 0.691351 | 0.694540 |
+| V100 | amazon           | 0.908944 | 0.925799 | 0.926442 |
+| V100 | ca               | 0.716568 | 0.728962 | 0.731292 |
+| V100 | akamai           | 0.933281 | 0.907444 | 0.900488 |
+| V100 | pokec            | 0.674148 | 0.676286 | 0.694540 |
+| V100 | cnr-2000         | 0.876618 | 0.878374 | 0.879678 |
+| V100 | coPapersDBLP     | 0.849409 | 0.843996 | 0.849065 |
+| V100 | soc-LiveJournal1 | 0.733556 | 0.545648 | 0.723852 |
+| V100 | channel-500x100x100-b050 | 0.900354 | 0.951188 | 0.850520 |
+| V100 | uk-2002          | 0.950671 | 0.960437 | 0.960437 |
+| V100 | europe_osm       | 0.997856 | 0.984438 | 0.983616 |
+| V100 | rgg_n_2_24_s0    | 0.992145 | 0.991991 | 0.989576 |
+| V100 | webbase-1M       | 0.894534 | 0.947102 | 0.955795 |
+| V100 | preferentialAttachment | 0.175757 | 0.228699 | 0.285213 |
+| V100 | caidaRouterLevel | 0.850029 | 0.836249 | 0.843553 |
+| V100 | citationCiteseer | 0.788792 | 0.760494 | 0.802499 |
+| V100 | coAuthorsDBLP    | 0.809231 | 0.813649 | 0.827131 |
+| V100 | coPapersCiteseer | 0.907459 | 0.905869 | 0.911000 |
+| V100 | hollywood-2009   | 0.743242 | 0.750153 | 0.751122 |
+| V100 | as-Skitter       | 0.836608 | 0.822323 | 0.813229 |
+
+The number of resulted communities:
+
+| GPU  | DataSet          | Gunrock GPU | OMP | Serial |
+|------|------------------|-------:|-------:|-------:|
+| P100 | amazon           |   7667 |    213 |    240 |
+| P100 | ca               |   1120 |    616 |    617 |
+| P100 | akamai           |  90285 | 130639 | 145785 |
+| P100 | pokec            | 154988 | 161709 | 166156 |
+| V100 | amazon           |   7671 |    233 |    240 |
+| V100 | ca               |   1076 |    615 |    617 |
+| V100 | akamai           |  90245 | 127843 | 145785 |
+| V100 | pokec            | 155100 | 162464 | 166156 |
+| V100 | cnr-2000         |  65621 |  59219 |  59253 |
+| V100 | coPapersDBLP     |     70 |    111 |    237 |
+| V100 | soc-LiveJournal1 | 506826 | 434272 | 447426 |
+| V100 | channel-500x100x100-b050 | 24 | 54 |     12 |
+| V100 | uk-2002          | 2402560| 2245355| 2245678|
+| V100 | europe_osm       |  17320 | 784171 | 828662 |
+| V100 | rgg_n_2_24_s0    |    344 |    359 |    311 |
+| V100 | webbase-1M       |   4430 |   1469 |   1362 |
+| V100 | preferentialAttachment | 18 |   14 |     39 |
+| V100 | caidaRouterLevel |    410 |    467 |    745 |
+| V100 | citationCiteseer |     67 |     48 |    141 |
+| V100 | coAuthorsDBLP    |     95 |    138 |    273 |
+| V100 | coPapersCiteseer |    108 |    110 |    358 |
+| V100 | hollywood-2009   |  12218 |  12593 |  12741 |
+| V100 | as-Skitter       |    924 |   1945 |   2531 |
 
 ### Implementation limitations
 
@@ -260,7 +369,10 @@ are also referenced, to make sure the resulted modularities and running times
 are not far off.
 
 - **Modularity** The modularities have some variation from different implementations,
-mostly within +- 0.05. As mentioned in the output section, that variation could
+mostly within +- 0.05. On small graphs, the GPU implementation could see some
+modularity drops; one large graphs, the GPU implementation is most likely to
+yield modularity at least as good as the serial implementation, if not better.
+As mentioned in the output section, that variation could
 be caused by concurrent movement of vertices. Small graphs could suffer more than
 larger graphs, as movements to a communities have higher chance to happen concurrently.
 
@@ -270,11 +382,19 @@ much faster than pervious works using multiple CPU threads. The sequential CPU
 is an order faster than pervious sequential CPU work. Comparing across different
 Gunrock implementations, the GPU is not always the fastest: on small graphs, GPU
 could actually be slower, caused by GPU kernel overheads and hardware under
-utilizations; so for small graphs, the OpenMP implementation may be a better choice.
+utilizations; so for small graphs, the OpenMP implementation may be a better
+choice.
+
+Published results (timing and modularity) from pervious works are summarized in
+the [louvain_results.xlsx]( attachments/louvain/louvain_results.xlsx "Louvain
+results") file in the `louvain` directory.
 
 ### Performance limitations
 
 The performance bottleneck is the sort function, especially in the first pass.
+It's true that sort on GPU is much faster than CPU; but the CPU implementations
+use hash tables, which may not be suitable for the GPU; the alternative
+approaches section has more details on this.
 Using `akamai` dataset to profile the GPU Louvain implementation on a V100, an
 iteration in the first pass takes 64.08 ms, and the sort takes 42.05 ms, which
 is two third of the iteration time. The Louvain implementation uses CUB's radix
