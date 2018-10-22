@@ -522,7 +522,9 @@ edges, and replicate the vertices; so there is no need to do vertex id
 conversion across multiple GPUs. When the number of GPUs is large, the high-low
 degree vertex separation and partitioning scheme can be used: edges are still
 distributed across GPUs, high degree vertices are duplicated, and low degree
-vertices are owned by one GPU each.
+vertices are owned by one GPU each. The boundary to use different partitioning
+scheme is still unclear, but it's likely that 8 GPUs within a DGX-1 can still
+be considered as a small number, and use the simple 1D partitioning.
 
 ### Notes on dynamic graphs
 
