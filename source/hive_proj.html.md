@@ -354,13 +354,11 @@ _When the dataset can fit into memory_, Gunrock is \~ 4x faster than GraphBLAS. 
 
 Another straightforward way to implement graph projections would be as a single sparse matrix multiplication `G.T.dot(G)` -- it would be interesting to compare the performance of this Gunrock implementation with a high-quality GPU SpMM-based implementation.
 
-As mentioned above, it would also be worthwhile to implement a version that does not require allocating the `|V|x|V|` array.  This could be accomplished by using a sparse data structure (eg, a hashmap or a mutable graph), or possibly by moving intermediate results from GPU to CPU memory during the computation.
+As mentioned above, it would be worthwhile to implement a Gunrock version that does not require allocating the `|V|x|V|` array.  It should be possible to acheive this by implementing the same kind of two-pass approach that cuSPARSE uses for `spgemm` -- one pass computes the CSR offsets, then column and data values are inserted at the appropriate locations.  
 
 ### Gunrock implications
 
-Gunrock support for bipartite graphs would make programming bipartite graph projections easier and more scalable.
-
-If Gunrock implemented a mutable graph structure that allowed for fast edge insertion, we may be able to avoid allocating the `|V|x|V|` array.  This does not impact _worst case_ memory usage, but likely would give us better scalability in practice.
+Gunrock does not natively support bipartite graphs, though it is straightforward for the programmer to implement algorithms that expect bipartite graphs by keeping track of the number of nodes in each node set.  However, for multi-GPU implementations, the fact that a graph is bipartite may be helpful for determining the optimal graph partitioning.
 
 ### Notes on multi-GPU parallelization
 
@@ -370,7 +368,7 @@ Even though extending matrix-multiplication to multiple GPUs can be straightforw
 
 ### Notes on dynamic graphs
 
-This workflow does not have an explicit dynamic component.  However, the graph projection operation seems like it would be fairly straightforward to adapt to dynamic graphs -- as nodes/edges are added to `G`, we create/increment the weight of the appropriate edges in `H`.
+This workflow does not have an explicit dynamic component.  However, the graph projection operation seems like it would be fairly straightforward to adapt to dynamic graphs -- as nodes/edges are added to `G`, we create/increment the weight of the appropriate edges in `H`.  However, this adds an additional layer of complexity to the memory allocation step, as we can't use the two-pass approach to allocate memory conservatively.
 
 ### Notes on larger datasets
 

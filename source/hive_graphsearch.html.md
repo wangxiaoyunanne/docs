@@ -224,21 +224,27 @@ This app can only be used for graphs that have scores associated w/ each node.  
 
 ### Comparison against existing implementations
 
-We measure runtime on the [HIVE graphsearch Twitter dataset](https://hiveprogram.com/data/_v0/graph_search/).
- - Nodes: 9291392
- - Edges: 21741663
+We measure runtime on the [HIVE graphsearch Twitter dataset](https://hiveprogram.com/data/_v0/graph_search/).  `|U|=9291392` and `|E|=21741663`.
+
+At a high level, the results show:
+
+| Variant | OpenMP w/ 64 threads | Gunrock GPU | Gunrock Speedup |
+| ------- | -------------------- | ----------- | --------------- | 
+| Directed greedy | 236ms | 64ms | 3.7x
+| Directed random | 158ms | 34ms | 4.6x
+| Undirected random | 3186ms | 630ms | 5.0x
+
+Details follow.
 
 #### HIVE Python reference implementation
 
 We run the HIVE Python reference implementation w/ the following settings:
  - undirected graph
- - 100 random seeds
- - 10000 steps per walk
+ - uniform transition function
+ - 1000 random seeds
+ - 128 steps per walk
 
-With the `greedy` transition function, the run took `139.31s`.
-With the `uniform` transition function, the run took `310.25s`.
-
-!! Could flesh this out more, but it's so slow it's not very interesting
+With the `uniform` transition function, the run took `41s`.  Walks are done sequentially, so runtime will scale linearly with the number of seeds.  This implementation is _substantially_ slower than even a single-threaded run of PNNLs OpenMP code, so we omit further analysis.
 
 #### PNNL OpenMP implementation
 
@@ -471,12 +477,11 @@ Validate_Results: total_steps_taken=914397206
 ```
 
 !! Compute steps per second per walk
+!! Add summary
 
 ### Performance limitations
 
-<TODO>
-e.g., random memory access?
-</TODO>
+!! Profile 
 
 ## Next Steps
 
@@ -488,7 +493,7 @@ __Optimization:__ In a directed walk, once we hit a node with no outgoing neighb
 
 ### Gunrock implications
 
-For the `greedy` and `stochastic_greedy` transition function, we have to sequentially iterate over all of a node's neighbors.  Simple wrappers for computing eg. the maximum of node scores across all of a nodes neighbors could be helpful, both for ease of programming and performance.
+For the `greedy` and `stochastic_greedy` transition function, we have to sequentially iterate over all of a node's neighbors.  Simple wrappers for computing eg. the maximum of node scores across all of a nodes neighbors could be helpful, both for ease of programming and performance.  Gunrock has a newly added `NeighborReduce` kernel that supports associative reductions -- it should be straightforward to implement (at least) the `greedy` transition function with this kernel.
 
 ### Notes on multi-GPU parallelization
 
