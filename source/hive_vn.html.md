@@ -316,7 +316,7 @@ The Gunrock VN algorithm works on weighted/unweighted directed/undirected graphs
 
 ### Performance limitations
 
-- Vertex nomination is bound by device memory latency
+- Vertex nomination is bound by device memory latency.
 - Profiling indicates that 64% of time is spent in the Gunrock advance operator, and 20% of time is spent in XXX.
 - The device memory bandwidth is 271GB/s -- within the expected range for Gunrock graph analytics.  
 

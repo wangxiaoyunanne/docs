@@ -83,6 +83,9 @@ make
       2 = stochastic_greedy
   --node-value-path
       If --walk-mode != 0, this is the path to node scores
+  --store-walks
+      0 = just do the walk -- don't actually store it anywhere
+      1 = store walks in memory
   --walk-length
       Length of each walk
   --walks-per-node
@@ -329,7 +332,7 @@ All experiments conducted on the HIVE DGX-1.
 
 #### Gunrock GPU implementation
 
-- directed greedy
+- directed, greedy
 
 ```bash
 ./bin/test_rw_9.1_x86_64 --graph-type market --graph-file dir_gs_twitter.mtx \
@@ -377,7 +380,7 @@ Validate_Results: total_steps_taken=16325873
  total time: 2073.837996 ms
 ```
 
-- directed, random
+- directed, uniform
 
 ```bash
 ./bin/test_rw_9.1_x86_64 --graph-type market --graph-file dir_gs_twitter.mtx \
@@ -428,7 +431,7 @@ Validate_Results: total_steps_taken=16530404
  total time: 1781.071901 ms
 ```
 
-- undirected, random
+- undirected, uniform
 
 ```bash
 ./bin/test_rw_9.1_x86_64 --graph-type market --graph-file undir_gs_twitter.mtx \
@@ -481,7 +484,10 @@ Validate_Results: total_steps_taken=914397206
 
 ### Performance limitations
 
-!! Profile 
+- For the undirected uniform settings, profiling shows that 79% of compute time is spent in the `ForAll` operator and 20% is spent in the `curand` random number generator.  Device memory bandwidth in the `ForAll` kernel is 193GB/s.
+- For the directed greedy settings, profiling shows that 99.5% of compute time is spent in the `ForAll` operator.  Device memory bandwidth in the `ForAll` kernel is 136GB/s.
+
+When we do a large number of walks and/or the length of each walk is very long, there may not be enough GPU memory to store all of the walks in memory.  For now, we expose the `--store-walks` parameter -- when this is set to zero, the walk is discarded as it is computed and only the length of the walk to stored.  A better solution we could implement in the future would be to move walks from GPU to CPU memory as they grow too large.
 
 ## Next Steps
 
