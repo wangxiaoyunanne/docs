@@ -60,7 +60,11 @@ make
 ### Application specific parameters
 ```
 --src
- Comma separated list of seed nodes (eg, `0,1,2`)
+ Comma separated list of seed nodes (eg, `0,1,2`) OR `random`
+--srcs-per-run
+ If `src=random` number of randomly chosen source nodes per run
+--num-runs
+ Number of runs
 ```
 
 ### Example command
@@ -69,20 +73,20 @@ make
 ./bin/test_vn_9.1_x86_64 \
     --graph-type market \
     --graph-file ../../dataset/small/chesapeake.mtx \
-    --src 0,1,2
+    --src random \
+    --srcs-per-run 10 \
+    --num-runs 2
 ```
 
 ### Example output
 ```
 Loading Matrix-market coordinate-formatted graph ...
-  Reading from ../../dataset/small/chesapeake.mtx:
-  Parsing MARKET COO format (39 nodes, 170 directed edges)...   Done (0 s).
-  Writing meta data into ../../dataset/small/chesapeake.mtx.meta
-  Writting edge pairs in binary into ../../dataset/small/chesapeake.mtx.coo_edge_pairs
+  Reading meta data from ../../dataset/small/chesapeake.mtx.meta
+  Reading edge lists from ../../dataset/small/chesapeake.mtx.coo_edge_pairs
   Assigning 1 to all 170 edges
   Substracting 1 from node Ids...
   Edge doubleing: 170 -> 340 edges
-  graph loaded as COO in 0.052936s.
+  graph loaded as COO in 0.090935s.
 Converting 39 vertices, 340 directed edges ( ordered tuples) to CSR format...Done (0s).
 Degree Histogram (39 vertices, 340 edges):
     Degree 0: 0 (0.000000 %)
@@ -93,41 +97,43 @@ Degree Histogram (39 vertices, 340 edges):
     Degree 2^4: 2 (5.128205 %)
     Degree 2^5: 1 (2.564103 %)
 
-Computing reference value ...
-srcs_vector | num_srcs=3
-test_vn srcs[i]=0
-test_vn srcs[i]=1
-test_vn srcs[i]=2
 __________________________
-CPU num_srcs=3
 --------------------------
-Run 0 elapsed: 0.007153 ms, srcs = 0,1,2
+Run 0 elapsed: 0.025034 ms, srcs = 21,19,3,28,20,25,23,26,13,38
+__________________________
+--------------------------
+Run 1 elapsed: 0.021935 ms, srcs = 21,15,5,23,3,29,22,26,33,4
 ==============================================
  mark-pred=0 advance-mode=LB
 Using advance mode LB
 Using filter mode CULL
 __________________________
+0  1   0   queue3    oversize :  234 ->  246
+0  1   0   queue3    oversize :  234 ->  246
 --------------------------
-Run 0 elapsed: 0.319004 ms, srcs = 0,1,2, #iterations = 3
+Run 0 elapsed: 0.442028 ms, srcs = 21,19,3,28,20,25,23,26,13,38, #iterations = 3
+__________________________
+--------------------------
+Run 1 elapsed: 0.329971 ms, srcs = 21,15,5,23,3,29,22,26,33,4, #iterations = 3
 Distance Validity: PASS
 First 40 distances of the GPU result:
-[0:0 1:0 2:0 3:2 4:2 5:2 6:1 7:1 8:1 9:2 10:1 11:1 12:1 13:1 14:1 15:1 16:1 17:1 18:2 19:2 20:2 21:1 22:1 23:2 24:2 25:2 26:2 27:2 28:2 29:2 30:2 31:2 32:2 33:1 34:1 35:1 36:1 37:2 38:1 ]
+[0:1 1:1 2:1 3:0 4:0 5:0 6:1 7:1 8:2 9:2 10:2 11:2 12:2 13:1 14:1 15:0 16:1 17:1 18:1 19:2 20:2 21:0 22:0 23:0 24:2 25:2 26:0 27:1 28:2 29:0 30:1 31:1 32:1 33:0 34:1 35:1 36:1 37:1 38:1 ]
 First 40 distances of the reference CPU result.
-[0:0 1:0 2:0 3:2 4:2 5:2 6:1 7:1 8:1 9:2 10:1 11:1 12:1 13:1 14:1 15:1 16:1 17:1 18:2 19:2 20:2 21:1 22:1 23:2 24:2 25:2 26:2 27:2 28:2 29:2 30:2 31:2 32:2 33:1 34:1 35:1 36:1 37:2 38:1 ]
+[0:1 1:1 2:1 3:0 4:0 5:0 6:1 7:1 8:2 9:2 10:2 11:2 12:2 13:1 14:1 15:0 16:1 17:1 18:1 19:2 20:2 21:0 22:0 23:0 24:2 25:2 26:0 27:1 28:2 29:0 30:1 31:1 32:1 33:0 34:1 35:1 36:1 37:1 38:1 ]
 
 [vn] finished.
- avg. elapsed: 0.319004 ms
+ avg. elapsed: 0.386000 ms
  iterations: 3
- min. elapsed: 0.319004 ms
- max. elapsed: 0.319004 ms
- rate: 1.065817 MiEdges/s
- src: 1
+ min. elapsed: 0.329971 ms
+ max. elapsed: 0.442028 ms
+ rate: 0.880830 MiEdges/s
+ src: 3
  nodes_visited: 39
  edges_visited: 340
- load time: 117.792 ms
- preprocess time: 955.240000 ms
- postprocess time: 0.524998 ms
- total time: 956.246138 ms
+ load time: 113.31 ms
+ preprocess time: 974.719000 ms
+ postprocess time: 0.562906 ms
+ total time: 976.519108 ms
 ```
 
 ### Expected Output
@@ -142,11 +148,13 @@ in the output.
 
 The Gunrock VN implementation was tested against the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/vertex_nomination_Enron/blob/master/snap_vertex_nomination.py) to verify correctness.  We also implemented a CPU reference implementation inside of the Gunrock VN app, with results that match the HIVE reference implementation.  Also, for ease of exposition, we implemented a [pure Python version of the app](https://github.com/gunrock/pygunrock/blob/master/apps/vn.py) that lets people new to Gunrock see the relevant logic without all of the complexity of C++/CUDA data structures, memory management, etc.
 
+This version of VN is a deterministic algorithm, so all correct solutions have the same accuracy/quality.
+
 ## Performance and Analysis
 
 Performance is measured by the runtime of the app, given:
  - an input graph
- - a set of seed nodes
+ - a set of seed nodes (or size/number of random seed sets)
 
 ### Other implementations
 
@@ -168,37 +176,143 @@ For correctness checking, we implement VN via the SSSP variant described above i
 
 The Enron graph is a graph of email communications between employees of Enron, w/ `|U|=15056` and `|E|=57075`.
 
+The HIVE reference implementation implementation does 10 runs w/ 5 random seeds each on the [Enron email dataset](https://hiveprogram.com/data/_v0/vertex_nomination_and_scan_statistics/).  Results are as follows
 
-This implementation does 10 runs w/ 5 random seeds each on the [Enron email dataset](https://hiveprogram.com/data/_v0/vertex_nomination_and_scan_statistics/).  Runtimes (in ms) are as follows:
 ```
-3326.16
-3435.40
-3509.23
-3738.28
-3791.98
-3920.63
-3951.03
-4239.80
-4371.74
-6871.20
+num_nodes | num_edges | num_seeds | run_id | ms_elapsed
+
+# HIVE reference
+15056 57075 5 0 3326.16
+15056 57075 5 1 3435.40
+15056 57075 5 2 3509.23
+15056 57075 5 3 3738.28
+15056 57075 5 4 3791.98
+15056 57075 5 5 3920.63
+15056 57075 5 6 3951.03
+15056 57075 5 7 4239.80
+15056 57075 5 8 4371.74
+15056 57075 5 9 6871.20
+--
+mean time = 4115.545
+
+# Gunrock CPU
+15056 57075 5 0 9.342909
+15056 57075 5 1 7.142067
+15056 57075 5 2 7.050037
+15056 57075 5 3 7.044077
+15056 57075 5 4 7.103205
+15056 57075 5 5 7.117033
+15056 57075 5 6 7.065058
+15056 57075 5 7 7.049084
+15056 57075 5 8 7.065058
+15056 57075 5 9 7.073879
+--
+mean time = 7.305
+
+# Gunrock GPU
+15056 57075 5 0 1.070976
+15056 57075 5 1 0.850201
+15056 57075 5 2 0.936985
+15056 57075 5 3 0.932932
+15056 57075 5 4 0.855923
+15056 57075 5 5 0.915051
+15056 57075 5 6 0.982046
+15056 57075 5 7 0.930071
+15056 57075 5 8 0.837088
+15056 57075 5 9 0.906944
+--
+mean time = 0.921
 ```
 
-#### Our CPU reimplementation
+Due to improved algorithmic efficiency, the Gunrock CPU implementation is approximately 563x faster than the HIVE reference implementation.  The Gunrock GPU implementation is approximately 7.9x faster than the Gunrock CPU implementation.  However, this dataset is probably too small for these numbers to be very meaningful.
+
+##### Hollywood-2009 graph
+
+The Hollywood-2009 graph is a graph of Hollywood movie actors, where nodes are actors and edges indicate two actors appear in a movie together.  `|U|=1139905` and `|E|=57515616`.
+
+```
+num_nodes | num_edges | num_seeds | run_id | ms_elapsed
+
+# HIVE reference
+# > 10 minutes
+
+# Gunrock CPU
+2258.028
+2234.127
+2028.867
+1982.334
+1988.029
+1992.302
+1984.540
+1966.538
+1952.640
+1967.100
+--
+mean time = 2035.45
+
+# Gunrock GPU
+16.205
+23.959
+23.586
+10.562
+10.581
+10.704
+10.588
+10.568
+10.571
+10.606
+--
+mean time = 13.793
+```
+
+Here, the Gunrock GPU implementation is approximately 150x faster than the Gunrock CPU implementation.  The HIVE reference implementation did not finish in 10 minutes.
+
+##### Indochina-2004 graph
+
+The Indochina-2005 graph is an internet hyperlink graph.  `|U|=7414866` and `|E|=191606827`.
+
+```
+num_nodes | num_edges | num_seeds | run_id | ms_elapsed
+
+# HIVE reference
+# > 10 minutes
+
+# Gunrock CPU
+9872.026367
+9244.244141
+9108.279297
+8946.968750
+8977.711914
+9000.626953
+8839.212891
+8933.740234
+8943.857422
+8925.489258
+--
+mean time = 9079.216
+
+# Gunrock GPU
+26.900053
+17.898083
+27.159929
+27.020216
+18.491030
+17.890930
+27.776003
+27.983904
+18.074989
+18.234015
+--
+mean time = 22.743
+```
+
+Here, the Gunrock GPU implementation is approximately 400x faster than the Gunrock CPU implementation.  The HIVE reference implementation did not finish in 10 minutes.
 
 ### Implementation limitations
 
-__TODO__
-Size of dataset that fits into GPU memory (what is the specific limitation?)
+The VN algorithm allocates 1-3 arrays of size `|U|`, so the size of the graph that can be processed will (usually) be limited by `|E|`.
 
-The Gunrock VN algorithm works on weighted/unweighted directed/undirected graphs.  No particular graph topology or node/edge metadata is required.  In general, vertex nomination is run on graphs with node/edge attributes, but since the Gunrock implementation only implements the graph analytic portion of the workflow, we are not subject to those restrictions.
-
-### Comparison against existing implementations
-
-The HIVE reference implementation is implemented via the [SNAP python bindings](https://snap.stanford.edu/snappy/), which runs Djikstra's from each node in the seed set to each node in the graph.  Thus it's algorithmic complexity is approximately `|S| * |V|` times larger than the Gunrock implementation, where `|S|` is the size of the seed set and `|V|` is the number of vertices in the graph.  On the reference Enron dataset, the python SNAP implementation takes > 4 seconds while the Gunrock implementation takes approximately 1ms.
-
-There is no HIVE OpenMP implementation of `VertexNomination` at this time (2018-09-25).
-
-This instantiation of VN is a deterministic algorithm, so all correct solutions have the same accuracy/quality.
+The Gunrock VN algorithm works on weighted/unweighted directed/undirected graphs.  No particular graph topology or node/edge metadata is required.  In general, vertex nomination is run on graphs with node/edge attributes, but since our Gunrock app only implements context scoring, we are not subject to those restrictions.
 
 ### Performance limitations
 
@@ -208,11 +322,11 @@ __TODO__
 
 ### Alternate approaches/further work
 
-Given more time, we could implement more variations on context similiarity as described in Coppersmith and Priebe's paper.
+Because of it's similarity to SSSP, this implementation of VN is fairly hardened.  However, given more time, we could implement more variations on context similiarity as described in Coppersmith and Priebe's paper.  Given the range of potential context similarity functions, this could involve implementing a wide variety of Gunrock operators.
 
 ### Gunrock implications
 
-This was a fairly straightforward adapatation of an existing Gunrock app.  SSSP is also one of the simpler apps -- only one advance/filter operation without a ton of logic -- so implementing VN was not very difficult. 
+This was a fairly straightforward adapatation of an existing Gunrock app.  SSSP is also one of the simpler apps -- only one advance/filter operation without a ton of logic -- so implementing VN was not very difficult.  All of the core logic in VN is identical to SSSP.
 
 ### Notes on multi-GPU parallelization
 
