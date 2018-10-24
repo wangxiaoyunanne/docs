@@ -176,6 +176,7 @@ For the first two, we use the `georgiyPattern` pattern graph included in the PNN
 #### georgiyData
 
 PNNL:
+
 | threads | elapsed_ms | 
 | ------- | ---------- | 
 | 64 | 706.761122 |
@@ -191,6 +192,7 @@ CUDA: 42.5326ms (13x faster than fastest PNNL run)
 #### rmat18
 
 PNNL:
+
 | threads | elapsed_ms | 
 | ------- | ---------- | 
 | 64 | 82495.028973 | 
@@ -206,6 +208,7 @@ CUDA: 827.573ms
 #### JohnsHopkins_random
 
 PNNL:
+
 | threads | elapsed_ms | 
 | ------- | ---------- | 
 | 64 | 19473.608017 |
