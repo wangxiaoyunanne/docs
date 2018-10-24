@@ -203,7 +203,7 @@ PNNL:
 | 2 | 142036.607981 | 
 | 1 | 113337.949038 | 
 
-CUDA: 827.573ms
+CUDA: 827.573ms (99x faster than fastest PNNL run)
 
 #### JohnsHopkins_random
 
@@ -219,7 +219,7 @@ PNNL:
 | 2 | 44293.390989 |
 | 1 | 71190.566063 |
 
-CUDA: 450.897
+CUDA: 450.897 (37x faster than fastest PNNL run)
 
 #### indochina-2004_random
 
