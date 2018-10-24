@@ -23,6 +23,7 @@ From [Andersen et al](https://projecteuclid.org/euclid.im/1243430567): > A local
 As long as you need. Provide links (say, to papers) where appropriate. What was the approach you took to implementing this on a GPU / in Gunrock? Pseudocode is fine but not necessary. Whatever is clear.
 
 Be specific about what you actually implemented with respect to the entire workflow (most workflows have non-graph components; as a reminder, our goal is implementing single-GPU code on only the graph components where the graph is static).
+(@bkj your input here would be great)
 
 ## How To Run This Application on DARPA's DGX-1
 
@@ -156,6 +157,8 @@ Other | 147.89 | 20.3%
 
 Note: "Other" includes HtoD and DtoH memcpy, smaller kernels such as scan, reduce, etc.
 
+By profiling the LB Advance kernel, we find that the performance of Advance is bottlenecked by random memory accesses. In the first part of the computation --getting row pointers and column indices--memory accesses can be coalesced and the profilers says we perform 4.9 memory transactions per access, which is close to the ideal of 4. However, once we start processing these neighbors, the memory access becomes random and we perform 31.2 memory transactions per access.
+
 ## Next Steps
 
 ### Alternate approaches
@@ -164,7 +167,7 @@ If you had an infinite amount of time, is there another way (algorithm/approach)
 
 ### Gunrock implications
 
-What did we learn about Gunrock? What is hard to use, or slow? What potential Gunrock features would have been helpful in implementing this workflow?
+The experience of implementing this application using Gunrock was straightforward. The `ForAll` and `ForEach` operators were very useful for this application.
 
 ### Notes on multi-GPU parallelization
 
