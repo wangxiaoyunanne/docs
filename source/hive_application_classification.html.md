@@ -158,6 +158,8 @@ These bugs are easy to fix, but we left them "as is" because a) we have no easy 
 
 _The original reference implementation consisted of a large amount of distributed Spark and GraphX Scala code.  For ease of implementation, and to make sure performance comparisons are meaningful, we instead based our implementation on the [PNNL ApplicationClassification](https://gitlab.hiveprogram.com/pnnl/ApplicationClassification) OpenMP code._
 
+Overall, the CUDA implementation is between 10x and 100x faster than the best run of the PNNL OpenMP code.
+
 We compare our CUDA implementation to PNNL's C++ OpenMP implementation on several different graphs:
  - `georgiyData` : `|U|=1000 |E|=20135 node_feat_dim=13 edge_feat_dim=17`
   - a small graph included w/ real (source unknown) node/edge features (included in PNNL repo)
@@ -223,7 +225,10 @@ CUDA: 450.897 (37x faster than fastest PNNL run)
 
 #### indochina-2004_random
 
+<TODO>
+</TODO>
 
+Note that performance of the PNNL code appears to saturate in the range of 32 to 64 threads.
 
 ### Performance limitations
 
