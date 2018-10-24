@@ -147,17 +147,24 @@ Bertsekas' auction algorithm allows us make the trade off between runtime and ac
 
 Currently, our implementation of SGM only supports undirected graphs -- extension to directed graphs is mathematically straightforward, but require a bit of code refactoring.  We've only tested on unweighted graphs, but the code _should_ work on weighted graphs as well.
 
-At the moment, the primary scaling bottleneck is that we're allocating a `|V|x|V|` array as part of the auction algorithm.  This could be replaced w/ 2 `|E|` arrays without much trouble.
+At the moment, the primary scaling bottleneck is that we allocate a `|V|x|V|` array as part of the auction algorithm.  This could be replaced w/ 2 `|E|` arrays without much trouble.
+
+Currently, the auction algorithm does not take advantage of all of available parallelism.  Each thread gets a row of the cost matrix, and then does a serial reduction across the entries of the row.  As the auction algorithm runs, the number of "active" rows rapidly decreases.  This means that the majority of auction iterations have a small number of active rows, and thus use a small number of GPU threads.  We could better utilize the GPU by doing the reductions in parallel across rows.  We have a preliminary implementation of this using the CUB library, but it has not been tested on various edge cases. Preliminary experiments suggest the CUB implementation of the auction algorithm may be substantially faster than the current implementation.
 
 SGM is only appropriate for pairs of graphs w/ some kind of correspondence between the nodes.  This could be an explicit correspondance (users on Twitter and users on Instagram, people in a cell phone network and people on an email network), or an implcit correspondence (two people play similar roles at similar companies).
 
 ### Comparison against existing implementations
 
 <TODO>
-- Reference implementation (python? Matlab?)
-- OpenMP reference
 
-Comparison is both performance and accuracy/quality.
+- implementations
+ - Original R code
+ - BKJ sgm versions
+
+- datasets
+ - connectome (doesn't do great?)
+ - kasios subsets
+
 </TODO>
 
 
