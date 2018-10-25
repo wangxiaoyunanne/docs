@@ -149,23 +149,35 @@ Currently, our implementation of SGM only supports undirected graphs -- extensio
 
 At the moment, the primary scaling bottleneck is that we allocate a `|V|x|V|` array as part of the auction algorithm.  This could be replaced w/ 2 `|E|` arrays without much trouble.
 
-Currently, the auction algorithm does not take advantage of all of available parallelism.  Each thread gets a row of the cost matrix, and then does a serial reduction across the entries of the row.  As the auction algorithm runs, the number of "active" rows rapidly decreases.  This means that the majority of auction iterations have a small number of active rows, and thus use a small number of GPU threads.  We could better utilize the GPU by doing the reductions in parallel across rows.  We have a preliminary implementation of this using the CUB library, but it has not been tested on various edge cases. Preliminary experiments suggest the CUB implementation of the auction algorithm may be substantially faster than the current implementation.
+Currently, the auction algorithm does not take advantage of all of available parallelism.  Each thread gets a row of the cost matrix, and then does a serial reduction across the entries of the row.  As the auction algorithm runs, the number of "active" rows rapidly decreases.  This means that the majority of auction iterations have a small number of active rows, and thus use a small number of GPU threads.  We could better utilize the GPU by doing the reductions in parallel across rows.  We have a preliminary implementation of this using the CUB library, but it has not been tested on various edge cases. Preliminary experiments suggest the CUB implementation of the auction algorithm may be substantially faster than the current implementation (roughly 2-5x)
 
 SGM is only appropriate for pairs of graphs w/ some kind of correspondence between the nodes.  This could be an explicit correspondance (users on Twitter and users on Instagram, people in a cell phone network and people on an email network), or an implcit correspondence (two people play similar roles at similar companies).
 
 ### Comparison against existing implementations
 
-<TODO>
+#### Python SGM code
 
-- implementations
- - Original R code
- - BKJ sgm versions
+The [original SGM implementation](https://github.com/youngser/VN/) is a single-threaded R program.  Preliminary tests on small graphs show that this implementation is not very performant.  As part of other work, we've written a [modular SGM package](https://github.com/bkj/sgm) that allows the programmer to plug in different backends for the LSAP solver and the linear algebra operations.  This package includes modes that transform the SGM problem to take advantage of sparsity to improve runtime.  In particular, we benchmark our CUDA SGM implementation against the `scipy.sparse.jv` mode, which uses `scipy` for linear algebra and the [gatagat/lap](https://github.com/gatagat/lap) implementation of the JV algorithm for the LSAP solver.
 
-- datasets
- - connectome (doesn't do great?)
- - kasios subsets
+#### Experiments
 
-</TODO>
+##### Connectome
+
+The connectome graphs are generated from brain MRIs.  Nodes represent a voxel in the image and edges indicate some kind of flow between parts of the brain. Each of the graphs represents one hemishpere of the brain -- therefor, we expect there to be an actual correspondence between nodes. By binning at different spatial resolutions, the researchers graphs at a variety of sizes.  Note that these graphs are already partially aligned -- the distance between the input graphs is far smaller than would be expected by chance.
+
+The size of the graphs are as follows:
+
+| name    | num_nodes | num_edges |
+| ------- | --------- | --------- |
+| DS00833 | 00833   |   12497   | 
+| DS01216 | 01216   |   19692   | 
+| DS01876 | 01876   |   34780   | 
+| DS03231 | 03231   |   64662   | 
+| DS06481 | 06481   |  150012   | 
+| DS16784 | 16784   |  445821   | 
+| DS72784 | 72784   | 2418304   | 
+
+
 
 
 ### Performance limitations
@@ -181,7 +193,7 @@ SGM is only appropriate for pairs of graphs w/ some kind of correspondence betwe
 
 ### Alternate approaches
 
-It would be worthwhile to look into parallel versions of the Hungarian or JV algorithms, as even a single-threaded CPU version of those algorithms is somewhat competitive with Berteseka's auction algorithm implemented on the GPU.  It's unclear whether it would be better to implement parallel JV/Hungarian as multi-threaded CPU programs or GPU programs.  If the former, SGM would be a good example of an application that makes good use of both the CPU (for LSAP) and GPU (for SpMM) at different steps.
+It would be worthwhile to look into parallel versions of the Hungarian or JV algorithms, as even a single-threaded CPU version of those algorithms is somewhat competitive with Bertseka's auction algorithm implemented on the GPU.  It's unclear whether it would be better to implement parallel JV/Hungarian as multi-threaded CPU programs or GPU programs.  If the former, SGM would be a good example of an application that makes good use of both the CPU (for LSAP) and GPU (for SpMM) at different steps.
 
 ### Gunrock implications
 
