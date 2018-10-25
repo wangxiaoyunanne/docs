@@ -177,8 +177,37 @@ The size of the graphs are as follows:
 | DS16784 | 16784   |  445821   | 
 | DS72784 | 72784   | 2418304   | 
 
+Python runtimes:
 
+| name    | orig_dist | final_dist | time_ms | 
+| -------- | --------- | ---------- | -------- |
+| DS00833 | 11650.0 | 11486.0 | 122.65658378601074 |
+| DS01216 | 20004.0 | 19264.0 | 278.73969078063965 |
+| DS01876 | 38228.0 | 36740.0 | 2275.141954421997 |
+| DS03231 | 78058.0 | 73282.0 | 8900.371313095093 |
+| DS06481 | 201084.0 | 183908.0 | 97658.3788394928 |
+| DS16784 | 677754.0 | 593590.0 | 920436.3875389099 |
 
+CSGM runtimes: 
+
+| eps | name      | orig_dist | final_dist | time_ms    | speedup  |
+| --- | --------- | --------- | ---------- | ---------- | ----- |
+| 1.0 |  DS00833  | 11650  | 11538   | 181.481 | 0.6    | 
+| 1.0 |  DS01216  | 20004  | 19360   | 324.908 | 0.8    | 
+| 1.0 |  DS01876  | 38228  | 36936   | 807.148 | 2.8    | 
+| 1.0 |  DS03231  | 78058  | 73746   | 3078.78 | 2.9    | 
+| 1.0 |  DS06481  | 201084 | 184832  | 9056.55 | 10.7   | 
+| 1.0 |  DS16784  | 677754 | 596370  | 42220.5 | 21.8   | 
+| 1.0 |  DS72784  |  x     |   x     | OOM     |  x     | 
+| 0.5 |  DS00833  | 11650  | 11466   | 378.056 | 0.3 *  |
+| 0.5 |  DS01216  | 20004  | 19288   | 965.915 | 0.3    | 
+| 0.5 |  DS01876  | 38228  | 36764   | 1258.65 | 1.8    | 
+| 0.5 |  DS03231  | 78058  | 73346   | 6257.87 | 1.4    | 
+| 0.5 |  DS06481  | 201084  | 183796 | 25931.2 | 3.7 *  |
+| 0.5 |  DS16784  | 677754  | 592822 | 120799  | 7.6 *  |
+| 0.5 |  DS72784  |   x     |   x    | OOM     |   x    | 
+
+We run CSGM w/ two values of `eps`, which controls the precision of the auction algorithm (lower values = more precise but slower).  For small graphs (`|U| < ~2000`) the Python implementation is faster.  However, as the size of the graph grows, CSGM becomes significantly faster -- up to 20x faster in the low accuracy setting and up to 7.6x faster in the higher accuracy setting.  Also, though in general the auction algorithm does not compute exact solutions to the LSAP, in several cases CSGM's accuracy outperforms the Python implementation, which uses an exact LSAP solver.
 
 ### Performance limitations
 
