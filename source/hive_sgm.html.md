@@ -10,10 +10,6 @@ search: true
 full_length: true
 ---
 
-!! Results don't replicate the reference implementation _exactly_, because the LAP solvers are not the same and do eg tiebreaking differently.
-
-!! Have verified manually that these are mathematically the same, but you could run the experiments multiple times to verify they give the same results.  It's _possible_ there's some very subtle thing hiding in the LAP solver that _statistically_ makes one of the approaches better (eg, it's better to break ties by going with tthe node w/ larger/smaller degree).
-
 # Seeded Graph Matching (SGM)
 
 From [Fishkind et al](https://arxiv.org/pdf/1209.0367.pdf):
@@ -207,7 +203,36 @@ CSGM runtimes:
 | 0.5 |  DS16784  | 677754  | 592822 | 120799  | 7.6 *  |
 | 0.5 |  DS72784  |   x     |   x    | OOM     |   x    | 
 
-We run CSGM w/ two values of `eps`, which controls the precision of the auction algorithm (lower values = more precise but slower).  For small graphs (`|U| < ~2000`) the Python implementation is faster.  However, as the size of the graph grows, CSGM becomes significantly faster -- up to 20x faster in the low accuracy setting and up to 7.6x faster in the higher accuracy setting.  Also, though in general the auction algorithm does not compute exact solutions to the LSAP, in several cases CSGM's accuracy outperforms the Python implementation, which uses an exact LSAP solver.
+We run CSGM w/ two values of `eps`, which controls the precision of the auction algorithm (lower values = more precise but slower).  For small graphs (`|U| < ~2000`) the Python implementation is faster.  However, as the size of the graph grows, CSGM becomes significantly faster -- up to 20x faster in the low accuracy setting and up to 7.6x faster in the higher accuracy setting.  Also, though in general the auction algorithm does not compute exact solutions to the LSAP, in several cases CSGM's accuracy outperforms the Python implementation, which uses an exact LSAP solver -- these are denoted with a `*`.
+
+#### Kasios
+
+The Kasios call graph shows the communication pattern inside of a company -- nodes represent a person and edges indicate that two people spoke on the phone.  The whole graph has 10M edges and 500K nodes, which is larger than any of our SGM implementations can currently handle.  Thus, we sample subgraphs of size 2**10 - 2**15 by running a random walk until the desired number of nodes are observed, and then extracting the subgraph induced by those nodes.  We generate pairs of graphs by random permutations (except for the first `num_seeds=100` nodes).  Interestingly, with 100 seeds, SGM can almost always perfectly "reidentify" the permuted graph. 
+
+Python runtimes:
+
+| num_nodes | orig_dist | final_dist | time_ms | 
+| -------- | --------- | ---------- | -------- |
+| 1024     | 66636     | 0          | 242 | 
+| 2048     | 208144    | 0          | 1275 | 
+| 4096     | 580988    | 0          | 6530 | 
+| 8192     | 1449712   | 0          | 30763 | 
+| 16384    | 3235356   | 0          | 118072 | 
+| 32768    | 6587656   | 0          | 479181 | 
+
+
+CSGM runtimes (`eps=1`)
+
+| num_nodes | orig_dist | final_dist | time_ms | speedup |  
+| -------- | --------- | ---------- | -------- | ------- |
+| 1024  | 66636   | 0    | 182.445 | 1.3 |
+| 2048  | 208144  | 4    | 310.566 | 4.1 | 
+| 4096  | 580988  | 4    | 1026.07 | 6.4 | 
+| 8192  | 1449712 | 8    | 3108.9  | 9.9 | 
+| 16384 | 3235356 | 16   | 4926.85 | 24.0 | 
+| 32768 | 6587656 | OOM! | x        | x |
+
+Similar to in the connectome experiments, we see the advantage of CSGM increase as the graphs grow larger.  In these examples, CSGM does not _quite_ match the performance of the exact LSAP solver.  However, this could be addressed by tuning and/or scheduling the `eps` parameter.  
 
 ### Performance limitations
 
