@@ -124,11 +124,11 @@ Because the modularity optimization runs multiple iterations before each graph
 contraction phase, the computation and communication of modularity optimization
 is dominant.
 
-| Parts                   | Computation cost                          | Communication cost    | Computation to Communication ratio | Scalability | Memory usage |
-|-------------------------|-------------------------------------------|-----------------------|--|--|
-| Modularity optimization | 10(&#124;E&#124; + &#124;V&#124;) / p     | 20&#124;V&#124; bytes | &#124;E&#124;/p : 2&#124;V&#124; | Okay | 88&#124;E&#124;/p + 12&#124;V&#124; bytes |
-| Graph contraction       | 5 &#124;E&#124; / p + &#124;E'&#124;      | 8&#124;E'&#124; bytes | 5&#124;E&#124;/p + &#124;E'&#124; : 8&#124;E'&#124; | Hard | 16&#124;E'&#124; bytes |
-| Louvain                 | 10(&#124;E&#124; + &#124;V&#124;) / p     | 20&#124;V&#124; bytes | &#124;E&#124;/p : 2&#124;V&#124; | Okay | 88&#124;E&#124;/p + 12&#124;V&#124; + 16&#124;E'&#124; bytes |
+| Parts                   | Computation cost | Communication cost    | Computation to Communication ratio | Scalability | Memory usage |
+|-------------------------|------------------|-----------|-----------------|------|--------------------------|
+| Modularity optimization | 10(E + V) /p     | 20V bytes | E/p : 2V        | Okay | 88E/p + 12V bytes        |
+| Graph contraction       | 5E / p + E'      | 8E' bytes | 5E/p + E' : 8E' | Hard | 16E' bytes               |
+| Louvain                 | 10(E + V) / p    | 20V bytes | E/p : 2V        | Okay | 88E/p + 12V + 16E' bytes |
 
 Louvain could be hard to implement on multiple GPUs, but the scalability should
 okay.
