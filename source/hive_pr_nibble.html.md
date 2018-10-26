@@ -1,5 +1,5 @@
 ---
-title: Template for HIVE workflow report
+title: Local Graph Clustering (HIVE)
 
 toc_footers:
   - <a href='https://github.com/gunrock/gunrock'>Gunrock&colon; GPU Graph Analytics</a>
@@ -10,13 +10,9 @@ search: true
 full_length: true
 ---
 
-<aside class="notice">
-  JDO notes, delete these when you copy this to `hive_yourworkflowname`: The goal of this report is to be useful to DARPA and to your colleagues. This is not a research paper. Be very honest. If there are limitations, spell them out. If something is broken or works poorly, say so. Above all else, make sure that the instructions to replicate the results you report are good instructions, and the process to replicate are as simple as possible; we want anyone to be able to replicate these results in a straightforward way.
-</aside>
-
 # Local Graph Clustering (LGC)
 
-From [Andersen et al](https://projecteuclid.org/euclid.im/1243430567): > A local graph clustering algorithm finds a cut near a specified starting vertex, with a running time that depends largely on the size of the small side of the cut, rather than the size of the input graph. A common algorithm for local graph clustering is called PageRank-Nibble (PR-Nibble). We implment a coordinate descent variant of this algorithm found in [Fountoulakis et al.](https://arxiv.org/pdf/1602.01886.pdf).
+From [Andersen et al](https://projecteuclid.org/euclid.im/1243430567): > A local graph clustering algorithm finds a cut near a specified starting vertex, with a running time that's a function of the size of the small side of the cut, rather than the size of the input graph. A common algorithm for local graph clustering is called PageRank-Nibble (PR-Nibble), which solves the L1 regularized PageRank problem. We implement a coordinate descent variant of this algorithm found in [Fountoulakis et al.](https://arxiv.org/pdf/1602.01886.pdf).
 
 ## Summary of Gunrock Implementation
 
@@ -72,11 +68,11 @@ make -j16
 # build App
 cd tests/pr_nibble
 make -j16
-
 ```
 
 ### Running the application
 
+Example command:
 ```bash
 ./bin/test_pr_nibble_9.1_x86_64 \
     --graph-type market \
@@ -85,55 +81,77 @@ make -j16
     --max-iter 1
 ```
 
-Output:
+Example output:
 ```
 Loading Matrix-market coordinate-formatted graph ...
-Reading from ../../dataset/small/chesapeake.mtx:
-  Parsing MARKET COO format
- (39 nodes, 340 directed edges)...
-Done parsing (0 s).
-  Converting 39 vertices, 340 directed edges ( ordered tuples) to CSR format...
-Done converting (0s).
+  Reading meta data from ../../dataset/small/chesapeake.mtx.meta
+  Reading edge lists from ../../dataset/small/chesapeake.mtx.coo_edge_pairs
+  Substracting 1 from node Ids...
+  Edge doubleing: 170 -> 340 edges
+  graph loaded as COO in 0.084587s.
+Converting 39 vertices, 340 directed edges ( ordered tuples) to CSR format...Done (0s).
+Degree Histogram (39 vertices, 340 edges):
+    Degree 0: 0 (0.000000 %)
+    Degree 2^0: 0 (0.000000 %)
+    Degree 2^1: 1 (2.564103 %)
+    Degree 2^2: 22 (56.410256 %)
+    Degree 2^3: 13 (33.333333 %)
+    Degree 2^4: 2 (5.128205 %)
+    Degree 2^5: 1 (2.564103 %)
+
 __________________________
-pr_nibble::CPU_Reference: reached max iterations. breaking at it=1
+pr_nibble::CPU_Reference: reached max iterations. breaking at it=10
 --------------------------
- Elapsed: 0.018835
+ Elapsed: 0.103951
+==============================================
+ advance-mode=LB
 Using advance mode LB
 Using filter mode CULL
 __________________________
-pr_nibble::Stop_Condition: reached max iterations. breaking at it=1
+0    2   0   queue3      oversize :  234 ->  342
+0    2   0   queue3      oversize :  234 ->  342
+pr_nibble::Stop_Condition: reached max iterations. breaking at it=10
 --------------------------
-Run 0 elapsed: 0.252008, #iterations = 1
+Run 0 elapsed: 1.738071, #iterations = 10
 0 errors occurred.
 [pr_nibble] finished.
- avg. elapsed: 0.252008 ms
- iterations: 140734444779008
- min. elapsed: 0.252008 ms
- max. elapsed: 0.252008 ms
+ avg. elapsed: 1.738071 ms
+ iterations: 140733299213840
+ min. elapsed: 1.738071 ms
+ max. elapsed: 1.738071 ms
  src: 0
- nodes_visited: 5326555
- edges_visited: 2
- nodes queued: 140734444778192
- edges queued: 38878400
- load time: 82.2091 ms
- preprocess time: 978.001000 ms
- postprocess time: 0.098944 ms
- total time: 978.564978 ms
+ nodes_visited: 41513344
+ edges_visited: 140733299212960
+ nodes queued: 140733299212992
+ edges queued: 5424992
+ load time: 116.627 ms
+ preprocess time: 963.004000 ms
+ postprocess time: 0.080824 ms
+ total time: 965.005875 ms
  ```
  
 ### Output
 
-We output information about the quality of the match in each iteration. The most important number is X errors occurred, which gives the number of disagreements between our CPU validation and our result. X = 0 indicates that LGC has generated an output that matches exactly with our CPU validation.
+We do not print the actual output values of PRNibble, but we output the results of a correctness check of the GPU version against our CPU implementation. `0 errors occurred.` indicates that LGC has generated an output that matches exactly with our CPU validation.
 
 This implementation is validated against the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/local_graph_clustering_socialmedia). 
 
+For ease of exposition, and to help in mapping the workflow to Gunrock primitives, we also implemented [a version of PRNibble in pygunrock](https://github.com/gunrock/pygunrock/blob/master/apps/pr_nibble.py).  This implementation is nearly identical to the actual Gunrock app, but in a way that more clearly exposes the logic of the app and eliminates a lot of Gunrock scaffolding/memory management/etc.
+
 ## Performance and Analysis
 
-Performance is primarily measured in runtime of the clustering portion of the LGC procedure. We do not compare the sweep-cut component, because we do not find it to be the meaningful component in this application.  In particular, the LSAP solver in the first iteration tends to take 10-100x longer than in subsequent iterations.
+Performance is measured by the runtime of the approximate PageRank solver, given
+ - a graph `G`
+ - a (set of) seed node(s) `S`
+ - some parameters controlling eg. target conductivity of the cluster (`rho`, `alpha`, ...)
+
+We do not compare the sweep-cut component, because we do not find it to be the meaningful component in this application.
 
 ### Implementation limitations
 
-- **Memory size**: The dataset is assumed to be an undirected graph, with self-loops (i.e. edges from vertex i to vertex i are removed). We were able to run on graphs of up to 6.2GB in size (7M vertices, 194M edges). The memory limitation should be the number of edges 2x|E| and 7x|V|, which needs to be smaller than the GPU memory size (16GB for a single P100 on DGX-1). 
+PageRank runs on arbitrary graph -- it does not require any special conditions such as node attributes, etc.
+
+- **Memory size**: The dataset is assumed to be an undirected graph (with self-loops removed). We were able to run on graphs of up to 6.2GB in size (7M vertices, 194M edges). The memory limitation should be the number of edges 2x|E| and 7x|V|, which needs to be smaller than the GPU memory size (16GB for a single P100 on DGX-1). 
 
 - **Data type**: We have tested only using int32 data type, but there is no reason int64 for graphs with more than 4B edges cannot be used too.
 
@@ -193,11 +211,13 @@ By profiling the LB Advance kernel, we find that the performance of Advance is b
 
 ### Alternate approaches
 
-This can also be implemented in GraphBLAS, which is currently being worked on.
+PR-Nibble can also be implemented in terms of matrix operations using GraphBLAS -- this implementation is currently in progress.
+
+In theory, local graph clustering is appealing because you don't have to "touch" the entire graph.  However, all LGC implementations that we are aware of first load the entire graph into CPU/GPU memory, which limits the size of the graph that can be analyzed.  Implementations that load data from disk "lazily" as computation happens would be useful and interesting.
 
 ### Gunrock implications
 
-The experience of implementing this application using Gunrock was straightforward. The `ForAll` and `ForEach` operators were very useful for this application.
+The experience of implementing this application using Gunrock was straightforward. The `ForAll` and `ForEach` operators were very useful for this application.  `pygunrock` proved to be a useful tool for development -- correctly mapping the original (serial) algorithm to the Gunrock operators required a lot of attention to detail, and having an environment for rapid expedited experimentation.
 
 ### Notes on multi-GPU parallelization
 
