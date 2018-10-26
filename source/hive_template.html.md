@@ -18,9 +18,15 @@ full_length: true
 
 One-paragraph summary of application, written at a high level.
 
+## Summary of Results
+
+One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+
 ## Summary of Gunrock Implementation
 
 As long as you need. Provide links (say, to papers) where appropriate. What was the approach you took to implementing this on a GPU / in Gunrock? Pseudocode is fine but not necessary. Whatever is clear.
+
+Be specific about how to map the algorithm to Gunrock operators. That is helpful for everyone.
 
 Be specific about what you actually implemented with respect to the entire workflow (most workflows have non-graph components; as a reminder, our goal is implementing single-GPU code on only the graph components where the graph is static).
 
