@@ -138,5 +138,5 @@ okay.
 ## Summary of the V0 apps
 
 | Application | Computation to communication ratio | Scalability | Implementation difficulty |
-|-----|---|
+|-------------|----------------|------|------|
 | Louvain     | E/p : 2V       | Okay | Hard |
