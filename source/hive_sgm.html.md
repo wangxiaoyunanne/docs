@@ -283,3 +283,9 @@ If the dataset were too big to fit into the aggregate GPU memory of multiple GPU
 ### Notes on other pieces of this workload
 
 N/A
+
+### How this work can lead to a paper publication
+
+Ben and Carl think this work can lead to a nice paper, because there aren't a lot of highly optimized parallel Linear Assignment Problem (LAP) solvers. A lot of the research Ben could find from 20+ years ago tend to assume that the input matrices are uniformly random. However, our usecase is on dot products of sparse matrices (so the ij'th entry is the number of neighbors node i and j have in common), which has a totally different distribution. There may be some optimizations we can find that target this distribution (similar to how direction-optimized BFS targets power law graphs).
+
+There is potential research in tie-breaking for the auction algorithm. In one of the popular Python/C++ LAP solvers, they're clearly not handling ties smartly, so the runtime can be improved ~10x by adding random values in a certain way. For these types of data, he finds a lot of people assuming there aren't many ties. But with graphs, Ben notices ~90% of the entries are ties, so some randomization is clearly needed.
