@@ -16,14 +16,46 @@ full_length: true
 
 # Local Graph Clustering (LGC)
 
-From [Andersen et al](https://projecteuclid.org/euclid.im/1243430567): > A local graph partitioning algorithm finds a cut near a specified starting vertex, with a running time that depends largely on the size of the small side of the cut, rather than the size of the input graph.
+From [Andersen et al](https://projecteuclid.org/euclid.im/1243430567): > A local graph clustering algorithm finds a cut near a specified starting vertex, with a running time that depends largely on the size of the small side of the cut, rather than the size of the input graph. A common algorithm for local graph clustering is called PageRank-Nibble (PR-Nibble). We implment a coordinate descent variant of this algorithm found in [Fountoulakis et al.](https://arxiv.org/pdf/1602.01886.pdf).
 
 ## Summary of Gunrock Implementation
 
-As long as you need. Provide links (say, to papers) where appropriate. What was the approach you took to implementing this on a GPU / in Gunrock? Pseudocode is fine but not necessary. Whatever is clear.
+The algorithm in [Fountoulakis et al.](https://arxiv.org/pdf/1602.01886.pdf) maps in a straightforward manner to Gunrock. We present the pseudocode below along with the corresponding Gunrock operations:
+```
+A: adjacency matrix of graph
+D: diagonal degree matrix of graph
+Q: D^(-1/2) x (D - (1 - alpha)/2 x (D + A)) x D^(-1/2)
+s: teleportation distribution, a distribution over nodes of graph
+d_i: degree of node i
+p_0: PageRank vector at iteration 0
+q_0:  D^(-1/2) x p term that coordinate descent optimizes over
+f(q): 1/2<q, Qq> - alpha x <s, D^(-1/2) x q>
+grad_f_i(q_0): i'th term of the gradient of f(q_0) using q at iteration 0
+rho: constant used to ensure convergence
+alpha: teleportation constant in (0, 1)
 
-Be specific about what you actually implemented with respect to the entire workflow (most workflows have non-graph components; as a reminder, our goal is implementing single-GPU code on only the graph components where the graph is static).
-(@bkj your input here would be great)
+Initialize: rho > 0
+Initialize: q_0 = [0 ... 0]
+Initialize: grad_f(q_0) = -alpha x D^(-1/2) x s
+
+// Note: || y ||_inf is the infinity norm
+For k = 0, 1, ..., inf
+    // Implemented using Gunrock ForAll operator
+    Choose an i such that grad_f_i(q_k) < - alpha x rho x d_i^(1/2)
+    q_k+1(i) = q_k(i) - grad_f_i(q_k)
+    grad_f_i(q_k+1) = (1 - alpha)/2 x grad_f_i(q_k)
+    
+    // Implemented using Gunrock Advance and Filter operator
+    For each j such that j ~ i
+        Set grad_f_j(q_k+1) = grad_f_j(q_k) + (1 - alpha)/(2d_i^(1/2) x d_j^(1/2)) x A_ij x grad_f_i(q_k)
+    For each j such that j !~ j
+        Set grad_f_j(q_k+1) = grad_f_j(q_k)
+    
+    // Implemented using Gunrock ForEach operator
+    if (||D^(-1/2) x grad_f(q_k)||_inf > rho x alpha) break
+EndFor
+return p_k = D^(1/2) x q_k
+```
 
 ## How To Run This Application on DARPA's DGX-1
 
@@ -101,16 +133,16 @@ Performance is primarily measured in runtime of the clustering portion of the LG
 
 ### Implementation limitations
 
-e.g.:
+- **Memory size**: The dataset is assumed to be an undirected graph, with self-loops (i.e. edges from vertex i to vertex i are removed). We were able to run on graphs of up to 6.2GB in size (7M vertices, 194M edges). The memory limitation should be the number of edges 2x|E| and 7x|V|, which needs to be smaller than the GPU memory size (16GB for a single P100 on DGX-1). 
 
-- Size of dataset that fits into GPU memory (what is the specific limitation?)
-- Restrictions on the type/nature of the dataset
-- (@bkj any input here would be valuable) 
+- **Data type**: We have tested only using int32 data type, but there is no reason int64 for graphs with more than 4B edges cannot be used too.
 
 ### Comparison against existing implementations
 
 - UCB reference implementation (Python wrapper around C++ library)
 - CPU reference implementation (C++)
+
+We find the Gunrock implementation is 3 orders of magnitude faster than either reference CPU implementation implemented in C++. The minimum, geomean, and maximum speedups are 7.25x, 1297x, 32899x.
 
 Comparison can be replicated by doing the following.
 
@@ -142,8 +174,6 @@ road_usa | 48232 | 31617 | 3.01
 soc-LiveJournal1 | 63151 | 37936 | 19.29
 soc-orkut | 111391 | 89752 | 18.05
 
-We find the Gunrock implementation is 3 orders of magnitude faster than either reference CPU implementation implemented by C++.
-
 ### Performance limitations
 
 We profiled the primitives while running `kron_g500-logn21`. The profiler adds ~100ms of overhead (728.48ms with profiler vs. 627.55ms without profiler). The breakdown looks like
@@ -163,7 +193,7 @@ By profiling the LB Advance kernel, we find that the performance of Advance is b
 
 ### Alternate approaches
 
-If you had an infinite amount of time, is there another way (algorithm/approach) we should consider to implement this?
+This can also be implemented in GraphBLAS, which is currently being worked on.
 
 ### Gunrock implications
 
@@ -171,10 +201,7 @@ The experience of implementing this application using Gunrock was straightforwar
 
 ### Notes on multi-GPU parallelization
 
-What will be the challenges in parallelizing this to multiple GPUs on the same node?
-
-Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
-(@bkj any input here would be great)
+Since this problem maps well to Gunrock operations, we expect parallelization to be similar to BFS and SSSP. The dataset can be effectively divided across multiple GPUs. 
 
 ### Notes on dynamic graphs
 
@@ -182,9 +209,12 @@ N/A
 
 ### Notes on larger datasets
 
-What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
-(@bkj any input here would be great)
+If the data were too big to fit into the aggregate GPU memory of multiple GPUs on a single node, then we would need to look at multiple node solutions. Getting the application to work on multiple nodes would not be challenging, because it is very similar to BFS. However, optimizing it to achieve good scalability may require asynchronous communication, which we have experience with (see [Pan et al.](https://arxiv.org/pdf/1803.03922.pdf)).
 
 ### Notes on other pieces of this workload
 
-Briefly: What are the important other (non-graph) pieces of this workload? Any thoughts on how we might implement them / what existing approaches/libraries might implement them?
+N/A
+
+### How this work can lead to a paper publication
+
+This work is very interesting, because the coordinate descent implementation by Ben shows that Gunrock can be used as a coordinate descent solver. There have been more interest in coordinate descent recently, because coordinate descent can be used in ML as an alternative to stochastic gradient descent for SVM training. Reference: Cho-Jul Hsieh from UC Davis is an expert in this field [Hsieh et al.](http://www.jmlr.org/proceedings/papers/v37/hsieha15-supp.pdf).
