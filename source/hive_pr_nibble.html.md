@@ -156,23 +156,23 @@ sh test_big.sh
 ```
 All runtimes are in milliseconds (ms):
 
-Dataset | UCB C++ | Our C++ | Gunrock
------------- | ------------- | ------------ | ------------- 
-ak2010 | 97.99 | 72.08 | 3.04
-belgium_osm | 2270 | 1663 | 2.97
-cit-Patents | 40574 | 22148 | 16.41
-coAuthorsDBLP | 1004 | 1399 | 4.86
-delaunay_n13 | 21.52 | 16.33 | 2.86
-delaunay_n21 | 5733 | 4084 | 2.98
-delaunay_n24 | 49299 | 34655 | 3.28
-europe_osm | 97022 | 72973 | 2.95
-hollywood-2009 | 43024 | 30430 | 46.30
-indochina-2004 | 101877 | 71902 | 11.05
-kron_g500-logn21 | 110309 | 89438 | 627.55
-roadNet-CA | 3403 | 2475 | 3.03
-road_usa | 48232 | 31617 | 3.01
-soc-LiveJournal1 | 63151 | 37936 | 19.29
-soc-orkut | 111391 | 89752 | 18.05
+Dataset | UCB C++ | Our C++ | Gunrock | Speedup
+------------ | ------------- | ------------ | ------------- | ------------- 
+ak2010 | 97.99 | 72.08 | 3.04 | 32
+belgium_osm | 2270 | 1663 | 2.97 | 726
+cit-Patents | 40574 | 22148 | 16.41 | 2472
+coAuthorsDBLP | 1004 | 1399 | 4.86 | 207
+delaunay_n13 | 21.52 | 16.33 | 2.86 | 8
+delaunay_n21 | 5733 | 4084 | 2.98 | 1924
+delaunay_n24 | 49299 | 34655 | 3.28 | 15030
+europe_osm | 97022 | 72973 | 2.95 | 32889
+hollywood-2009 | 43024 | 30430 | 46.30 | 929
+indochina-2004 | 101877 | 71902 | 11.05 | 9220
+kron_g500-logn21 | 110309 | 89438 | 627.55 | 176
+roadNet-CA | 3403 | 2475 | 3.03 | 1123
+road_usa | 48232 | 31617 | 3.01 | 16024
+soc-LiveJournal1 | 63151 | 37936 | 19.29 | 3274
+soc-orkut | 111391 | 89752 | 18.05 | 6171
 
 ### Performance limitations
 
