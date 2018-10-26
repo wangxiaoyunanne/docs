@@ -20,7 +20,7 @@ From [Andersen et al](https://projecteuclid.org/euclid.im/1243430567): > A local
 
 ## Summary of Gunrock Implementation
 
-The algorithm in [Fountoulakis et al.](https://arxiv.org/pdf/1602.01886.pdf) maps in a straightforward manner to Gunrock. We present the pseudocode below along with the corresponding Gunrock operations:
+We implemented Algorithm 2 in [Fountoulakis et al.](https://arxiv.org/pdf/1602.01886.pdf), which maps nicely to Gunrock. We present the pseudocode below along with the corresponding Gunrock operations:
 ```
 A: adjacency matrix of graph
 D: diagonal degree matrix of graph
@@ -38,7 +38,6 @@ Initialize: rho > 0
 Initialize: q_0 = [0 ... 0]
 Initialize: grad_f(q_0) = -alpha x D^(-1/2) x s
 
-// Note: || y ||_inf is the infinity norm
 For k = 0, 1, ..., inf
     // Implemented using Gunrock ForAll operator
     Choose an i such that grad_f_i(q_k) < - alpha x rho x d_i^(1/2)
@@ -52,6 +51,7 @@ For k = 0, 1, ..., inf
         Set grad_f_j(q_k+1) = grad_f_j(q_k)
     
     // Implemented using Gunrock ForEach operator
+    // Note: ||y||_inf is the infinity norm
     if (||D^(-1/2) x grad_f(q_k)||_inf > rho x alpha) break
 EndFor
 return p_k = D^(1/2) x q_k
