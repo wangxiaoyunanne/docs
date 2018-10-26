@@ -124,7 +124,7 @@ Because the modularity optimization runs multiple iterations before each graph
 contraction phase, the computation and communication of modularity optimization
 is dominant.
 
-| Parts                   | Computation cost | Communication cost    | Computation to Communication ratio | Scalability | Memory usage |
+| Parts                   | Computation cost | Communication cost    | Computation to communication ratio | Scalability | Memory usage |
 |-------------------------|------------------|-----------|-----------------|------|--------------------------|
 | Modularity optimization | 10(E + V) /p     | 20V bytes | E/p : 2V        | Okay | 88E/p + 12V bytes        |
 | Graph contraction       | 5E / p + E'      | 8E' bytes | 5E/p + E' : 8E' | Hard | 16E' bytes               |
@@ -134,3 +134,9 @@ Louvain could be hard to implement on multiple GPUs, but the scalability should
 okay.
 
 ## Graph SAGE
+
+## Summary of the V0 apps
+
+| Application | Computation to communication ratio | Scalability | Implementation difficulty |
+|-----|---|
+| Louvain     | E/p : 2V       | Okay | Hard |
