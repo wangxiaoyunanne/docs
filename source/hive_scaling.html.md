@@ -241,10 +241,10 @@ For each walk starting from local vertex v:
 Repeat until all steps of walks finished:
     For each received <walk#, step#, v> for visit:
         Select a neighbor u of v;
-        Send <walk#, setp# + 1, u> to host_GPU(u) for visit;
-        Send <walk#, setp# + 1, u> to host_GPU_walk(walk#) for record;
+        Send <walk#, step# + 1, u> to host_GPU(u) for visit;
+        Send <walk#, step# + 1, u> to host_GPU_walk(walk#) for record;
 
-    For each received <walk#, setp#, v> for record:
+    For each received <walk#, step#, v> for record:
         Store v for <walk#, step#>;
 ```
 
@@ -252,21 +252,20 @@ Using W as the number of walks, for each step, we have
 
 | Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |-----------------------|------------|---------------|----------------------|-------------|--------------|
-| Random walk           | W/p        | W/p x 24 bytes| 1 : 24               | very poor   | | 
+| Random walk           | W/p        | W/p x 24 bytes| 1 : 24               | very poor   | |
 
-If the selection of neighrbor is weighted random, instead of uniformly random,
+If the selection of neighbor is weighted random, instead of uniformly random,
 it will increase the computation workload to Wd /p, where d is the average
 degree of vertices in the graph. As a result, the computation to communication
 ratio will increase to d : 24; for most graphs, it's still not high enough to
-have good scalibility.
+have good scalability.
 
 ## Geo Location
 
 In each iteration, Geo updates a vertex's location based on its neighbors. For
 multiple GPUs, neighboring vertices's location information need to be
-available, either by direct access, UVM, or explict data movement. The fllowing
-shows how explict data movement can be implemented.
-
+available, either by direct access, UVM, or explicit data movement. The following
+shows how explicit data movement can be implemented.
 ```
 Do
     Local geo location updates on local vertices;
@@ -276,10 +275,10 @@ While no more update
 
 The computation cost is in the order of O(|E|/p), if each iteration all
 vertices are looking for possible location updates from neighbors. Because the
-spatial median function has a lot of mathmatical compuation inside,
+spatial median function has a lot of mathematical computation inside,
 particularly a haversine() for each edge, the constant factor hidden by O() is
 large; for simplicity, 100 is used as the constant factor here. Assuming
-boardcasting every vertex's location gives the upper bound of communication,
+broadcasting every vertex's location gives the upper bound of communication,
 but in reality, the communication should be much less: 1) not every vertex
 updates location every iteration; 2) vertices may not have neighbors on each
 GPUs, so instead of broadcast, p2p communication may be used to reduce the
@@ -287,8 +286,38 @@ communication cost, especially when the graph connectivity is low.
 
 | Comm. method          | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |-----------------------|------------|---------------|----------------------|-------------|--------------|
-| Explict movement      | 100E/p     | 2V x 8 bytes  | 25E/p : 4V           | Okay        | |
+| Explicit movement     | 100E/p     | 2V x 8 bytes  | 25E/p : 4V           | Okay        | |
 | UVM or peer access    | 100E/p     | E/p x 8 bytes | 25 : 1               | Good        | |
+
+## Vertex Nomination
+
+Vertex nomination is very much a single source shortest path (SSSP) problem,
+except it starts from a group of vertices, instead of a single source. One
+multi-GPU implementation is as following:
+```
+Set the starting vertex / vertices;
+While has new distance updates
+    For each local vertex v with distance update:
+        For each edge <v, u, w> of vertex v:
+            new_distance := distance[v] + w;
+            if (distance[u] > new_distance)
+                distance[u] = new_distance;
+
+    For each u with distance update:
+        Send <u, ditance[u]> to host_GPU(u);
+```
+
+Assuming on average, each vertex has its distance updated a times, and the
+average degree of vertices is d, the compuation and the communication costs are:
+
+| Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-----------------------|------------|---------------|----------------------|-------------|--------------|
+| Vertex nomination     | aE/p       | aV/p x min(d, p) x 8 bytes | E : 8V x min(d, p) | Okay | | 
+
+The min(d, p) part in the communication cost comes from update aggretion on
+each GPU: when a vertex has more than one distance updates, only the smallest
+is sent out; for a vertex that has a lot of neighbors and neighboring to all
+GPUs, its communication cost is capped by p x 8 bytes. 
 
 ## Summary of Results
 
@@ -296,6 +325,7 @@ communication cost, especially when the graph connectivity is low.
 |-------------|----------------|------|------|
 | Louvain     | E/p : 2V       | Okay | Hard |
 | Graph SAGE  | \~ CF : min(C, 2p)x4 | Good | Easy |
-| Random Walk | Duplicated graph: infinity<br> Distributed graph: 1 : 24 | Perfect <br> Very poor | Trivial <br> Easy |
-| Geo Location| Explict movement: 25E/p : 4V<br> UVM or peer access: 25 : 1 | Okay <br> Good | Easy |
- 
+| Random walk | Duplicated graph: infinity<br> Distributed graph: 1 : 24 | Perfect <br> Very poor | Trivial <br> Easy |
+| Geo location| Explicit movement: 25E/p : 4V<br> UVM or peer access: 25 : 1 | Okay <br> Good | Easy |
+| Vertex nomination | E : 8V x min(d, p) | Okay | Easy |
+
