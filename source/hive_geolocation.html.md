@@ -12,7 +12,7 @@ full_length: true
 
 # Geolocation
 
-Infers user locations using the location (latitude, longitude) of friends through spatial label propagation. Given a graph `G`, geolocation examines each vertex `v`'s neighbors and computes the spatial median of neighbors' location list, the output is a list of predicted locations for all vertices with unknown locations.
+Infers user locations using the location (latitude, longitude) of friends through spatial label propagation. Given a graph `G`, geolocation examines each vertex `v`'s neighbors and computes the spatial median of the neighbors' location list. The output is a list of predicted locations for all vertices with unknown locations.
 
 ## Summary of Results
 
@@ -20,18 +20,18 @@ One or two sentences that summarize "if you had one or two sentences to sum up y
 
 ## Summary of Gunrock Implementation
 
-We implemented Geolocation using two `compute` operators as `ForAll()`. The first `ForAll()` is a `gather` operation, gathering all the values of neighbors with known locations for an active vertex `v`, and the second `ForAll()` uses those values to compute the `spatial_center` where the spatial center of a list points is the center of those points on earth's surface.
+We implemented Geolocation using two `compute` operators as `ForAll()`. The first `ForAll()` is a `gather` operation, gathering all the values of neighbors with known locations for an active vertex `v`, and the second `ForAll()` uses those values to compute the `spatial_center` where the spatial center of a list's points is the center of those points on the earth's surface.
 
-<pre>
+```
 def gather_op(Vertex v):
     for neighbor in G.neighbors(v):
-	if isValid(neigbor.location):
-	    locations_list[v].append(neigbor.location)
+        if isValid(neigbor.location):
+            locations_list[v].append(neigbor.location)
 
 def compute_op(Vertex v):
     if !isValid(v.location):
-	v.location = spatial_center(locations_list[v])
-</pre>
+        v.location = spatial_center(locations_list[v])
+```
 
 See `gunrock/app/geo/geo_spatial.cuh` for details on the spatial center implementation.
 
@@ -39,35 +39,37 @@ See `gunrock/app/geo/geo_spatial.cuh` for details on the spatial center implemen
 
 ### Prerequisites
 
-<pre>
+```shell
 git clone --recursive https://github.com/gunrock/gunrock -b dev-refactor
 cd gunrock
 mkdir build
 ctest ..
 cd ../tests/geo/
 make clean && make
-</pre>
+```
 
 ### HIVE Data Preparation
 
 Prepare the data, skip this step if you are just running the sample dataset. Assuming we are in `tests/geo` directory:
 
-<pre>
-export TOKEN= # get this Authentication TOKEN from https://api-token.hiveprogram.com/#!/user
-wget --header "Authorization:$TOKEN" https://hiveprogram.com/data/_v0/geotagging/instagram/instagram.tar.gz
+```shell
+export TOKEN= # get this Authentication TOKEN from
+              # https://api-token.hiveprogram.com/#!/user
+wget --header "Authorization:$TOKEN" \
+  https://hiveprogram.com/data/_v0/geotagging/instagram/instagram.tar.gz
 tar -xzvf instagram.tar.gz && rm instagram.tar.gz
 cd instagram/graph
 cp ../../generate-data.py ./
 python generate-data.py
-</pre>
+```
 
-This will generate two files: `instagram.mtx` and `instagram.labels`, which can be used as an input to the geolocation app.
+This will generate two files, `instagram.mtx` and `instagram.labels`, which can be used as an input to the geolocation app.
 
 ### Running the application
 
 Application specific parameters:
 
-<pre>
+```
     --labels-file
         file name containing node ids and their locations.
 
@@ -76,20 +78,22 @@ Application specific parameters:
         (default = 3)
 
     --geo-complete
-        runs geolocation for as many iterations as required to find locations for all nodes.
+        runs geolocation for as many iterations as required
+        to find locations for all nodes.
         (default = false because it uses atomics)
-</pre>
+```
 
 Example command-line:
 
-<pre>
+```shell
 # geolocation.mtx is a graph based on chesapeake.mtx dataset
-./bin/test_geo_10.0_x86_64 --graph-type=market --graph-file=./geolocation.mtx --labels-file=./locations.labels --geo-iter=2 --geo-complete=false
-</pre>
+./bin/test_geo_10.0_x86_64 --graph-type=market --graph-file=./geolocation.mtx \
+  --labels-file=./locations.labels --geo-iter=2 --geo-complete=false
+```
 
 Sample input (labels):
 
-<pre>
+```
 % Nodes Latitude Longitude
 39 2 2
 1 37.7449063493 -122.009432884
@@ -103,11 +107,11 @@ Sample input (labels):
 30 39.2598884729 -106.804662071
 31 37.880443573 -122.230147039
 39 9.4276164485 -110.640705659
-</pre>
+```
 
 Sample output:
 
-<pre>
+```
 Loading Matrix-market coordinate-formatted graph ...
 Reading from ./geolocation.mtx:
   Parsing MARKET COO format edge-value-seed = 1539674096
@@ -225,67 +229,66 @@ Node [ 38 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -11
  preprocess time: 496.136000 ms
  postprocess time: 0.463009 ms
  total time: 508.110046 ms
-</pre>
+```
 
 ### Output
 
-When `quick` mode is disabled, the application performs the CPU Reference implementation, which is used to validate the results from the GPU implementation. Geolocation application also supports the `quiet` mode, which allows user to skip the output and just report the performance metrics (note, this will run CPU implementation in the background without any output).
+When `quick` mode is disabled, the application performs the CPU Reference implementation, which is used to validate the results from the GPU implementation. Geolocation application also supports the `quiet` mode, which allows the user to skip the output and just report the performance metrics (note, this will run the CPU implementation in the background without any output).
 
 ## Performance and Analysis
 
-Runtime is the key metric for measuring performance for Geolocation. We also check for prediction accuracy of the labels, but that is a threshold for correctness. If a certain threshold is not met (while comparing results to the CPU reference code), the output is considered incorrect and that run is invalid. Therefore, for the report I will just be focusing on runtime.
+Runtime is the key metric for measuring performance for Geolocation. We also check for prediction accuracy of the labels, but that is a threshold for correctness. If a certain threshold is not met (while comparing results to the CPU reference code), the output is considered incorrect and that run is invalid. Therefore, for the report we just focus on runtime.
 
 ### Implementation limitations
 
-One of the biggest limitation is that we are currently using `|V|x|V|` to store all the neighbors locations for all the vertices. For a graph of size `60K` nodes, it can take approximately `16GB` of a GPU memory. In the worst case scenario, we have a fully connected graph, but in most real world we won't see this connectivity within a network. Some tricks can be done to determine the degree of each vertex before hand and allocate just enough memory required to store the locations of valid neighbors. For the sake of complexity and time, we currently using `|V|x|V|` size array.
+One of our biggest limitations is that we are currently use a `|V|x|V|` array to store all the neighbors' locations for all the vertices. For a graph of size 60k nodes, it can take approximately 16 GB of GPU memory. In a worst-case scenario, we have a fully connected graph and require this much storage, but in most real-world cases, we won't see this connectivity within a graph. Some tricks can be done to determine the degree of each vertex beforehand and allocate just enough memory required to store the locations of valid neighbors. For simplicity at this point, our baseline currently uses a `|V|x|V|` size array.
 
 ### [Optimization] Reducing Memory footprint
 
-In the new version of Geolocation, we aim to address the memory limitations of the problem, where `locations_list` array being `|V|x|V|` is not a viable size GPUs can handle for larger dataset. Devised solution is that the `gather` and `spatial_center` operators are fused together such that now there are few more gathers within the spatial median calculations. Instead of storing the locations in a huge locations array, they are now fetch as needed within the `spatial_center` operator. Now, the largest allocated array size is of `|E|`, which is way more viable than a `|V|x|V|`.
+In our updated version of Geolocation, we aim to address the memory limitations of the problem, where a `locations_list` array of size `|V|x|V|` is not a viable size. With more optimized storage, GPUs can handle a far larger dataset. In this update, we fuse the `gather` and `spatial_center` operators  together such that now there are more gathers within the spatial median calculations. Instead of storing the locations in the huge locations array, they are now fetched as needed from within the `spatial_center` operator. Now, the largest allocated array size is size `|E|`, much smaller in practice than `|V|x|V|`.
 
 ### Comparison against existing implementations
 
-| Dataset            |  [V]     |  [E]     | Iterations | GT CPU (8 threads) | GT CPU (serial) | Gunrock  |
-|--------------------|----------|----------|------------|-----------------|--------------------|----------|
-| geolocation-sample | 39       | 170      | 3          | 0.466108        | N/A                | 0.286102 |
-| instagram          | 23731995 | 41355870 | 3          | 10.643214       | 63.821812          | 1.910632 |
+| Dataset            | \|V\|    | \|E\|     | Iterations | GT CPU (8 threads) | GT CPU (serial) | Gunrock  |
+|--------------------|----------|-----------|------------|--------------------|-----------------|----------|
+| geolocation-sample | 39       | 170       | 3          | 0.466108           | N/A             | 0.286102 |
+| instagram          | 23731995 | 41355870  | 3          | 10.643214          | 63.82181        | 1.910632 |
 
-On a GPU filling workload, gunrock out performs GT's C++ implementation using OpenMP by 5.5x. There is a lack of available dataset to test the performance against, so we are restricted to only using the provided instagram dataset, and a toy sample for sanity check. All tested implementations meet the criteria of accuracy, which is compared against the output of the original python implementation.
+On a workload that fills the GPU, gunrock outperforms GT's OpenMP C++ implementation by 5.5x. There is a lack of available datasets against which we can compare performance, so we use only the provided instagram dataset, and a toy sample for a sanity check. All tested implementations meet the criteria of accuracy, which is validated against the output of the original python implementation.
 
 - [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git)
 - [GTUSC implementation](https://gitlab.hiveprogram.com/gtusc/geotagging)
 
 ### Performance limitations
 
-As discussed later in the "Alternate approaches" section, current implementation of geolocation uses a compute operator with minimum load balancing. In cases where the graph is not so nicely distributed (where there is a great deal of difference in degrees of vertices), the entire application will suffer significantly from load imbalance.
+As discussed later in the "Alternate approaches" section, the current implementation of geolocation uses a compute operator with minimal load balancing. In cases where the graph is not so nicely distributed (where there is a great deal of difference in the degrees of vertices), the entire application will suffer significantly from load imbalance.
 
-Profiling the application shows 98.78% of the compute time in GPU activities is the `spatial_median` kernel, which gives us a good direction to focus our efforts on load balancing the workloads within the operator. Specifically, the for loops iterating over the neighbor list for spatial center calculations.
+Profiling the application shows 98.78% of the compute time in GPU activities is in the `spatial_median` kernel, which gives us a good direction to focus our efforts on load-balancing the workloads within the operator. Specifically, we must target the `for` loops iterating over the neighbor list for spatial center calculations.
 
 ## Next Steps
 
 ### Alternate approaches
 
-- **Neighborhood Reduce w/ Spatial Center:** We can perform better load balancing by opting in for neighbor reduce (`advance` operator + `cub::DeviceSegmentedReduce`) instead of using a compute operator. In graphs where the degree of a nodes could vary a lot, the compute operator will significantly be slower than a load balanced advance + segmented reduce.
+- **Neighborhood Reduce w/ Spatial Center:** We can perform better load balancing by leveraging a neighbor-reduce (`advance` operator + `cub::DeviceSegmentedReduce`) instead of using a compute operator. In graphs where the degrees of nodes vary a lot, the compute operator will be significantly slower than a load-balanced advance + segmented reduce.
 
-- **Push Based Approach:** Instead of gathering all the locations from all the neighbors of an active vertex, we perform a scatter of valid locations of all active vertices to their neighbors; push vs. pull approach.
+- **Push Based Approach:** Instead of gathering all the locations from all the neighbors of an active vertex, we could instead perform a scatter of valid locations of all active vertices to their neighbors; this is a push approach vs. our current implementation's pull.
 
 ### Gunrock implications
 
-- **The `predicted` atomic:** Geolocation and some other application exhibit the same behavior where the stop condition of the algorithm is such that when all vertices' label is predicted or determined, the algorithm stops. In Geolocation's case, when a location for all nodes is predicted, geolocation converges. This is currently being done with a loop and an atomic and it needs to be more of a core operation (mini-operator) such that when `isValidCount(labels|V|) == |V|)` stop condition is met. Currently, I am skipping this using number of iterations parameter to determine how long geolocation should run for.
+- **The `predicted` atomic:** Geolocation and some other applications exhibit the same behavior where the stop condition of the algorithm is such that when all vertices' labels are predicted or determined, the algorithm stops. In Geolocation's case, when a location for all nodes is predicted, geolocation converges. We currently implement this with a loop and an atomic. This needs to be more of a core operation (mini-operator) such that when `isValidCount(labels|V|) == |V|`, a stop condition is met. Currently, we sidestep this issue by using a number-of-iterations parameter to determine the stop condition.
 
 ### Notes on multi-GPU parallelization
 
-No complicated partitioning scheme is required for multi-GPU implementation; the challenging part for a multi-GPU Geolocation would be to obtain the updated node location from a seperate device if the two vertices on different devices share an edge. An interesting approach here would be leveraging the P2P memory bandwidth with the new NVLink connectors to exchange small amount of updates across the NVLink's memory lane.
+No complicated partitioning scheme is required for multi-GPU implementation; the challenging part for a multi-GPU Geolocation would be to obtain the updated node location from a seperate device if the two vertices on different devices share an edge. An interesting approach here would be leveraging the P2P memory bandwidth with the new NVLink connectors to exchange a small amount of updates across the NVLink's memory lane.
 
 ### Notes on dynamic graphs
 
-Streaming graphs is an interesting problem for Geolocation application, because when predicting a location of a certain node, if another edge is introduced the location of the vertex has to be recomputed entirely. This can still be done in an iterative manner, where if a node was inserted as a neighbor to a vertex, that vertex's predicted location will be marked invalid and during the next iteration it will be computed again along with all the other invalid vertices (locations).
+Streaming graphs is an interesting problem for the Geolocation application, because when predicting the location of a certain node, if another edge is introduced, the location of the vertex has to be recomputed entirely. This can still be done in an iterative manner, where if a node was inserted as a neighbor to a vertex, that vertex's predicted location will be marked invalid and during the next iteration it will be computed again along with all the other invalid vertices (locations).
 
 ### Notes on larger datasets
 
-If the datasets are larger than a single or multi-GPU's aggregate memory, an easier solution to this would be to let Unified Virtual Memory (UVM) in CUDA handle the memory movement for us.
+If the datasets are larger than a single or multi-GPU's aggregate memory, the straightforward solution would be to let Unified Virtual Memory (UVM) in CUDA automatically handle memory movement.
 
 ### Notes on other pieces of this workload
 
-Geolocation application calls a lot of  CUDA math functions (`sin`, `cos`, `atan`, `atan2`, `median`, `mean`, `fminf`, `fmaxf`, etc.), and I believe some of these micro workloads can also leverage GPU's parallelism; for example, a mean could be implemented using `reduce-mean/sum`. We currently don't have these math operators within gunrock that can be used in graph applications.
-
+Geolocation calls a lot of CUDA math functions (`sin`, `cos`, `atan`, `atan2`, `median`, `mean`, `fminf`, `fmaxf`, etc.).  Some of these micro-workloads can also leverage the GPU's parallelism; for example, a mean could be implemented using `reduce-mean/sum`. We currently don't have these math operators exposed within Gunrock in such a way they can be used in graph applications.
