@@ -249,10 +249,14 @@ In our updated version of Geolocation, we aim to address the memory limitations 
 
 ### Comparison against existing implementations
 
-| Dataset            | \|V\|    | \|E\|     | Iterations | GT CPU (8 threads) | GT CPU (serial) | Gunrock  |
-|--------------------|----------|-----------|------------|--------------------|-----------------|----------|
++--------------------+----------+-----------+------------+--------------------+-----------------+----------+
+|                    |          |           |            | GT CPU             | GT CPU          |          |
+| Dataset            | \|V\|    | \|E\|     | Iterations |        (8 threads) |        (serial) | Gunrock  |
++====================+==========+===========+============+====================+=================+==========+
 | geolocation-sample | 39       | 170       | 3          | 0.466108           | N/A             | 0.286102 |
++--------------------+----------+-----------+------------+--------------------+-----------------+----------+
 | instagram          | 23731995 | 41355870  | 3          | 10.643214          | 63.82181        | 1.910632 |
++--------------------+----------+-----------+------------+--------------------+-----------------+----------+
 
 On a workload that fills the GPU, gunrock outperforms GT's OpenMP C++ implementation by 5.5x. There is a lack of available datasets against which we can compare performance, so we use only the provided instagram dataset, and a toy sample for a sanity check. All tested implementations meet the criteria of accuracy, which is validated against the output of the original python implementation.
 
