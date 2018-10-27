@@ -53,9 +53,9 @@ thus may have different scaling results.
 
 As the target platform DGX-1 has 8 GPUs. Although that's more than people
 normally used for single scaling studies, the simple 1D graph partitioning
-scheme should still work. The marginal performance benific by using more GPUs
+scheme should still work. The marginal performance improvement by using more GPUs
 may be insignificant at this scale, and a small number of applications might even see
-performance degration with some datasets. However, the 1D partitioning makes
+performance decreases with some datasets. However, the 1D partitioning makes
 the scaling analysis simple and easily understandable. If other partitioning
 scheme could work better for a specific application, it would be noted.
 
@@ -74,9 +74,9 @@ an app to have okay-ish scalability. With GPUs newer than P100, the computation
 power and memory bandwidth improve faster than the inter connects, the compute
 to communicate ratio needs to be higher to start seeing positive scaling.
 
-## Louvain
+## Community Detection (Louvain)
 
-The main part and most time consuming of the Louvain algorithm is the
+The main and most time consuming part of the Louvain algorithm is the
 modularity optimization iterations. The aggregated edge weights between
 vertices and their respective adjacent communities, as well as the out-going
 edge weights of each community, are needed for the modularity optimization. The
@@ -90,8 +90,8 @@ GPUs. The modularity optimization with inter-GPU communication can be done as:
 Do
     Local modularity optimization;
     Broadcast updated community assignments of local vertices;
-    local_weights_community2any <- sums(local edges from an community);
-    weights_community2any <- AllReduce(local_weights_community2any, sum);
+    local_weights_community2any := sums(local edges from an community);
+    weights_community2any := AllReduce(local_weights_community2any, sum);
 While iterations stop condition not met
 ```
 
@@ -106,7 +106,7 @@ depending on the dataset.
 
 The graph contraction can be done as below on multiple GPUs
 ```
-temp_graph <- Contract the local sub-graph based on community assignments;
+temp_graph := Contract the local sub-graph based on community assignments;
 Send edges <v, u, w> in temp_graph to host_GPU(v);
 Merge received edges and form the new local sub-graph;
 ```
@@ -124,7 +124,7 @@ Because the modularity optimization runs multiple iterations before each graph
 contraction phase, the computation and communication of modularity optimization
 is dominant.
 
-| Parts                   | Computation cost | Communication cost    | Computation to communication ratio | Scalability | Memory usage |
+| Parts                   | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |-------------------------|------------------|-----------|-----------------|------|--------------------------|
 | Modularity optimization | 10(E + V) /p     | 20V bytes | E/p : 2V        | Okay | 88E/p + 12V bytes        |
 | Graph contraction       | 5E / p + E'      | 8E' bytes | 5E/p + E' : 8E' | Hard | 16E' bytes               |
@@ -135,8 +135,95 @@ okay.
 
 ## Graph SAGE
 
-## Summary of the V0 apps
+The main memory usage and computation of SAGE are related to the features of
+vertices. While directly accessing the feature data of neighbors via. peer
+access is possible and memory efficient, it will create a huge amount of
+inter-GPU traffic that makes SAGE unscalable in terms of running time. Using
+UVM to store the feature data is also possible, but that will move the traffic
+from inter-GPU to the GPU-CPU connection, which is even less desirable. Although
+there is a risk of using up the GPU memory, especially on graphs that have high
+connectivity, a more scalable way is to duplicate the feature data of neighboring
+vertices. Depending on the graph size and the size of features, not all of the
+above data distribution schemes are applicable. The following analysis focuses
+on the feature duplication scheme, with other schemes' result in the summary
+table.
+
+SAGE can be seperated into three parts, depending on whether the computation
+and data access is source-centric or child-centric.
+```
+// Part1: Select the children
+For each source in local batch:
+    Select num_children_per_source children form source's neighbors;
+    Send <source, child> pairs to host_GPU(child);
+
+// Part2: Child-centric computation
+For each received <source, child> pair:    
+    child_feature = feature[child];
+    send child_feature to host_GPU(source);
+
+    feature_sums := {0};
+    For i from 1 to num_leafs_per_child:
+        Select a leaf from child's neighbors;
+        leafs_feature += feature[leaf];
+    child_temp = L2_normalize( concatenate( 
+        feature[child] * Wf1, leafs_feature * Wa1));
+    send child_temp to host_GPU(source);
+
+// Part3: Source-centric computation
+For each source in local batch:
+    children_feature := sum(received child_feature);
+    children_temp := sum(received child_temp);
+    source_temp := L2_normalize( concatenate(
+        feature[source] * Wf1, children_feature * Wa1));
+
+    source_result := L2_normalize( concatenate(
+        source_temp * Wf2, children_temp * Wa2));
+```
+
+Assume the size of local batch is B, the number of children per source is C,
+the number of leafs per child is L, and the feature length per vertex is F.
+Dimensions of 2D matrices are noted as (x, y). The
+computation and communication costs for each part are:
+
+Part 1, computation  : B x C. <br>
+Part 1, communication: B x C x 8 bytes. <br>
+Part 2, computation  : B x C x F + B x C x (F + L x F + F x (Wf1.y + Wa1.y)).<br>
+Part 2, communication: B x C x (F + Wf1.y + Wa1.y) x 4 bytes.<br>
+Part 3, computation  : B x (C x (F + Wf1.y + Wa1.y) + F x (Wf1.y + Wa1.y) + (Wf1.y + Wa1.y) x (Wf2.y + Wa2.y)). <br>
+Part 3, communication: 0 byte.
+
+For Part 2's communication, if C is larger than about 2p, using `AllReduce` to
+sum up child\_feature and child\_temp for each source will cost less, at B x (F + Wf1.y + Wa1.y) x 2p x 4 bytes.
+
+*Summary of Graph SAGE multi-GPU scaling*
+
+| Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-----------------------|------------|---------------|----------------------|-------------|--------------|
+| *Feature duplication* | | | | | |
+| Children selection    | BC | 8BC bytes | 1 : 8 | Poor | |
+| Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) | 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes | \~ CF : min(C, 2p) x 4 | Good | |
+| Source-centric comp.  | B x (CF + (Wf1.y + Wa1.y) x (C + F + Wf2.y + Wa2.y) | 0 bytes | N.A. | N.A. | |
+| Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes | at least \~ CF : min(C, 2p) x 4 | Good | |
+| | | | | | |
+| *Direct feature access* | | | | | |
+| Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) | 4B x ((F + Wf1.y + Wa1.y) x min(C, 2p) + CLF) bytes | \~ (2 + L + Wf1.y + Wa1.y) : 4L | poor | |
+| Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) + 4BCFL bytes | \~ (2 + L + Wf1.y + Wa1.y) : 4L | poor | |
+| | | | | | |
+| *Feature in UVM*      | | | | | | 
+| Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) | 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU + 4BCLF bytes over GPU-CPU | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor | |
+| Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU + 4BCFL bytes over GPU-CPU | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor | |
+
+When the number of features are at least several tens, the computation workload
+will be much more than communication, and SAGE should have good scalability.
+Implementation should be easy, as only simple p2p or AllReduce communication
+models are used. If memory usage is an issue, falling back to peer-access or
+UVM will resulted in very poor scalability; problem segmentation (i.e. only
+process protion of the graph at a time) may be necessary to have a scalable
+implemenation for large graphs, but that will be quite complex.
+ 
+## Summary of Results
 
 | Application | Computation to communication ratio | Scalability | Implementation difficulty |
 |-------------|----------------|------|------|
 | Louvain     | E/p : 2V       | Okay | Hard |
+| Graph SAGE  | \~ CF : min(C, 2p)x4 | Good | Easy |
