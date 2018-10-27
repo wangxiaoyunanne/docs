@@ -148,7 +148,7 @@ above data distribution schemes are applicable. The following analysis focuses
 on the feature duplication scheme, with other schemes' result in the summary
 table.
 
-SAGE can be seperated into three parts, depending on whether the computation
+SAGE can be separated into three parts, depending on whether the computation
 and data access is source-centric or child-centric.
 ```
 // Part1: Select the children
@@ -165,7 +165,7 @@ For each received <source, child> pair:
     For i from 1 to num_leafs_per_child:
         Select a leaf from child's neighbors;
         leafs_feature += feature[leaf];
-    child_temp = L2_normalize( concatenate( 
+    child_temp = L2_normalize( concatenate(
         feature[child] * Wf1, leafs_feature * Wa1));
     send child_temp to host_GPU(source);
 
@@ -209,7 +209,7 @@ sum up child\_feature and child\_temp for each source will cost less, at B x (F 
 | Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) | 4B x ((F + Wf1.y + Wa1.y) x min(C, 2p) + CLF) bytes | \~ (2 + L + Wf1.y + Wa1.y) : 4L | poor | |
 | Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) + 4BCFL bytes | \~ (2 + L + Wf1.y + Wa1.y) : 4L | poor | |
 | | | | | | |
-| *Feature in UVM*      | | | | | | 
+| *Feature in UVM*      | | | | | |
 | Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) | 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU + 4BCLF bytes over GPU-CPU | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor | |
 | Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU + 4BCFL bytes over GPU-CPU | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor | |
 
@@ -218,12 +218,52 @@ will be much more than communication, and SAGE should have good scalability.
 Implementation should be easy, as only simple p2p or AllReduce communication
 models are used. If memory usage is an issue, falling back to peer-access or
 UVM will resulted in very poor scalability; problem segmentation (i.e. only
-process protion of the graph at a time) may be necessary to have a scalable
-implemenation for large graphs, but that will be quite complex.
- 
+process portion of the graph at a time) may be necessary to have a scalable
+implementation for large graphs, but that will be quite complex.
+
+## Random walks
+
+If the graph can be duplicated on each GPUs, the random walk multi-GPU
+implementation is trivial: just do a subset of the walks on each GPU. The
+scalability will be perfect, as there is no communication involved at all.
+
+A more interesting multi-GPU implementation would be when the graph is
+distributed across the GPUs. In this case, each step of a walk not only needs
+to send the <walk#, step#, v> information to host\_GPU(v), but also to the GPU that
+stores the result for such walk.
+```
+For each walk starting from local vertex v:
+    Store v for <walk#, step 0>;
+    Select a neighbor u of v;
+    Store u for <walk#, step 1>;
+    Send <walk#, 1, u> to host_GPU(u) for visit;
+
+Repeat until all steps of walks finished:
+    For each received <walk#, step#, v> for visit:
+        Select a neighbor u of v;
+        Send <walk#, setp# + 1, u> to host_GPU(u) for visit;
+        Send <walk#, setp# + 1, u> to host_GPU_walk(walk#) for record;
+
+    For each received <walk#, setp#, v> for record:
+        Store v for <walk#, step#>;
+```
+
+Using W as the number of walks, for each step, we have
+
+| Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-----------------------|------------|---------------|----------------------|-------------|--------------|
+| Random walk           | W/p        | W/p x 24 bytes| 1 : 24               | very poor   | | 
+
+If the selection of neighrbor is weighted random, instead of uniformly random,
+it will increase the computation workload to Wd /p, where d is the average
+degree of vertices in the graph. As a result, the computation to communication
+ratio will increase to d : 24; for most graphs, it's still not high enough to
+have good scalibility.
+
 ## Summary of Results
 
 | Application | Computation to communication ratio | Scalability | Implementation difficulty |
 |-------------|----------------|------|------|
 | Louvain     | E/p : 2V       | Okay | Hard |
 | Graph SAGE  | \~ CF : min(C, 2p)x4 | Good | Easy |
+| Random Walk | duplicate graph: infinity<br> distributed graph: 1 : 24 | Perfect <br> Very poor | Trivial <br> Easy |
