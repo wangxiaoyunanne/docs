@@ -260,10 +260,42 @@ degree of vertices in the graph. As a result, the computation to communication
 ratio will increase to d : 24; for most graphs, it's still not high enough to
 have good scalibility.
 
+## Geo Location
+
+In each iteration, Geo updates a vertex's location based on its neighbors. For
+multiple GPUs, neighboring vertices's location information need to be
+available, either by direct access, UVM, or explict data movement. The fllowing
+shows how explict data movement can be implemented.
+
+```
+Do
+    Local geo location updates on local vertices;
+    Broadcast local vertices' updates;
+While no more update
+```
+
+The computation cost is in the order of O(|E|/p), if each iteration all
+vertices are looking for possible location updates from neighbors. Because the
+spatial median function has a lot of mathmatical compuation inside,
+particularly a haversine() for each edge, the constant factor hidden by O() is
+large; for simplicity, 100 is used as the constant factor here. Assuming
+boardcasting every vertex's location gives the upper bound of communication,
+but in reality, the communication should be much less: 1) not every vertex
+updates location every iteration; 2) vertices may not have neighbors on each
+GPUs, so instead of broadcast, p2p communication may be used to reduce the
+communication cost, especially when the graph connectivity is low.
+
+| Comm. method          | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-----------------------|------------|---------------|----------------------|-------------|--------------|
+| Explict movement      | 100E/p     | 2V x 8 bytes  | 25E/p : 4V           | Okay        | |
+| UVM or peer access    | 100E/p     | E/p x 8 bytes | 25 : 1               | Good        | |
+
 ## Summary of Results
 
 | Application | Computation to communication ratio | Scalability | Implementation difficulty |
 |-------------|----------------|------|------|
 | Louvain     | E/p : 2V       | Okay | Hard |
 | Graph SAGE  | \~ CF : min(C, 2p)x4 | Good | Easy |
-| Random Walk | duplicate graph: infinity<br> distributed graph: 1 : 24 | Perfect <br> Very poor | Trivial <br> Easy |
+| Random Walk | Duplicated graph: infinity<br> Distributed graph: 1 : 24 | Perfect <br> Very poor | Trivial <br> Easy |
+| Geo Location| Explict movement: 25E/p : 4V<br> UVM or peer access: 25 : 1 | Okay <br> Good | Easy |
+ 
