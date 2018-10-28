@@ -387,11 +387,91 @@ of vertices, the costs analysis are:
 |-----------------------|------------|---------------|----------------------|-------------|--------------|
 | Wedge generation      | dE/p     |                 | | | |
 | Wedge communication   | 0      | aE/p x 12 bytes   | | | |
-| Wedge checking        | aE/p * log(d) |            | | | |
-| AllReduce             | 2V         | 2V * 4 bytes  | | | |
-| Triangle Counting     | (d + a * log(d))E/p + 2V | aE/p * 12 + 8V bytes | \~ (d + a * log(d)) : 12a | Okay | |
-| Scan Statistics (wedge checks) | (d + a * log(d))E/p + 2V + V/p | 12aE/p + 8V bytes | \~ (d + a * log(d)) : 12a | Okay | |
-| Scan Statistics (intersection) | Vdd | 0 byte | Infinity | Perfect | |
+| Wedge checking        | aE/p x log(d) |            | | | |
+| AllReduce             | 2V         | 2V x 4 bytes  | | | |
+| Triangle Counting     | (d + a x log(d))E/p + 2V | aE/p x 12 + 8V bytes | \~(d + a x log(d)) : 12a | Okay | |
+| Scan Statistics (wedge checks) | (d + a x log(d))E/p + 2V + V/p | 12aE/p + 8V bytes | \~ (d + a x log(d)) : 12a | Okay | |
+| Scan Statistics (intersection) | Vdd + V/p | 8V bytes | dd : 8 | Perfect | |
+
+## Sparse Fused Lasso (GTF)
+
+The sparse fused lasso iteration is mainly a max-flow (MF), plus some
+per-vertex calculation to update the capacities in the graph. The reference and
+most non-parallel implementations of MF are argumenting path based; but finding
+the argumenting path and subsequent residual updates are both serial. The
+push-relabel algorithm is more parallelable, and used by Gunrock's MF
+implementation. Each time the push operation updates the flow on an edge, it
+also needs to update the flow on the reverse edge; but the reverse edge may be
+host by another GPU, and that creates a large amount of inter-GPU traffic. The
+pseudo code for one iteration of MF with inter-GPU communication is following:
+```
+// Push phase
+For each local vertex v:
+    If (excess[v] <= 0) continue;
+    If (v == source || v == sink) continue;
+    For each edge e<v, u> of v:
+        If (capacity[e] <= flow[e]) continue;
+        If (height[v] <= height[u]) continue;
+        move := min(capacity[e] - flow[e], excess[v]);
+        excess[v] -= move;
+        flow[e] += move;
+        Send <reverse[e], move> to host_GPU(u);
+        If (excess[v] <= 0)
+            break for each e loop;
+
+For each received <e, move> pair:
+    flow[e] -= move;
+    excess[Dest(e)] += move;
+
+// Relabel phase
+For each local vertex v:
+    If (excess[v] <= 0) continue;
+    min_height := infinity;
+    For each e<v, u> of v:
+        If (capacity[e] <= flow[e]) continue;
+        If (min_height > height[u])
+            min_height = height[u];
+    If (height[v] <= min_height)
+        height[v] := min_height + 1;
+
+Broadcast height[v] for all local vertex;
+```
+
+The cost analysis will not be on one single iteration, but on a full run of the
+push-relabel algorithm, as the bounds of the push and the relabel operations
+are known.
+
+| Parts | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-------|------------|---------------|----------------------|-------------|--------------|
+| Push  | a(V + 1)VE/p | (V+1)VE/p x 8 bytes | a:8          | Less than okay | |
+| Relabel | VE/p     | V^2 x 8 bytes | d/p : 8              | Okay | |
+| MF (Push-Relabel) | (aV + a + 1)VE/p | V^2((V+1)d/p + 1) x 8 bytes | \~ a:8 | Less than okay | |
+
+The GTF specific parts are more complicated than MF in terms of communication:
+it keeps some data, such as weights and sizes, for each community of vertices,
+and multiple GPUs could be updating such data simultaneously. It's almost
+impossible to do explicit data movement for this part, and the best option is to
+use direct access or UVM; each vertex may update its community once, so the
+communication cost is still manageable. One iteration of GTF is like this:
+```
+MF;
+BFS to find the min-cut;
+Vertex-Community updates;
+Updates source-vertex and vertex-destination capacities;
+```
+
+| Parts | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-------|------------|---------------|----------------------|-------------|--------------|
+| MF (Push-Relabel) | (aV + a + 1)VE/p | V^2((V+1)d/p + 1) x 8 bytes | \~ a:8 | Less than okay | |
+| BFS   | E/p        | 2V x 4 bytes  | d/p : 8              | Okay | |
+| V-C updates | E/p | V/p x 8 bytes  | d : 8                | Okay | |
+| Capacity updates | V/p | V/p x 4 bytes | 1 : 4            | Less than okay | |
+| GTF | (aV + a + 1)VE/p + 2E/p + V/p | V^2((V+1)d/p + 1) x 8  + 2V x 4 + V/p x 4 bytes | \~ a:8 | Less than okay | |
+
+It's unsurprising that GTF may not scale: the compute and communicate heavy part
+of GTF is the MF, and in MF, each push needs communication to update its
+reverse edge. A more distributed friendly MF algorithm is needed to over come
+this problem.
 
 ## Summary of Results
 
@@ -403,3 +483,4 @@ of vertices, the costs analysis are:
 | Geo location| Explicit movement: 25E/p : 4V<br> UVM or peer access: 25 : 1 | Okay <br> Good | Easy <br> Easy |
 | Vertex nomination | E : 8V x min(d, p) | Okay | Easy |
 | Scan Statistics   | Duplicated graph: infinity<br> Distributed graph: \~ (d + a * log(d)) : 12 | Okay | Trivial <br> Easy |
+| Sparse Fused Lasso | \~ a:8 | Less than okay | Hard |
