@@ -304,20 +304,94 @@ While has new distance updates
                 distance[u] = new_distance;
 
     For each u with distance update:
-        Send <u, ditance[u]> to host_GPU(u);
+        Send <u, distance[u]> to host_GPU(u);
 ```
 
 Assuming on average, each vertex has its distance updated a times, and the
-average degree of vertices is d, the compuation and the communication costs are:
+average degree of vertices is d, the computation and the communication costs are:
 
 | Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |-----------------------|------------|---------------|----------------------|-------------|--------------|
-| Vertex nomination     | aE/p       | aV/p x min(d, p) x 8 bytes | E : 8V x min(d, p) | Okay | | 
+| Vertex nomination     | aE/p       | aV/p x min(d, p) x 8 bytes | E : 8V x min(d, p) | Okay | |
 
-The min(d, p) part in the communication cost comes from update aggretion on
+The min(d, p) part in the communication cost comes from update aggregation on
 each GPU: when a vertex has more than one distance updates, only the smallest
 is sent out; for a vertex that has a lot of neighbors and neighboring to all
-GPUs, its communication cost is capped by p x 8 bytes. 
+GPUs, its communication cost is capped by p x 8 bytes.
+
+## Scan Statistics
+
+Scan statistics is triangle counting (TC) for each vertex plus a simple post
+processing step. The current Gunrock TC implementation is intersection based:
+for an edge <v, u>, intersecting neighbors[u] and neighbors[v] gives the number
+of triangles including edge <v, u>. This neighborhood intersection based
+algorithm only works, if the neighborhood of end points of all edges need to
+count triangles for can reside in the memory of a single GPU. For graphs
+with low connectivities, such as road networks and meshes, it's still possible
+to partition the graph; for graphs with high connectivity, such as social
+networks or some web graphs, it's almost impossible to partition the graph, and
+any sizable partition of the graph may touch a large portion of vertices of
+the graph. As a result, for general graphs, the intersection based algorithm
+requires the graph can be duplicated on each GPU. Under this condition, the
+multi-GPU implementation is trivial: only count triangles for a subset of edges
+on each GPU, and no communication is involved.
+
+A more distributed friendly TC algorithm is wedge checking based (
+https://e-reports-ext.llnl.gov/pdf/890544.pdf). The main idea is this: for each
+triangle A-B-C, where degree(A) >= degree(B) >= degree(C), both A and
+B are in C's neighborhood, and A is in B's neighborhood; when testing for
+possible triangle D-E-F, with degree(D) >= degree(E) >= degree(F), the wedge
+(two edges share the same end point) need to be checked is D-E, and the
+checking can be simply done by verifying whether D is in E's neighborhood. As
+this algorithm is designed for distributed systems, it should be well suited
+for multi-GPU system. The ordering requirements are imposed to reduce the
+number of wedge checking and to balance the workload. The multi-GPU pseudo code
+is as following:
+```
+For each local edge < v, u >:
+    If (degree(v) > degree(u)) continue;
+    For each neighbor w of v:
+        If (degree(v) > degree(w)) continue;
+        If (degree(u) > degree(w)) continue;
+        Send tuple <u, w, v> to host_GPU(u) for checking;
+
+For each received tuple < u, w, v >:
+    If (w in u's neighbor list):
+        triangles[u] ++;
+        triangles[w] ++;
+        triangles[v] ++;
+
+AllReduce(triangles, sum);
+
+// For Scan statistics only
+For each vertex v in the graph:
+    scan_stat[v] := triangles[v] + degree(v);
+    if (scan_stat[v] > max_scan_stat):
+        max_scan_stat := scan_stat[v];
+        max_ss_node := v;
+```
+
+Using T as the number of triangles in the graph, the number of wedge checks is
+normally a few times of T, noted as aT. For the three graphs tested by the
+LLNL paper, Twitter, WDC 2012 and Rmat-Scale 34, a ranges from 1.5 to 5. The
+large number of wedges can use up the GPU memory, if they are stored and
+communicated all at once. The solution is to generate a batch of wedges and check
+them, then generate another batch and check them, loop until all wedges are
+checked.
+
+Assuming the neighbor lists of every vertex are sorted, the membership checking
+can be done in log(#neighbors). As a result, using d as the averaged out degree
+of vertices, the costs analysis are:
+
+| Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-----------------------|------------|---------------|----------------------|-------------|--------------|
+| Wedge generation      | dE/p     |                 | | | |
+| Wedge communication   | 0      | aE/p x 12 bytes   | | | |
+| Wedge checking        | aE/p * log(d) |            | | | |
+| AllReduce             | 2V         | 2V * 4 bytes  | | | |
+| Triangle Counting     | (d + a * log(d))E/p + 2V | aE/p * 12 + 8V bytes | \~ (d + a * log(d)) : 12a | Okay | |
+| Scan Statistics (wedge checks) | (d + a * log(d))E/p + 2V + V/p | 12aE/p + 8V bytes | \~ (d + a * log(d)) : 12a | Okay | |
+| Scan Statistics (intersection) | Vdd | 0 byte | Infinity | Perfect | |
 
 ## Summary of Results
 
@@ -326,6 +400,6 @@ GPUs, its communication cost is capped by p x 8 bytes.
 | Louvain     | E/p : 2V       | Okay | Hard |
 | Graph SAGE  | \~ CF : min(C, 2p)x4 | Good | Easy |
 | Random walk | Duplicated graph: infinity<br> Distributed graph: 1 : 24 | Perfect <br> Very poor | Trivial <br> Easy |
-| Geo location| Explicit movement: 25E/p : 4V<br> UVM or peer access: 25 : 1 | Okay <br> Good | Easy |
+| Geo location| Explicit movement: 25E/p : 4V<br> UVM or peer access: 25 : 1 | Okay <br> Good | Easy <br> Easy |
 | Vertex nomination | E : 8V x min(d, p) | Okay | Easy |
-
+| Scan Statistics   | Duplicated graph: infinity<br> Distributed graph: \~ (d + a * log(d)) : 12 | Okay | Trivial <br> Easy |
