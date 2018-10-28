@@ -43,7 +43,7 @@ def spatial_center(Vertex v):
         v.location = spatial_median(neighbors_list[v])
 ```
 
-    - **[Optimization] Early Exit:** fuses the global gather approach with the repeated compute, by performing one local gather for every vertex within the spatial center operator (without a costly device barrier), and exiting early if a vertex `v` has only one or two valid neighbors:
+- **[Optimization] Early Exit:** fuses the global gather approach with the repeated compute, by performing one local gather for every vertex within the spatial center operator (without a costly device barrier), and exiting early if a vertex `v` has only one or two valid neighbors:
 
 ```
 def spatial_center(Vertex v):
@@ -60,8 +60,8 @@ def spatial_center(Vertex v):
 
 | Approach         | Memory Usage | Memory Reads/Vertex  | Device Barriers | Largest Dataset (P100) |
 |------------------|--------------|----------------------|-----------------|------------------------|
-| Global Gather    | O(3x|E|)     | # of valid locations | 1               | ~160M Edges            |
-| Repeated Compute | O(|E|)       | degree of vertex     | 0               | ~500M Edges            |
+| Global Gather    | O(3x[E])     | # of valid locations | 1               | ~160M Edges            |
+| Repeated Compute | O([E])       | degree of vertex     | 0               | ~500M Edges            |
 
 
 **Note:** `spatial_median()` is defined as center of points on earth's surface -- given a set of points `Q`, the function computes the point `p` such that: `sum([haversine_distance(p, q) for q in Q])` is minimized. See `gunrock/app/geo/geo_spatial.cuh` for details on the spatial median implementation.
