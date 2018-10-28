@@ -473,6 +473,62 @@ of GTF is the MF, and in MF, each push needs communication to update its
 reverse edge. A more distributed friendly MF algorithm is needed to over come
 this problem.
 
+## Graph Projection
+
+Graph project is very similar to triangle counting by wedge checking; but
+instead of counting the triangles, it actually records the wedges. The problem
+here is not computation or communication, but rather the memory requirement of
+the result: all vertex projection may create a very dense graph, which means
+much larger than the original graph. One possible solution is to process the
+results in batch:
+
+```
+vertex_start := 0;
+While (vertex_start < num_vertices)
+    markers := {0};
+    current_range := [vertex_start, vertex_start + batch_size);
+    For each local edge e<v, u> with u in current_range:
+        For each neighbor t of v:
+            If (u == t) continue;
+            markers[(u - vertex_start) * ceil(num_vertices / 32) + t / 32] |=
+                1 << (t % 32);
+
+    For each vertex u in current_range:
+        Form the neighbor list of u in the new graph by markers;
+
+    For each local edge e<v, u> with u in current_range:
+        For each neighbor t of v:
+            If (u == t) continue;
+            e' := edge_id of <u, t> in the new graph,
+                by searching u's neighbor list;
+            edge_values[e'] += 1;
+
+    For each edge e'<u, t, w> in the new graph:
+        send <u, t, w> to host_GPU(u);
+
+    Merge all received <u, t, w> to form projection
+        for local vertices u in current_range;
+    Move the result from GPU to CPU;
+
+    vertex_start += batch_size;
+```
+
+Using E' to denote the number of edges in the projected graph, and d to denote
+the average degree of vertices, the costs are:
+
+| Parts | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-------|------------|---------------|----------------------|-------------|--------------|
+| Marking | dE/p     | 0 byte        | | | |
+| Forming edge lists | E' | 0 byte | | | |
+| Counting | dE/p | 0 byte | | | |
+| Merging  | E' | E' x 12 bytes | | | |
+| Graph Projection | 2dE/p + 2E' | 12E' bytes | dE/p + E' : 6E' | Okay | |
+
+If the graph can be duplicated on each GPU, instead of processing distributed
+edges, each GPU can process only u that hosted by the GPU. This eliminate the
+merging step; as a result, there is no communication needed, and the
+computation cost reduces to 2dE/p + E'.
+
 ## Summary of Results
 
 | Application | Computation to communication ratio | Scalability | Implementation difficulty |
@@ -482,5 +538,6 @@ this problem.
 | Random walk | Duplicated graph: infinity<br> Distributed graph: 1 : 24 | Perfect <br> Very poor | Trivial <br> Easy |
 | Geo location| Explicit movement: 25E/p : 4V<br> UVM or peer access: 25 : 1 | Okay <br> Good | Easy <br> Easy |
 | Vertex nomination | E : 8V x min(d, p) | Okay | Easy |
-| Scan Statistics   | Duplicated graph: infinity<br> Distributed graph: \~ (d + a * log(d)) : 12 | Okay | Trivial <br> Easy |
-| Sparse Fused Lasso | \~ a:8 | Less than okay | Hard |
+| Scan statistics   | Duplicated graph: infinity<br> Distributed graph: \~ (d + a * log(d)) : 12 | Okay | Trivial <br> Easy |
+| Sparse fused lasso | \~ a:8 | Less than okay | Hard |
+| Graph projection | Duplicated graph : infinity <br> Distributed graph : dE/p + E' : 6E' | Perfect <br> Okay | Easy <br> Easy |
