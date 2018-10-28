@@ -12,7 +12,8 @@ full_length: true
 
 # Sparse Graph Trend Filtering
 
-Given each vertex on the graph has its own weight, the sparse graph trend filtering tries to learn a weight that is (1) sparse (mostly of the vertices have weights 0), (2) close to the original weight in l2 norm, and (3) close to its neighbors' weight(s) in l1 norm. This algorithm is usually used in main trend filtering (denoising).
+Given each vertex on the graph has its own weight, the sparse graph trend filtering tries to learn a weight that is (1) sparse (mostly of the vertices have weights 0), (2) close to the original weight in l2 norm, and (3) close to its neighbors' weight(s) in l1 norm. This algorithm is usually used in main trend filtering (denoising). The loss function is 0.5*sum(y' - y)^2 + lambda1*sum|yi' - yj'| + lambda2 * sum|yi'|, where y
+is the input value for each vertex and y' is the output denoising value for each vertex.
 (https://arxiv.org/abs/1410.7690)
 
 ## Summary of Results
@@ -53,29 +54,62 @@ make
 At this point, there should be an executable `gtf_main_<CUDA version>_x86_64`
 in `tests/gtf/bin`.
 
-The datasets are assumed to have been placed in `/raid/data/hive`, and converted
-to proper matrix market format (.mtx). At the time of testing, `ca`, `amazon`,
-`akamai`, and `pokec` are available in that directory. `ca` and `amazon` are taken
-from PNNL's implementation, and originally use 0-based vertex index; 1 is added
-to each vertex Id to make them proper .mtx files.
-
 The testing is done with Gunrock using `dev-refactor` branch at commit `2699252`
 (Oct. 18, 2018), using CUDA 9.1 with NVIDIA driver 390.30.
 
+### HIVE Data Preparation
+
+Prepare the data, skip this step if you are just running the sample dataset.
+
+```
+cd gunrock/tests/gtf/_data
+
+export TOKEN= # get this Authentication TOKEN from https://api-token.hiveprogram.com/#!/user
+mkdir -p _data
+wget --header "Authorization:$TOKEN" https://hiveprogram.com/data/_v0/sparse_fused_lasso/taxi/taxi-small.tar.gz
+tar -xzvf taxi-small.tar.gz && rm -r taxi-small.tar.gz
+mv taxi-small _data/
+
+wget --header "Authorization:$TOKEN" https://hiveprogram.com/data/_v0/sparse_fused_lasso/taxi/taxi-1M.tar.gz
+tar -xzvf taxi-1M.tar.gz && rm -r taxi-1M.tar.gz
+mv taxi-1M _data/
+'''
+
+Refer to parse_args() in taxi_tsv_file_preprocessing.py for dataset preprocessing options.
+Set the lambda1 (see equation above) in generate_graph.py
+'''
+python taxi_tsv_file_preprocessing.py
+python generate_graph.py
+```
+Then three files are generated. The files e and n are for benchmarks, and std_added.mtx is for Gunrock input.
 
 ### Running the application
-
-We will attach a run file in the repository as well. The command is
-<code>
-
-<code>
-
-Note: This run / these runs need to be on DARPA's DGX-1.
+```
+market is the graph type for Gunrock
+--lambda2 is the sparsity regularization constant
+```
+Sample command line with argument.
+```
+./bin/test_gtf_10.0_x86_64 market ./_data/std_added.mtx --lambda2 3
+```
 
 ### Output
 
-The code will output two files in the current directory. One is called output_pr.txt and the other is called ouput_pr_GPU.txt.
+The code will output two files in the current directory. One is called output_pr.txt (for CPU reference) and the other is called ouput_pr_GPU.txt.
 Each vertex's new weight will be stored in each line of the two files. These output could be further processed to the heatmap.
+
+Sample output is
+```
+0
+0
+0
+0
+0
+0
+-11.375
+-0.307292
+0
+```
 
 ## Performance and Analysis
 
@@ -93,10 +127,10 @@ renormalization is O(V+E).
 Graphtv is the graph trend filtering algorithm with parametric maxflow backend. It is CPU serial implementation.
 The metrics to measure the accuracy is side by side comparison of the output weights per node.
 | DataSet       | time starts         | time ends          | #E       | #V       | graphtv runtime   | Gunrock GPU runtime |
-|-------------- |---------------------|--------------------|----------|--------- |-------------------| --------------------|
+|-------------- |--------------------:|-------------------:|---------:|---------:|------------------:| -------------------:|
 | NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349    | 8922     | 0.11s             |                     |
 | NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259   | 107064   | 8.71s             |                     |
-| NY Taxi-1M    | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211   | 213360   | 8.71s             |                     |
+| NY Taxi-1M    | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211   | 213360   | 103.62s           |                     |
 
 
 ### Performance limitations
