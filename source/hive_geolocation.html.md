@@ -24,7 +24,7 @@ There are two approaches we took to implement Geolocation within gunrock:
 
 - **[Fewer Reads] Global Gather:** uses two `compute` operators as `ForAll()`. The first `ForAll()` is a `gather` operation, gathering all the values of neighbors with known locations for an active vertex `v`, and the second `ForAll()` uses those values to compute the `spatial_center` where the spatial center of a list's points is the center of those points on the earth's surface.
 
-```
+```python
 def gather_op(Vertex v):
     for neighbor in G.neighbors(v):
         if isValid(neigbor.location):
@@ -37,7 +37,7 @@ def compute_op(Vertex v):
 
 - **[Less Memory] Repeated Compute:** skips the global gather and uses only one `compute` operator as a `ForAll()` to find the spatial center of every vertex. During the spatial center computation, instead of iterating over all valid neighbors (where valid neighobor is a neighbor with a known location), we iterate over all neighbors for each vertex, doing more random reads than the global gather approach, but using `3x` less memory.
 
-```
+```python
 def spatial_center(Vertex v):
     if !isValid(v.location):
         v.location = spatial_median(neighbors_list[v])
@@ -45,7 +45,7 @@ def spatial_center(Vertex v):
 
 - **[Optimization] Early Exit:** fuses the global gather approach with the repeated compute, by performing one local gather for every vertex within the spatial center operator (without a costly device barrier), and exiting early if a vertex `v` has only one or two valid neighbors:
 
-```
+```python
 def spatial_center(Vertex v):
     if !isValid(v.location):
 	if v.valid_locations == 1:
