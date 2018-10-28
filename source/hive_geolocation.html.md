@@ -20,7 +20,9 @@ One or two sentences that summarize "if you had one or two sentences to sum up y
 
 ## Summary of Gunrock Implementation
 
-We implemented Geolocation using two `compute` operators as `ForAll()`. The first `ForAll()` is a `gather` operation, gathering all the values of neighbors with known locations for an active vertex `v`, and the second `ForAll()` uses those values to compute the `spatial_center` where the spatial center of a list's points is the center of those points on the earth's surface.
+There are two approaches we took to implement Geolocation within gunrock: 
+
+- **[Fewer Reads] Global Gather:** uses two `compute` operators as `ForAll()`. The first `ForAll()` is a `gather` operation, gathering all the values of neighbors with known locations for an active vertex `v`, and the second `ForAll()` uses those values to compute the `spatial_center` where the spatial center of a list's points is the center of those points on the earth's surface.
 
 ```
 def gather_op(Vertex v):
@@ -33,7 +35,36 @@ def compute_op(Vertex v):
         v.location = spatial_center(locations_list[v])
 ```
 
-See `gunrock/app/geo/geo_spatial.cuh` for details on the spatial center implementation.
+- **[Less Memory] Repeated Compute:** skips the global gather and uses only one `compute` operator as a `ForAll()` to find the spatial center of every vertex. During the spatial center computation, instead of iterating over all valid neighbors (where valid neighobor is a neighbor with a known location), we iterate over all neighbors for each vertex, doing more random reads than the global gather approach, but using `3x` less memory.
+
+```
+def spatial_center(Vertex v):
+    if !isValid(v.location):
+        v.location = spatial_median(neighbors_list[v])
+```
+
+    - **[Optimization] Early Exit:** fuses the global gather approach with the repeated compute, by performing one local gather for every vertex within the spatial center operator (without a costly device barrier), and exiting early if a vertex `v` has only one or two valid neighbors:
+
+```
+def spatial_center(Vertex v):
+    if !isValid(v.location):
+	if v.valid_locations == 1:
+	    v.location = valid_neighbor[v].location:
+	    exit
+	else if v.valid_locations == 2:
+	    v.location = mid_point(valid_neighbors[v].location)
+	else:
+            v.location = spatial_median(neighbors_list[v])
+```
+
+
+| Approach         | Memory Usage | Memory Reads/Vertex  | Device Barriers | Largest Dataset (P100) |
+|------------------|--------------|----------------------|-----------------|------------------------|
+| Global Gather    | O(3x|E|)     | # of valid locations | 1               | ~160M Edges            |
+| Repeated Compute | O(|E|)       | degree of vertex     | 0               | ~500M Edges            |
+
+
+**Note:** `spatial_median()` is defined as center of points on earth's surface -- given a set of points `Q`, the function computes the point `p` such that: `sum([haversine_distance(p, q) for q in Q])` is minimized. See `gunrock/app/geo/geo_spatial.cuh` for details on the spatial median implementation.
 
 ## How To Run This Application on DARPA's DGX-1
 
@@ -77,10 +108,19 @@ Application specific parameters:
         number of iterations to run geolocation or (stop condition).
         (default = 3)
 
+    --spatial-iter
+        number of iterations for spatail median computation.
+        (default = 1000)
+
     --geo-complete
         runs geolocation for as many iterations as required
         to find locations for all nodes.
         (default = false because it uses atomics)
+
+    --debug
+        Debug label values, this prints out the entire labels 
+	array (longitude, latitude).
+        (default = false)
 ```
 
 Example command-line:
@@ -126,6 +166,7 @@ Reading from ./locations.labels:
  (39 nodes)
 Done parsing (0 s).
 Debugging Labels -------------
+ (nans represent unknown locations)
     locations[ 0 ] = < 37.744907 , -122.009430 >
     locations[ 1 ] = < 37.866806 , -122.257973 >
     locations[ 2 ] = < nan , nan >
@@ -233,7 +274,7 @@ Node [ 38 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -11
 
 ### Output
 
-When `quick` mode is disabled, the application performs the CPU Reference implementation, which is used to validate the results from the GPU implementation. Geolocation application also supports the `quiet` mode, which allows the user to skip the output and just report the performance metrics (note, this will run the CPU implementation in the background without any output).
+When `quick` mode is disabled, the application performs the CPU reference implementation, which is used to validate the results from the GPU implementation by comparing the predicted latitudes and longitudes of each vertex with the CPU referencec implementation as well as the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git). Geolocation application also supports the `quiet` mode, which allows the user to skip the output and just report the performance metrics (note, this will run the CPU implementation in the background without any output).
 
 ## Performance and Analysis
 
@@ -242,10 +283,6 @@ Runtime is the key metric for measuring performance for Geolocation. We also che
 ### Implementation limitations
 
 One of our biggest limitations is that we are currently use a `|V|x|V|` array to store all the neighbors' locations for all the vertices. For a graph of size 60k nodes, it can take approximately 16 GB of GPU memory. In a worst-case scenario, we have a fully connected graph and require this much storage, but in most real-world cases, we won't see this connectivity within a graph. Some tricks can be done to determine the degree of each vertex beforehand and allocate just enough memory required to store the locations of valid neighbors. For simplicity at this point, our baseline currently uses a `|V|x|V|` size array.
-
-### [Optimization] Reducing Memory footprint
-
-In our updated version of Geolocation, we aim to address the memory limitations of the problem, where a `locations_list` array of size `|V|x|V|` is not a viable size. With more optimized storage, GPUs can handle a far larger dataset. In this update, we fuse the `gather` and `spatial_center` operators  together such that now there are more gathers within the spatial median calculations. Instead of storing the locations in the huge locations array, they are now fetched as needed from within the `spatial_center` operator. Now, the largest allocated array size is size `|E|`, much smaller in practice than `|V|x|V|`.
 
 ### Comparison against existing implementations
 
@@ -258,10 +295,10 @@ In our updated version of Geolocation, we aim to address the memory limitations 
 | instagram          | 23731995 | 41355870  | 3          | 10.643214          | 63.82181        | 1.910632 |
 +--------------------+----------+-----------+------------+--------------------+-----------------+----------+
 
-On a workload that fills the GPU, gunrock outperforms GT's OpenMP C++ implementation by 5.5x. There is a lack of available datasets against which we can compare performance, so we use only the provided instagram dataset, and a toy sample for a sanity check. All tested implementations meet the criteria of accuracy, which is validated against the output of the original python implementation.
+On a workload that fills the GPU, gunrock outperforms GT's OpenMP C++ implementation by 5.5x. There is a lack of available datasets against which we can compare performance, so we use only the provided instagram dataset, and a toy sample for a sanity check on NVIDIA's P100 with 16GB of global memory. All tested implementations meet the criteria of accuracy, which is validated against the output of the original python implementation.
 
-- [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git)
-- [GTUSC implementation](https://gitlab.hiveprogram.com/gtusc/geotagging)
+- [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git) uses distributed PySpark.
+- [GTUSC implementation](https://gitlab.hiveprogram.com/gtusc/geotagging) uses C++ OpenMP.
 
 ### Performance limitations
 
