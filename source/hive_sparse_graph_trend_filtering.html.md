@@ -61,6 +61,9 @@ The testing is done with Gunrock using `dev-refactor` branch at commit `2699252`
 
 Prepare the data, skip this step if you are just running the sample dataset.
 
+Refer to parse_args() in taxi_tsv_file_preprocessing.py for dataset preprocessing options.
+Set the lambda1 (see equation above) in generate_graph.py for Gunrock.
+
 ```
 cd gunrock/tests/gtf/_data
 
@@ -73,14 +76,11 @@ mv taxi-small _data/
 wget --header "Authorization:$TOKEN" https://hiveprogram.com/data/_v0/sparse_fused_lasso/taxi/taxi-1M.tar.gz
 tar -xzvf taxi-1M.tar.gz && rm -r taxi-1M.tar.gz
 mv taxi-1M _data/
-'''
 
-Refer to parse_args() in taxi_tsv_file_preprocessing.py for dataset preprocessing options.
-Set the lambda1 (see equation above) in generate_graph.py
-'''
 python taxi_tsv_file_preprocessing.py
 python generate_graph.py
 ```
+
 Then three files are generated. The files e and n are for benchmarks, and std_added.mtx is for Gunrock input.
 
 ### Running the application
@@ -126,6 +126,7 @@ renormalization is O(V+E).
 ### Comparison against existing implementations
 Graphtv is the graph trend filtering algorithm with parametric maxflow backend. It is CPU serial implementation.
 The metrics to measure the accuracy is side by side comparison of the output weights per node.
+
 | DataSet       | time starts         | time ends          | #E       | #V       | graphtv runtime   | Gunrock GPU runtime |
 |-------------- |--------------------:|-------------------:|---------:|---------:|------------------:| -------------------:|
 | NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349    | 8922     | 0.11s             |                     |
