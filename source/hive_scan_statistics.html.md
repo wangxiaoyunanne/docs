@@ -45,23 +45,17 @@ git clone --recursive https://github.com/gunrock/gunrock -b dev-refactor
 cd gunrock
 mkdir build
 ctest ..
-cd ../tests/scan_statistics/
+cd ../tests/ss/
 make clean && make
 </pre>
 
 ### Running the application
 Application specific parameters:
  
-<pre>
-    --labels-file
-    file name containing node ids and their locations.
-</pre>
- 
 Example command-line:
 
 <pre>
-location.mtx is a graph based on chesapeake.mtx dataset
-./bin/test_geo_10.0_x86_64 --graph-type=market --graph-file=./geolocation.mtx --labels-file=./locations.labels
+./bin/test_ss_main_10.0_x86_64 --graph-type=market --graph-file=./scan_statistics.mtx
 </pre>
 
 Note: This run / these runs need to be on DARPA's DGX-1.
@@ -114,14 +108,16 @@ Can the dataset be effectively divided across multiple GPUs, or must it be repli
 
 ### Notes on dynamic graphs
 
-(Only if appropriate)
-
-Does this workload have a dynamic-graph component? If so, what are the implications of that? How would your implementation change? What support would Gunrock need to add?
+This workload have a dynamic-graph component as it can potentially take in time-series graph and try to find any abnormal behavior in any statistics change as mentioned in the referenced papers. We would need Gunrock to support dynamic graph in its advance and intersection operators. And this application would be changed to record all history scan statistics and try to find any significant changes with a certain threshold.
 
 ### Notes on larger datasets
 
-What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
+For dataset which is too large to fit into a single GPU, we can leverage the multi-GPU implementation of Gunrock to make it work on multiple GPUs on a single node. The implementation won't change a lot since Gunrock already has good support in its multi-GPU implementation. For dataset which cannot fit multiple GPUs on a single node, we need distributed level of computation which Gunrock doesn't support yet. But open source libs such as NCCL and Horovad support thiswhich we can reference. Performance-wise, the way of partitioning the graph as well as the properties of a graph will effect the communication bottleneck. Since we need to calculate the total number of triangles each node is involved in, if we couldn't fit all neighorhood of a node on a single node, we need other compute resouces' help in solving that. Worst case senario is that the graph is fully connected, and we have to wait for the counting results from all other compute resources and sum them up. In this case, if we can do good scheduling of load balancing, we can minimize the communication bottleneck and reduce latency.
 
 ### Notes on other pieces of this workload
 
-Briefly: What are the important other (non-graph) pieces of this workload? Any thoughts on how we might implement them / what existing approaches/libraries might implement them?
+Other importand pieces of this work includes some statistics time series analysis on the dynamic changes of the graph. Gunrock currently doesn't support dealing with dynamic graphs. But other libraries such as cuSTINGER might solve the problem.
+
+### Research value
+
+This application takes the advantage of a classic traingle counding problem to solve a more complex statistics problem. Instead of directly using the exisitng solution, it's solved from a different angle. Instead of counting how many triangles there are in the whole graph, we count triangles from the node respective.
