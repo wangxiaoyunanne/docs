@@ -302,7 +302,8 @@ __Note:__ Small differences in the number of nonzero entries in the output (nnz_
 | PNNL OpenMP    | 16          | 286830790 | 188.701         |
 | PNNL OpenMP    | 32          | 286830790 | 102.964         |
 | PNNL OpenMP    | 64          | 286830790 | 163.731         |
-| Gunrock        | 1xP100 GPU  | 286830790 | _out-of-memory_ |
+| Gunrock        | 1xP100 GPU  | 286830790 | _
+_ |
 | GraphBLAS      | 1xP100 GPU  | 286830790 | __5.012__       |
 
 __Takeaway:__ When the graph is small enough, Gunrock graph projection is fastest, followed by GraphBLAS (approx. 5x slower).  The PNNL OpenMP implementation is consistently substantially slower than the single threaded scipy implementation, even when using 32+ threads.
@@ -368,7 +369,7 @@ This workflow does not have an explicit dynamic component.  The graph projection
 
 If the dataset were too big to fit into the aggregate GPU memory of multiple GPUs on a node, then two directions can be taken in order to be able to tackle these larger datasets:
 
- - Out-of-memory: Compute using part of the dataset at a time on the GPU, and save the completed result to CPU memory. When all completed results on the CPU are ready to perform the next step, copy back to GPU (slower than distributed, but cheaper and easier to implement).
+ - Out-of-memory: Compute using part of the dataset at a time on the GPU, and save the completed result to CPU memory. This method is slower than distributed, but cheaper and easier to implement.
  - Distributed memory: If GPU memory of a single node is not enough, use multiple nodes. This method can be made to scale for infinitely large datasets provided the implementation is good enough (faster than out-of-memory, but more expensive and difficult).
 
 ### Notes on other pieces of this workload
