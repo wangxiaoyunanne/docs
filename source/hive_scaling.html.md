@@ -278,7 +278,7 @@ The cost analysis, depending on the walk strategy and optimization, we have:
 |----------|------------|---------------|----------------------|-------------|--------------|
 | Uniform  | W/p        | W/p x 24 bytes| 1 : 24               | very poor   | |
 | Greedy   | Straight forward: dW/p <br> Pre-visit: W/p | W/p x 24 bytes | d : 24 <br> 1 : 24 | Poor <br> very poor | |
-| Stochastic Greedy | Straight forward: dW/p <br> Pre-visit: log(d)W/p | W/p x 24 bytes | d : 24 <br> log(d) : 24 | Poor <br> very poor | | 
+| Stochastic Greedy | Straight forward: dW/p <br> Pre-visit: log(d)W/p | W/p x 24 bytes | d : 24 <br> log(d) : 24 | Poor <br> very poor | |
 
 If the selection of neighbor is weighted random, instead of uniformly random,
 it will increase the computation workload to Wd /p, where d is the average
@@ -555,6 +555,74 @@ edges, each GPU can process only u that hosted by the GPU. This eliminate the
 merging step; as a result, there is no communication needed, and the
 computation cost reduces to 2dE/p + E'.
 
+## Local Graph Clustering
+
+The Gunrock implementation of Local Graph Clustering (LGC) uses
+PageRank-Nibble, an variance of the PageRank algorithm. PR-Nibble's
+communication pattern is the same as standard PR: accumulate changes to the
+vertices to their host GPUs. As a result, PR-Nibble should be scalable, same
+as standard PR. PR-Nibble with communication can be done as:
+
+```
+// Per-vertex updates
+For each active local vertex v:
+    If (iteration == 0 && v == src\_neighbor) continue;
+    If (iteration > 0 && v == src)
+        gradient[v] -= alpha / #reference_vertices / sqrt(degree(v));
+    z[v] := y[v] - gradient[v];
+    If (z[v] == 0) continue;
+
+    q_old := q[v];
+    threshold := rho * alpha * sqrt(degree(v));
+    If (z[v] >= threshold)
+        q[v] := z[v] - threshold;
+    Else if (z[v] <= -threshold)
+        q[v] := z[v] + threshold;
+    Else
+        q[v] := 0;
+
+    If (iteration == 0)
+        y[v] := q[v];
+    Else
+        y[v] := q[v] + (1 - sqrt(alpha)) / (1 + sqrt(alpha)) * (q[v] - old_q);
+
+    gradient[v] := y[v] * (1 + alpha) / 2;
+
+// Ranking propagation
+For each edge e<v, u> of active local vertex v:
+    change := y[v] * (1 - alpha) / 2 / sqrt(degree(v)) / sqrt(degree(u));
+    gradient_update[u] -= change;
+
+For each u that has gradient updates:
+    send < u, gradient_update[u]> to host_GPU(u);
+
+For each received gradient update < u, gradient_update>:
+    gradient[u] += gradient_update;
+
+// Gradient updates
+For each local vertex u with gradient updated:
+    If (gradient[u] == 0) continue;
+    Set u as active for next iteration;
+
+    val := gradient[u];
+    If (u == src)
+        val -= (alpha / #reference_vertices) / sqrt(degree(u));
+    val := abs(val / sqrt(degree(u)));
+    if (gradient_scale_value < val)
+        gradient_scale_value = val;
+    if (val > gradient_threshold)
+        gradient_scale := 1;
+```
+
+The cost analysis is as following:
+
+| Parts | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-------|------------|---------------|----------------------|-------------|--------------|
+| Per-vertex updates  | \~10 V/p | 0 bytes | | | |
+| Ranking propagation | 2E/p | V * 8 bytes | d/p : 4 | | |
+| Gradient updates    | V/p | 0 bytes | | | |
+| Local graph clustering | (12V + 2E)/p | 8V bytes | (6 + d)/p : 4 | good | |
+
 ## Summary of Results
 
 | Application | Computation to communication ratio | Scalability | Implementation difficulty |
@@ -564,9 +632,10 @@ computation cost reduces to 2dE/p + E'.
 | Random walk | Duplicated graph: infinity<br> Distributed graph: 1 : 24 | Perfect <br> Very poor | Trivial <br> Easy |
 | Graph search: Uniform  | 1 : 24               | very poor   | Easy |
 | Graph search: Greedy   | Straight forward: d : 24 <br> Pre-visit: 1:24 | Poor <br> very poor | Easy <br> Easy |
-| Graph search: Stochastic greedy | Straight forward: d : 24 <br> Pre-visit: log(d) : 24 | Poor <br> very poor | Easy <br> Easy | 
+| Graph search: Stochastic greedy | Straight forward: d : 24 <br> Pre-visit: log(d) : 24 | Poor <br> very poor | Easy <br> Easy |
 | Geo location| Explicit movement: 25E/p : 4V<br> UVM or peer access: 25 : 1 | Okay <br> Good | Easy <br> Easy |
 | Vertex nomination | E : 8V x min(d, p) | Okay | Easy |
 | Scan statistics   | Duplicated graph: infinity<br> Distributed graph: \~ (d + a * log(d)) : 12 | Perfect <br> Okay | Trivial <br> Easy |
 | Sparse fused lasso | \~ a:8 | Less than okay | Hard |
 | Graph projection | Duplicated graph : infinity <br> Distributed graph : dE/p + E' : 6E' | Perfect <br> Okay | Easy <br> Easy |
+| Local graph clustering | (6 + d)/p : 4 | Good | Easy |
