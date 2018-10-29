@@ -12,15 +12,19 @@ full_length: true
 
 # Vertex Nomination
 
-The `VertexNomination` workflow is an implementation of the kind of algorithms discussed in [Coppersmith and Priebe](https://arxiv.org/abs/1201.4118).  Often, we have an attributed graph where we know of some "interesting" nodes, and we want to rank the rest of the nodes by their likelihood of being "interesting".  Coppersmith and Priebe propose using both node attributes (eg "content") and network features (eg "context") to rank nodes. The specific content, context and fusion functions can be arbitrary, user-defined functions.
+The vertext nomination (VN) workflow is an implementation of the kind of algorithm discussed in [Coppersmith and Priebe](https://arxiv.org/abs/1201.4118).
+
+Often, we have an attributed graph where we know of some "interesting" nodes, and we want to rank the rest of the nodes by their likelihood of being interesting.  Coppersmith and Priebe propose a general framework for using both node attributes ("content") and network features ("context") to rank nodes. The specific content, context and fusion functions can be arbitrary, user-defined functions. 
 
 ## Summary of Gunrock Implementation
 
-Since HIVE is focused on graph analytics, the content scoring function is not relevant, and we only implement the context scoring function.  Coppersmith and Priebe propose a number of possible network statistics that could be used for context scoring, but the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/vertex_nomination_Enron/blob/master/snap_vertex_nomination.py) ranks each node `u` in a graph `G = (U, E)` by the minimum distance from `u` to a node in a set of seed nodes `S`.  This is the VN variant we have implemented in Gunrock.  This choice of scoring function ends up being very close to a single source shortest paths (SSSP) problem, but instead of starting from a single node, we start from the set of seeds nodes `S`.
+Since HIVE is focused on graph analytics, the content scoring function is not relevant, and we only implement the context scoring function.  Coppersmith and Priebe propose a number of possible network statistics that can be used for context scoring.  The [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/vertex_nomination_Enron/blob/master/snap_vertex_nomination.py) ranks each node `u` in a graph `G = (U, E)` by the minimum distance from `u` to a node in a set of seed nodes `S`.  This is the VN variant we have implemented in Gunrock.  
 
-Because of the similarity to SSSP, the [Gunrock VN implementation](https://github.com/gunrock/gunrock/tree/dev-refactor/tests/vn) consists of a minor modification to the [Gunrock SSSP implementation](https://github.com/gunrock/gunrock/tree/dev-refactor/tests/sssp), so that it can accept a list of source nodes instead of a single source node.  Thus, the core of the VN algorithm is a Gunrock advance operator implementing a parallel version of Djikstra's algorithm.  Specifically, in `python`:
+This choice of context scoring function ends up being nearly identical to a single source shortest paths (SSSP) problem.  The one difference is that we start from the set of seed nodes `S` instead of single node. 
 
-```
+Because of this similarity to SSSP, the [Gunrock VN implementation](https://github.com/gunrock/gunrock/tree/dev-refactor/tests/vn) consists of making a minor modification to the [Gunrock SSSP implementation](https://github.com/gunrock/gunrock/tree/dev-refactor/tests/sssp), so that it can accept a list of source nodes instead of a single source node.  Thus, the core of the VN algorithm is a Gunrock advance operator implementing a parallel version of Djikstra's algorithm.  Specifically, in `python`:
+
+```python
 class IterationLoop(BaseIterationLoop):
     def _advance_op(self, src, dest, problem, enactor_stats):
         src_distance = problem.distances[src]
@@ -41,9 +45,10 @@ class IterationLoop(BaseIterationLoop):
 ```
 
 Note we could have used the Gunrock SSSP implementation directly by
- a) adding a dummy node `d` to `G`; then
- b) adding an edge `(d, s)` between `d` and each node `s` in `S` with weight 0; then
- c) running SSSP from `d`
+
+ 1. adding a dummy node `d` to `G`
+ 2. adding an edge `(d, s)` between `d` and each node `s` in `S` with `weight(d, s) = 0`
+ 3. running SSSP from `d`
 
 ## How To Run This Application on DARPA's DGX-1
 
@@ -60,9 +65,9 @@ make
 ### Application specific parameters
 ```
 --src
- Comma separated list of seed nodes (eg, `0,1,2`) OR `random`
+ Comma separated list of seed nodes (eg, `0,1,2`) OR `random` (see below)
 --srcs-per-run
- If `src=random` number of randomly chosen source nodes per run
+ If `src=random`, number of randomly chosen source nodes per run
 --num-runs
  Number of runs
 ```
@@ -138,46 +143,52 @@ First 40 distances of the reference CPU result.
 
 ### Expected Output
 
-Currently, the VN app does write any output to disk. It prints runtime statistics and the results of a correctness check.  A successfuly run will print 
-```
-Distance Validity: PASS
-```
-in the output.
+Currently, the VN app does write any output to disk. It prints runtime statistics and the results of a correctness check.  A successfuly run will print  `Distance Validity: PASS` in the output.
 
 ## Validation
 
-The Gunrock VN implementation was tested against the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/vertex_nomination_Enron/blob/master/snap_vertex_nomination.py) to verify correctness.  We also implemented a CPU reference implementation inside of the Gunrock VN app, with results that match the HIVE reference implementation.  Also, for ease of exposition, we implemented a [pure Python version of the app](https://github.com/gunrock/pygunrock/blob/master/apps/vn.py) that lets people new to Gunrock see the relevant logic without all of the complexity of C++/CUDA data structures, memory management, etc.
+The Gunrock VN implementation was tested against the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/vertex_nomination_Enron/blob/master/snap_vertex_nomination.py) to verify correctness.  We also implemented a CPU reference implementation inside of the Gunrock VN app, with results that match the HIVE reference implementation.
 
-This version of VN is a deterministic algorithm, so all correct solutions have the same accuracy/quality.
+Additionally, for ease of exposition, we implemented a [pure Python version of the Gunrock algorithm](https://github.com/gunrock/pygunrock/blob/master/apps/vn.py) that lets people new to Gunrock see the relevant logic without all of the complexity of C++/CUDA data structures, memory management, etc.
+
+Our implementation of VN is a deterministic algorithm, so all correct solutions have the same accuracy/quality.
 
 ## Performance and Analysis
 
 Performance is measured by the runtime of the app, given:
- - an input graph
+ - an input graph `G=(U, E)`
  - a set of seed nodes (or size/number of random seed sets)
 
 ### Other implementations
 
 #### Python reference implementation
 
-The Python+SNAP reference implementation can be found [here](https://gitlab.hiveprogram.com/ggillary/vertex_nomination_Enron/blob/master/snap_vertex_nomination.py).  This is a very naive implementation of the context function -- instead of running the SSSP variant we describe above, it runs a separate BFS from each node `s` in the seed set `S` to each node `u` in `U`.  Thus, it's algorithmic complexity is aproximately `|S|x|U|` times larger than the Gunrock implementation. 
+The Python + SNAP reference implementation can be found [here](https://gitlab.hiveprogram.com/ggillary/vertex_nomination_Enron/blob/master/snap_vertex_nomination.py).  This is a very naive implementation of the context function -- rather than running the SSSP variant we describe above, it runs a separate BFS from each node `s` in the seed set `S` to each node `u` in `U`.  Thus, it's algorithmic complexity is aproximately `|S|x|U|` times larger than the Gunrock implementation. 
 
-#### Performer OpenMP implementation
+#### Performer OpenMP implementations
 
-We were unable to locate any C/OpenMP implementation of VN from TA1/TA2 performers.
+We were unable to locate any C/OpenMP implementation of VN from TA1/TA2 performers at the time of writing. (2018-10-20)
 
 #### Gunrock CPU implementation
 
-For correctness checking, we implement VN via the SSSP variant described above in C++ within the Gunrock testing framework.  This is a serial implementation of Djikstra's algorithm using a CSR graph representation and `std::priority_queue`.  We expect this to be substantially faster than the HIVE reference implementation due to improved algorithmic complexity.
+For correctness checking, we implement VN in single-threaded C++ within the Gunrock testing framework.  This is a serial implementation of Djikstra's algorithm using a CSR graph representation and `std::priority_queue`.  We expect this to be substantially faster than the HIVE Python+SNAP reference implementation due to superior algorithmic complexity.
 
 #### Experiments 
 
-##### HIVE Enron dataset
+##### HIVE Enron dataset (|U|=15056, |E|=57075)
 
-The Enron graph is a graph of email communications between employees of Enron, w/ `|U|=15056` and `|E|=57075`.
+The Enron graph is a graph of email communications between employees of Enron.
 
-The HIVE reference implementation implementation does 10 runs w/ 5 random seeds each on the [Enron email dataset](https://hiveprogram.com/data/_v0/vertex_nomination_and_scan_statistics/).  Results are as follows
+The HIVE reference implementation implementation does 10 runs w/ 5 random seeds each on the [Enron email dataset](https://hiveprogram.com/data/_v0/vertex_nomination_and_scan_statistics/).  Results are as follows:
 
+| implementation | elapsed_ms (avg of 10 runs) |
+| -------------- | --------------------------- | 
+| Python+SNAP    | 4115.545                    |
+| Gunrock CPU    | 7.305                       | 
+| Gunrock GPU    | __0.921__                   | 
+
+<!--
+#### Raw data:
 ```
 num_nodes | num_edges | num_seeds | run_id | ms_elapsed
 
@@ -223,13 +234,21 @@ mean time = 7.305
 --
 mean time = 0.921
 ```
+-->
 
-Due to improved algorithmic efficiency, the Gunrock CPU implementation is approximately 563x faster than the HIVE reference implementation.  The Gunrock GPU implementation is approximately 7.9x faster than the Gunrock CPU implementation.  However, this dataset is probably too small for these numbers to be very meaningful.
+__Takeaway:__ Due to improved algorithmic efficiency, the Gunrock CPU implementation is approximately 563x faster than the HIVE reference implementation.  The Gunrock GPU implementation is approximately 7.9x faster than the Gunrock CPU implementation.  However, this dataset may be too small for these numbers numbers to be very precise.
 
-##### Hollywood-2009 graph
+##### Hollywood-2009 graph (|U|=1139905, |E|=57515616)
 
-The Hollywood-2009 graph is a graph of Hollywood movie actors, where nodes are actors and edges indicate two actors appear in a movie together.  `|U|=1139905` and `|E|=57515616`.
+The Hollywood-2009 graph is a graph of Hollywood movie actors, where nodes are actors and edges indicate two actors appear in a movie together.
 
+| implementation | elapsed_ms (avg of 10 runs) |
+| -------------- | --------------------------- | 
+| Python+SNAP    | _> 10 minutes_              |
+| Gunrock CPU    | 2035.45                     | 
+| Gunrock GPU    | __13.793__                  | 
+
+<!--
 ```
 num_nodes | num_edges | num_seeds | run_id | ms_elapsed
 
@@ -264,13 +283,22 @@ mean time = 2035.45
 --
 mean time = 13.793
 ```
+-->
 
-Here, the Gunrock GPU implementation is approximately 150x faster than the Gunrock CPU implementation.  The HIVE reference implementation did not finish in 10 minutes.
+__Takeaway:__ Here, the Gunrock GPU implementation is approximately 150x faster than the Gunrock CPU implementation.  The HIVE reference implementation did not finish in 10 minutes.
 
-##### Indochina-2004 graph
+##### Indochina-2004 graph (|U|=7414866, |E|= 191606827)
 
-The Indochina-2005 graph is an internet hyperlink graph.  `|U|=7414866` and `|E|=191606827`.
+The Indochina-2004 graph is an internet hyperlink graph, generated by a crawl of Asian country domains.
 
+| implementation | elapsed_ms (avg of 10 runs) |
+| -------------- | --------------------------- | 
+| Python+SNAP    | _> 10 minutes_              |
+| Gunrock CPU    | 9079.216                    | 
+| Gunrock GPU    | __22.743__                  | 
+
+
+<!--
 ```
 num_nodes | num_edges | num_seeds | run_id | ms_elapsed
 
@@ -305,20 +333,21 @@ mean time = 9079.216
 --
 mean time = 22.743
 ```
+-->
 
-Here, the Gunrock GPU implementation is approximately 400x faster than the Gunrock CPU implementation.  The HIVE reference implementation did not finish in 10 minutes.
+__Takeaway:__ Here, the Gunrock GPU implementation is approximately 400x faster than the Gunrock CPU implementation.  The HIVE reference implementation did not finish in 10 minutes.
 
 ### Implementation limitations
 
-The VN algorithm allocates 1-3 arrays of size `|U|`, so the size of the graph that can be processed will (usually) be limited by `|E|`.
+The size of the graph that can be processed will (usually) be limited by the number of edges `|E|` in the input graph. The VN algorithm only allocates an additional 1-3 arrays of size `|U|`, and thus does not require a large amount of storage for temporary data.
 
-The Gunrock VN algorithm works on weighted/unweighted directed/undirected graphs.  No particular graph topology or node/edge metadata is required.  In general, vertex nomination is run on graphs with node/edge attributes, but since our Gunrock app only implements context scoring, we are not subject to those restrictions.
+The Gunrock VN algorithm works on weighted/unweighted directed/undirected graphs.  No particular graph topology or node/edge metadata is required.  In general, VN would be run on graphs with node and/or edge attributes, but since our Gunrock app only implements context scoring, we are not subject to those restrictions.
 
 ### Performance limitations
 
-- Vertex nomination is bound by device memory latency.
-- Profiling indicates that 64% of time is spent in the Gunrock advance operator, and 20% of time is spent in XXX.
-- The device memory bandwidth is 271GB/s -- within the expected range for Gunrock graph analytics.  
+- Like SSSP, VN is bound by device memory latency.
+- Profiling indicates that 64% of time is spent in the Gunrock `advance `operator and 20% of time is spent in in the `filter` operator (pseudocode above).
+- The device memory bandwidth is 271GB/s -- within the expected range for Gunrock graph analytics.  Random memory access means that we don't expect to get close to the reported maximum memory bandwidth.
 
 ## Next Steps
 
@@ -328,7 +357,7 @@ Because of it's similarity to SSSP, this implementation of VN is fairly hardened
 
 ### Gunrock implications
 
-This was a fairly straightforward adapatation of an existing Gunrock app.  SSSP is also one of the simpler apps -- only one advance/filter operation without a ton of logic -- so implementing VN was not very difficult.  All of the core logic in VN is identical to SSSP.
+This was a straightforward adapatation of an existing Gunrock app.  SSSP is also one of the simpler apps -- only one advance/filter operation without a complex logic -- so implementing VN was not very difficult.  All of the core logic in VN is identical to SSSP.
 
 ### Notes on multi-GPU parallelization
 
@@ -340,11 +369,12 @@ Can the dataset be effectively divided across multiple GPUs, or must it be repli
 
 ### Notes on dynamic graphs
 
-The reference implementation does not cover a dynamic graph version of this workflow, though one could imagine having a static set of seed nodes and a streaming graph on which you'd like to compute context scores in real time.
+The reference implementation does not cover a dynamic graph version of this workflow, though one could imagine having a static set of seed nodes and a streaming graph on which bkjyou'd like to compute context scores in real time.
 
 ### Notes on larger datasets
 
-<TODO> What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
+__TODO__
+What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
 
 ### Notes on other pieces of this workload
 
