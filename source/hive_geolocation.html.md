@@ -20,22 +20,22 @@ One or two sentences that summarize "if you had one or two sentences to sum up y
 
 ## Summary of Gunrock Implementation
 
-There are two approaches we took to implement Geolocation within gunrock: 
+There are two approaches we took to implement Geolocation within gunrock:
 
 - **[Fewer Reads] Global Gather:** uses two `compute` operators as `ForAll()`. The first `ForAll()` is a `gather` operation, gathering all the values of neighbors with known locations for an active vertex `v`, and the second `ForAll()` uses those values to compute the `spatial_center` where the spatial center of a list's points is the center of those points on the earth's surface.
 
 ```python
 def gather_op(Vertex v):
     for neighbor in G.neighbors(v):
-        if isValid(neigbor.location):
-            locations_list[v].append(neigbor.location)
+        if isValid(neighbor.location):
+            locations_list[v].append(neighbor.location)
 
 def compute_op(Vertex v):
     if !isValid(v.location):
         v.location = spatial_center(locations_list[v])
 ```
 
-- **[Less Memory] Repeated Compute:** skips the global gather and uses only one `compute` operator as a `ForAll()` to find the spatial center of every vertex. During the spatial center computation, instead of iterating over all valid neighbors (where valid neighobor is a neighbor with a known location), we iterate over all neighbors for each vertex, doing more random reads than the global gather approach, but using `3x` less memory.
+- **[Less Memory] Repeated Compute:** skips the global gather and uses only one `compute` operator as a `ForAll()` to find the spatial center of every vertex. During the spatial center computation, instead of iterating over all valid neighbors (where valid neighbor is a neighbor with a known location), we iterate over all neighbors for each vertex, doing more random reads than the global gather approach, but using `3x` less memory.
 
 ```python
 def spatial_center(Vertex v):
@@ -48,12 +48,12 @@ def spatial_center(Vertex v):
 ```python
 def spatial_center(Vertex v):
     if !isValid(v.location):
-	if v.valid_locations == 1:
-	    v.location = valid_neighbor[v].location:
-	    exit
-	else if v.valid_locations == 2:
-	    v.location = mid_point(valid_neighbors[v].location)
-	else:
+        if v.valid_locations == 1:
+            v.location = valid_neighbor[v].location:
+            exit
+        else if v.valid_locations == 2:
+            v.location = mid_point(valid_neighbors[v].location)
+        else:
             v.location = spatial_median(neighbors_list[v])
 ```
 
@@ -101,26 +101,26 @@ This will generate two files, `instagram.mtx` and `instagram.labels`, which can 
 Application specific parameters:
 
 ```
-    --labels-file
-        file name containing node ids and their locations.
+--labels-file
+    file name containing node ids and their locations.
 
-    --geo-iter
-        number of iterations to run geolocation or (stop condition).
-        (default = 3)
+--geo-iter
+    number of iterations to run geolocation or (stop condition).
+    (default = 3)
 
-    --spatial-iter
-        number of iterations for spatail median computation.
-        (default = 1000)
+--spatial-iter
+    number of iterations for spatial median computation.
+    (default = 1000)
 
-    --geo-complete
-        runs geolocation for as many iterations as required
-        to find locations for all nodes.
-        (default = false because it uses atomics)
+--geo-complete
+    runs geolocation for as many iterations as required
+    to find locations for all nodes.
+    (default = false because it uses atomics)
 
-    --debug
-        Debug label values, this prints out the entire labels 
-	array (longitude, latitude).
-        (default = false)
+--debug
+    Debug label values, this prints out the entire labels
+    array (longitude, latitude).
+    (default = false)
 ```
 
 Example command-line:
@@ -274,7 +274,7 @@ Node [ 38 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -11
 
 ### Output
 
-When `quick` mode is disabled, the application performs the CPU reference implementation, which is used to validate the results from the GPU implementation by comparing the predicted latitudes and longitudes of each vertex with the CPU reference implementation. Further correctness checking was performed by comparing results to the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git). 
+When `quick` mode is disabled, the application performs the CPU reference implementation, which is used to validate the results from the GPU implementation by comparing the predicted latitudes and longitudes of each vertex with the CPU reference implementation. Further correctness checking was performed by comparing results to the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git).
 
 Geolocation application also supports the `quiet` mode, which allows the user to skip the output and just report the performance metrics (note, this will run the CPU implementation in the background without any output).
 
@@ -284,23 +284,23 @@ Runtime is the key metric for measuring performance for Geolocation. We also che
 
 ### Implementation limitations
 
-Geolocation is also one of the few applications that exhibits the dynamic parallelism pattern:
+Geolocation is also one of the few applications that exhibits a dynamic parallelism pattern:
 
 - Parallel compute across the nodes,
 - Serial compute per node, and
 - Parallel compute within the serial compute per node.
 
-One of the ways to implement this will be using `ForAll()` operator for the parallel compute across the nodes, a simple while loop for the serial compute per node, and finally multiple `neighbor_reduce()` operators for the parallel work within the serial while loop. Currently, we do not have a way to support this within gunrock, but moving forward we can see kernel launch within a kernel to address this limitation.
+One way to implement this will use the `ForAll()` operator for the parallel compute across the nodes, a simple while loop for the serial compute per node, and finally multiple `neighbor_reduce()` operators for the parallel work within the serial while loop. Currently, we do not have a way to support this within Gunrock, but moving forward we can potentially leverage kernel launch within a kernel ("dynamic parallelism") to address this limitation.
 
 ### Comparison against existing implementations
 
 | GPU  | Dataset            | \|V\|    | \|E\|     | Iterations | Spatial Iters | GTUSC (16 threads) | Gunrock (CPU)  | Gunrock (GPU) |
 |------|--------------------|----------|-----------|------------|---------------|--------------------|----------------|---------------|
-| P100 | sample             | 39       | 170       | 10         | 1000          | N\A                | 0.144005 ms    | 0.022888 ms   |
+| P100 | sample             | 39       | 170       | 10         | 1000          | N/A                | 0.144005 ms    | 0.022888 ms   |
 | P100 | instagram          | 23731995 | 82711740  | 10         | 1000          | 8009.491 ms        | 1589.884033 ms | 15.113831 ms  |
-| V100 | twitter            | 50190344 | 488078602 | 10         | 1000          | N\A                | 9216.666016 ms | 46.108007 ms  |
+| V100 | twitter            | 50190344 | 488078602 | 10         | 1000          | N/A                | 9216.666016 ms | 46.108007 ms  |
 
-On a workload that fills the GPU, gunrock outperforms GT's OpenMP C++ implementation by ~533x, comparing gunrock's GPU vs. CPU performance, we see that gunrock's GPU version outperforms the CPU implementation by 100x. There is a lack of available datasets against which we can compare performance, so we use only the provided instagram and twitter datasets, and a toy sample for a sanity check on NVIDIA's P100 with 16GB of global memory and V100 with 32GB of global memory. All tested implementations meet the criteria of accuracy, which is validated against the output of the original python implementation.
+On a workload that fills the GPU, gunrock outperforms GT's OpenMP C++ implementation by ~533x. Comparing gunrock's GPU vs. CPU performance, we see that gunrock's GPU version outperforms the CPU implementation by 100x. There is a lack of available datasets against which we can compare performance, so we use only the provided instagram and twitter datasets, and a toy sample for a sanity check on NVIDIA's P100 with 16GB of global memory and V100 with 32GB of global memory. All tested implementations meet the criteria of accuracy, which is validated against the output of the original python implementation.
 
 - [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git) uses distributed PySpark.
 - [GTUSC implementation](https://gitlab.hiveprogram.com/gtusc/geotagging) uses C++ OpenMP.
@@ -317,23 +317,23 @@ Profiling the application shows 98.78% of the compute time in GPU activities is 
 
 - **Neighborhood Reduce w/ Spatial Center:** We can perform better load balancing by leveraging a neighbor-reduce (`advance` operator + `cub::DeviceSegmentedReduce`) instead of using a compute operator. In graphs where the degrees of nodes vary a lot, the compute operator will be significantly slower than a load-balanced advance + segmented reduce.
 
-- **Push Based Approach:** Instead of gathering all the locations from all the neighbors of an active vertex, we could instead perform a scatter of valid locations of all active vertices to their neighbors; this is a push approach vs. our current implementation's pull. Similar to global gather approach, a push based geolocation could also suffer from load imbalance issue, where some vertices will have to broadcast their valid locations to a long list of neighbors, while others will only have few neighbors to update. Push based approach will also require a device synchronize before the spatial center computation, but may perform better by using an `advance_op` with an atomic update (note, pull is done using a `ForAll()`).
+- **Push Based Approach:** Instead of gathering all the locations from all the neighbors of an active vertex, we could instead perform a scatter of valid locations of all active vertices to their neighbors; this is a push approach vs. our current implementation's pull. Similar to the global gather approach, a push-based geolocation could also suffer from load imbalance, where some vertices will have to broadcast their valid locations to a long list of neighbors, while others will only have few neighbors to update. A push-based approach will also require a device synchronize before the spatial center computation, but may perform better by using an `advance_op` with an atomic update (note, pull is done using a `ForAll()`).
 
 ### Gunrock implications
 
-- **The `predicted` atomic:** Geolocation and some other applications exhibit the same behavior where the stop condition of the algorithm is such that when all vertices' labels are predicted or determined, the algorithm stops. In Geolocation's case, when a location for all nodes is predicted, geolocation converges. We currently implement this with a loop and an atomic. This needs to be more of a core operation (mini-operator) such that when `isValidCount(labels|V|) == |V|`, a stop condition is met. Currently, we sidestep this issue by using a number-of-iterations parameter to determine the stop condition.
+- **The `predicted` atomic:** Geolocation and some other applications exhibit the same behavior where the algorithm stops when all vertices' labels are predicted or determined. In Geolocation's case, when a location for all nodes is predicted, geolocation converges. We currently implement this with a loop and an atomic. This needs to be more of a core operation (mini-operator) such that when `isValidCount(labels|V|) == |V|`, a stop condition is met. Currently, we sidestep this issue by using a number-of-iterations parameter to determine the stop condition.
 
 - **Parallel -> Serial -> Parallel:** As discussed earlier, gunrock currently doesn't have a way to address the dynamic parallelism problem, or even a kernel launch within a kernel. In geolocation's case, these minor parallel work inside the serial loop need to be multiple neighbor reduce.
 
 ### Notes on multi-GPU parallelization
 
-The challenging part for a multi-GPU Geolocation would be to obtain the updated node location from a seperate device if the two vertices on different devices share an edge. An interesting approach here would be leveraging the P2P memory bandwidth with the new NVLink connectors to exchange a small amount of updates across the NVLink's memory lane, and other ways are simply using direct accesses, or explicit data movement. Also elaborated on in the sclaing documentation, the communication model for multi-gpu geolocation could be done the following way:
+The challenging part for a multi-GPU Geolocation would be to obtain the updated node location from a separate device if the two vertices on different devices share an edge. An interesting approach here would be leveraging the P2P memory bandwidth with the new NVLink connectors to exchange a small amount of updates across the NVLink's memory lane; other ways are simply using direct accesses or explicit data movement. This is detailed more in the scaling documentation, but the communication model for multi-gpu geolocation could be done in the following way:
 
 ```
-Do
+do
     Local geo location updates on local vertices;
     Broadcast local vertices' updates;
-While no more update
+while no more update.
 ```
 
 ### Notes on dynamic graphs
