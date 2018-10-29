@@ -26,7 +26,7 @@ Since HIVE is focused on graph analytics, the content scoring function is not re
 
 This choice of context scoring function ends up being nearly identical to a single source shortest paths (SSSP) problem.  The one difference is that we start from the set of seed nodes `S` instead of single node.
 
-Because of this similarity to SSSP, the [Gunrock VN implementation](https://github.com/gunrock/gunrock/tree/dev-refactor/tests/vn) consists of making a minor modification to the [Gunrock SSSP implementation](https://github.com/gunrock/gunrock/tree/dev-refactor/tests/sssp), so that it can accept a list of source nodes instead of a single source node.  Thus, the core of the VN algorithm is a Gunrock advance operator implementing a parallel version of Djikstra's algorithm.  Specifically, in `python`:
+Because of this similarity to SSSP, the [Gunrock VN implementation](https://github.com/gunrock/gunrock/tree/dev-refactor/tests/vn) consists of making a minor modification to the [Gunrock SSSP implementation](https://github.com/gunrock/gunrock/tree/dev-refactor/tests/sssp), so that it can accept a list of source nodes instead of a single source node.  Thus, the core of the VN algorithm is a Gunrock advance operator implementing a parallel version of the Bellman-Ford algorithm.  Specifically, in `python`:
 
 ```python
 class IterationLoop(BaseIterationLoop):
@@ -147,13 +147,13 @@ First 40 distances of the reference CPU result.
 
 ### Expected Output
 
-Currently, the VN app does write any output to disk. It prints runtime statistics and the results of a correctness check.  A successful run will print  `Distance Validity: PASS` in the output.
+Currently, the VN app does not write any output to disk. It prints runtime statistics and the results of a correctness check.  A successful run will print  `Distance Validity: PASS` in the output.
 
 ## Validation
 
 The Gunrock VN implementation was tested against the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/vertex_nomination_Enron/blob/master/snap_vertex_nomination.py) to verify correctness.  We also implemented a CPU reference implementation inside of the Gunrock VN app, with results that match the HIVE reference implementation.
 
-Additionally, for ease of exposition, we implemented a [pure Python version of the Gunrock algorithm](https://github.com/gunrock/pygunrock/blob/master/apps/vn.py) that lets people new to Gunrock see the relevant logic without all of the complexity of C++/CUDA data structures, memory management, etc.
+Additionally, for ease of exposition, we implemented a [pure Python version of the Gunrock algorithm](https://github.com/gunrock/pygunrock/blob/master/apps/vn.py) that lets people new to Gunrock see the relevant logic without all of the complexity of C++/CUDA data structures, memory management, etc.  In this case, we already knew how to implement VN using Gunrock primitives.  However, in other cases, where we're writing a Gunrock app from scratch, translation from some arbitrary serial implementation to `advance`/`filter`/`compute` can be complex and involve some trial and error to handle edge cases.  In those cases, `pygunrock` has proven to be a useful tool for rapid prototyping and debugging.
 
 Our implementation of VN is a deterministic algorithm, so all correct solutions have the same accuracy/quality.
 

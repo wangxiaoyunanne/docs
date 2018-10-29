@@ -152,7 +152,7 @@ Performance is measured by the runtime of the approximate PageRank solver, given
  - a (set of) seed node(s) `S`
  - some parameters controlling eg. the target conductivity of the output cluster (`rho`, `alpha`, ...)
 
-We do not compare the sweep-cut component, because we do not find it to be the meaningful component in this application.
+The reference implementation also includes a sweep-cut step, where a threshold is applied to the approximate PageRank values to produce hard cluster assignments.  We do not implement this part of the workflow, as it is not fundamentally a graph operation.
 
 ### Implementation limitations
 
@@ -184,23 +184,24 @@ sh test_big.sh
 
 All runtimes are in milliseconds (ms):
 
-Dataset          | UCB C++  | Gunrock C++ | Gunrock GPU    | Speedup
+Dataset          | HIVE Ref. C++  | Gunrock C++ | Gunrock GPU    | Speedup
 ---------------- | -------- | ------------ | ------------- | ------------- 
-ak2010           | 97.99  | 72.08  | 3.04     | 32
-belgium_osm      | 2270   | 1663   | 2.97     | 726
-cit-Patents      | 40574  | 22148  | 16.41    | 2472
-coAuthorsDBLP    | 1004   | 1399   | 4.86     | 207
-delaunay_n13     | 21.52  | 16.33  | 2.86     | 8
-delaunay_n21     | 5733   | 4084   | 2.98     | 1924
-delaunay_n24     | 49299  | 34655  | 3.28     | 15030
-europe_osm       | 97022  | 72973  | 2.95     | 32889
-hollywood-2009   | 43024  | 30430  | 46.30    | 929
-indochina-2004   | 101877 | 71902  | 11.05    | 9220
-kron_g500-logn21 | 110309 | 89438  | 627.55   | 176
-roadNet-CA       | 3403   | 2475   | 3.03     | 1123
-road_usa         | 48232  | 31617  | 3.01     | 16024
-soc-LiveJournal1 | 63151  | 37936  | 19.29    | 3274
-soc-orkut        | 111391 | 89752  | 18.05    | 6171
+delaunay_n13     | 21.52  | 16.33  | 2.86     | 8 
+ak2010           | 97.99  | 72.08  | 3.04     | 32 
+coAuthorsDBLP    | 1004   | 1399   | 4.86     | 207 
+belgium_osm      | 2270   | 1663   | 2.97     | 726 
+roadNet-CA       | 3403   | 2475   | 3.03     | 1123 
+delaunay_n21     | 5733   | 4084   | 2.98     | 1924 
+cit-Patents      | 40574  | 22148  | 16.41    | 2472 
+hollywood-2009   | 43024  | 30430  | 46.30    | 929 
+road_usa         | 48232  | 31617  | 3.01     | 16024 
+delaunay_n24     | 49299  | 34655  | 3.28     | 15030 
+soc-LiveJournal1 | 63151  | 37936  | 19.29    | 3274 
+europe_osm       | 97022  | 72973  | 2.95     | 32889 
+indochina-2004   | 101877 | 71902  | 11.05    | 9220 
+kron_g500-logn21 | 110309 | 89438  | 627.55   | 176 
+soc-orkut        | 111391 | 89752  | 18.05    | 6171 
+
 
 ### Performance limitations
 
@@ -245,7 +246,7 @@ If the data were too big to fit into the aggregate GPU memory of multiple GPUs o
 
 ### Notes on other pieces of this workload
 
-N/A
+As mentioned previously, we do not implement the sweep-cut portion of the workflow where the PageRank values are discretized to produce hard cluster assignments.  Though it's not fundamentally a graph problem, parallelization of this step is a research question addressed in [Shun et al](https://arxiv.org/abs/1604.07515).
 
 ### How this work can lead to a paper publication
 
