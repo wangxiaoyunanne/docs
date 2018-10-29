@@ -280,7 +280,7 @@ The auction algorithm can be parallelized across GPUs in several ways:
 
 ### Notes on dynamic graphs
 
-N/A
+Real-world applications of SGM to eg. social media or communications networks often involve dynamic graphs.  Application of SGM to streaming garphs could be a very interesting new research direction.  To our knowledge, this problem has not been studied by the JHU group responsible for the algorithm.  Given an initial view of two graphs, we could compute an initial match, and then update the match via a few iterations of SGM as new edges arrive.
 
 ### Notes on larger datasets
 
@@ -291,7 +291,7 @@ If the dataset were too big to fit into the aggregate GPU memory of multiple GPU
 
 ### Notes on other pieces of this workload
 
-N/A
+There are no non-graph pieces of the SGM workload.
 
 ### How this work can lead to a paper publication
 
