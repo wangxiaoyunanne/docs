@@ -243,7 +243,7 @@ Since this problem maps well to Gunrock operations, we expect parallelization st
 
 ### Notes on dynamic graphs
 
-N/A
+It is not obvious how this algorithm would be extended to handle dynamic graphs.  At a high level, the algorithm iteratively spreads mass from the seed nodes to neighbors in the graph.  As the connectivity structure of the graph changes, the dynamics of this mass spreading could change arbitrarily -- imagine edges that form bridges between two previously distinct clusters.  Thus, we suspect that adapting the app to work on dynamic graphs may require substantial development and study of the underlying algorithms.
 
 ### Notes on larger datasets
 
