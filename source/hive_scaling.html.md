@@ -623,6 +623,18 @@ The cost analysis is as following:
 | Gradient updates    | V/p | 0 bytes | | | |
 | Local graph clustering | (12V + 2E)/p | 8V bytes | (6 + d)/p : 4 | good | |
 
+## Seed Graph Matching and Application Classification
+
+The implementations of these two applications are linear algebra based,
+compared to other applications in native graph (vertex-edge) formulations used
+by Gunrock. The linear algebra based, or BLAS based formulation, especially the
+ones that involved with matrix-matrix multiplications, may impose a large
+communication requirement. Advance matrix-matrix and vector-matrix
+multiplication kernels use optimizations that build on top of specific layout of the
+data, which may be not distribution friendly. A different method of analyzing
+the computation and the communication costs, thus the computation vs.
+communication ratio, is needed for these applications.
+
 ## Summary of Results
 
 | Application | Computation to communication ratio | Scalability | Implementation difficulty |
@@ -639,3 +651,5 @@ The cost analysis is as following:
 | Sparse fused lasso | \~ a:8 | Less than okay | Hard |
 | Graph projection | Duplicated graph : infinity <br> Distributed graph : dE/p + E' : 6E' | Perfect <br> Okay | Easy <br> Easy |
 | Local graph clustering | (6 + d)/p : 4 | Good | Easy |
+| Seed graph matching | | | |
+| Application classification | | | |
