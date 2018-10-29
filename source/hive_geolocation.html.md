@@ -171,37 +171,7 @@ Debugging Labels -------------
     locations[ 1 ] = < 37.866806 , -122.257973 >
     locations[ 2 ] = < nan , nan >
     locations[ 3 ] = < 37.869114 , -122.259109 >
-    locations[ 4 ] = < nan , nan >
-    locations[ 5 ] = < 37.643185 , -121.816154 >
-    locations[ 6 ] = < nan , nan >
-    locations[ 7 ] = < nan , nan >
-    locations[ 8 ] = < nan , nan >
-    locations[ 9 ] = < nan , nan >
-    locations[ 10 ] = < 37.865234 , -122.250633 >
-    locations[ 11 ] = < nan , nan >
-    locations[ 12 ] = < nan , nan >
-    locations[ 13 ] = < nan , nan >
-    locations[ 14 ] = < nan , nan >
-    locations[ 15 ] = < nan , nan >
-    locations[ 16 ] = < nan , nan >
-    locations[ 17 ] = < nan , nan >
-    locations[ 18 ] = < 38.204342 , -114.300339 >
-    locations[ 19 ] = < nan , nan >
-    locations[ 20 ] = < 36.758221 , -118.167915 >
-    locations[ 21 ] = < 33.977467 , -114.886513 >
-    locations[ 22 ] = < nan , nan >
-    locations[ 23 ] = < nan , nan >
-    locations[ 24 ] = < nan , nan >
-    locations[ 25 ] = < nan , nan >
-    locations[ 26 ] = < nan , nan >
-    locations[ 27 ] = < nan , nan >
-    locations[ 28 ] = < nan , nan >
-    locations[ 29 ] = < 39.259888 , -106.804665 >
-    locations[ 30 ] = < 37.880444 , -122.230148 >
-    locations[ 31 ] = < nan , nan >
-    locations[ 32 ] = < nan , nan >
-    locations[ 33 ] = < nan , nan >
-    locations[ 34 ] = < nan , nan >
+     ...
     locations[ 35 ] = < nan , nan >
     locations[ 36 ] = < nan , nan >
     locations[ 37 ] = < nan , nan >
@@ -225,37 +195,7 @@ Node [ 0 ]: Predicted = < 37.744907 , -122.009430 > Reference = < 37.744907 , -1
 Node [ 1 ]: Predicted = < 37.866806 , -122.257973 > Reference = < 37.866806 , -122.257973 >
 Node [ 2 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
 Node [ 3 ]: Predicted = < 37.869114 , -122.259109 > Reference = < 37.869114 , -122.259109 >
-Node [ 4 ]: Predicted = < 23.634264 , -115.614845 > Reference = < 23.634264 , -115.614845 >
-Node [ 5 ]: Predicted = < 37.643185 , -121.816154 > Reference = < 37.643185 , -121.816154 >
-Node [ 6 ]: Predicted = < 37.743797 , -122.011337 > Reference = < 37.864948 , -122.250595 >
-Node [ 7 ]: Predicted = < 33.535606 , -116.003227 > Reference = < 33.535610 , -116.003235 >
-Node [ 8 ]: Predicted = < 23.754425 , -115.802628 > Reference = < 23.754425 , -115.802628 >
-Node [ 9 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
-Node [ 10 ]: Predicted = < 37.865234 , -122.250633 > Reference = < 37.865234 , -122.250633 >
-Node [ 11 ]: Predicted = < 10.187306 , -110.838608 > Reference = < 37.744308 , -122.008415 >
-Node [ 12 ]: Predicted = < 37.744141 , -122.010750 > Reference = < 37.744141 , -122.010750 >
-Node [ 13 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
-Node [ 14 ]: Predicted = < 23.826635 , -112.263268 > Reference = < 23.826635 , -112.263268 >
-Node [ 15 ]: Predicted = < 23.826635 , -112.263268 > Reference = < 23.826635 , -112.263268 >
-Node [ 16 ]: Predicted = < 9.427615 , -110.640709 > Reference = < 23.755602 , -115.803055 >
-Node [ 17 ]: Predicted = < 23.826635 , -112.263268 > Reference = < 23.826635 , -112.263268 >
-Node [ 18 ]: Predicted = < 38.204342 , -114.300339 > Reference = < 38.204342 , -114.300339 >
-Node [ 19 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
-Node [ 20 ]: Predicted = < 36.758221 , -118.167915 > Reference = < 36.758221 , -118.167915 >
-Node [ 21 ]: Predicted = < 33.977467 , -114.886513 > Reference = < 33.977467 , -114.886513 >
-Node [ 22 ]: Predicted = < 37.744621 , -122.008858 > Reference = < 37.744621 , -122.008873 >
-Node [ 23 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
-Node [ 24 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 37.744907 , -122.009430 >
-Node [ 25 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
-Node [ 26 ]: Predicted = < 33.934067 , -114.746063 > Reference = < 33.933800 , -114.745186 >
-Node [ 27 ]: Predicted = < 21.715958 , -112.579689 > Reference = < 21.715958 , -112.579689 >
-Node [ 28 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -110.640709 >
-Node [ 29 ]: Predicted = < 39.259888 , -106.804665 > Reference = < 39.259888 , -106.804665 >
-Node [ 30 ]: Predicted = < 37.880444 , -122.230148 > Reference = < 37.880444 , -122.230148 >
-Node [ 31 ]: Predicted = < 33.975193 , -114.890976 > Reference = < 33.975193 , -114.890976 >
-Node [ 32 ]: Predicted = < 33.981956 , -114.889862 > Reference = < 33.981964 , -114.889854 >
-Node [ 33 ]: Predicted = < 37.744907 , -122.009430 > Reference = < 37.744907 , -122.009430 >
-Node [ 34 ]: Predicted = < 37.744907 , -122.009430 > Reference = < 37.744907 , -122.009430 >
+...
 Node [ 35 ]: Predicted = < 37.864429 , -122.199409 > Reference = < 37.864429 , -122.199409 >
 Node [ 36 ]: Predicted = < 23.755602 , -115.803055 > Reference = < 37.807079 , -122.134163 >
 Node [ 37 ]: Predicted = < 37.053715 , -115.913658 > Reference = < 37.053719 , -115.913628 >
