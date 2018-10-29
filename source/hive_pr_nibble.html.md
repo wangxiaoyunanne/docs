@@ -12,7 +12,7 @@ full_length: true
 
 # Local Graph Clustering (LGC)
 
-From [Andersen et al](https://projecteuclid.org/euclid.im/1243430567): 
+From [Andersen et al.](https://projecteuclid.org/euclid.im/1243430567):
 > A local graph partitioning algorithm finds a cut near a specified starting vertex, with a running time that depends largely on the size of the small side of the cut, rather than the size of the input graph.
 
 A common algorithm for local graph clustering is called PageRank-Nibble (PRNibble), which solves the L1 regularized PageRank problem. We implement a coordinate descent variant of this algorithm found in [Fountoulakis et al.](https://arxiv.org/pdf/1602.01886.pdf), which uses the fast iterative shrinkage-thresholding algorithm (FISTA).
@@ -43,18 +43,19 @@ For k = 0, 1, ..., inf
     Choose an i such that grad_f_i(q_k) < - alpha x rho x d_i^(1/2)
     q_k+1(i) = q_k(i) - grad_f_i(q_k)
     grad_f_i(q_k+1) = (1 - alpha)/2 x grad_f_i(q_k)
-    
+
     // Implemented using Gunrock Advance and Filter operator
-	For each j such that j ~ i
-		Set grad_f_j(q_k+1) = grad_f_j(q_k) + (1 - alpha)/(2d_i^(1/2) x d_j^(1/2)) x A_ij x grad_f_i(q_k)
-       
-	For each j such that j !~ j
-		Set grad_f_j(q_k+1) = grad_f_j(q_k)
-    
+    For each j such that j ~ i
+        Set grad_f_j(q_k+1) = grad_f_j(q_k) +
+            (1 - alpha)/(2d_i^(1/2) x d_j^(1/2)) x A_ij x grad_f_i(q_k)
+
+    For each j such that j !~ j
+        Set grad_f_j(q_k+1) = grad_f_j(q_k)
+
     // Implemented using Gunrock ForEach operator
     // Note: ||y||_inf is the infinity norm
-	if (||D^(-1/2) x grad_f(q_k)||_inf > rho x alpha)
-		break
+    if (||D^(-1/2) x grad_f(q_k)||_inf > rho x alpha)
+            break
 EndFor
 
 return p_k = D^(1/2) x q_k
@@ -67,7 +68,7 @@ return p_k = D^(1/2) x q_k
 ```bash
 # clone gunrock
 git clone --recursive https://github.com/gunrock/gunrock.git \
-	-b dev-refactor
+        -b dev-refactor
 
 cd gunrock/tests/pr_nibble
 cp ../../gunrock/util/gitsha1.c.in ../../gunrock/util/gitsha1.c
@@ -140,7 +141,7 @@ Run 0 elapsed: 1.738071, #iterations = 10
 
 We do not print the actual output values of PRNibble, but we output the results of a correctness check of the GPU version against our CPU implementation. `0 errors occurred.` indicates that LGC has generated an output that exactly matches our CPU validation implementation.
 
-Our implementations is validated against the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/local_graph_clustering_socialmedia). 
+Our implementations are validated against the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/local_graph_clustering_socialmedia).
 
 For ease of exposition, and to help in mapping the workflow to Gunrock primitives, we also implemented [a version of PRNibble in pygunrock](https://github.com/gunrock/pygunrock/blob/master/apps/pr_nibble.py).  This implementation is nearly identical to the actual Gunrock app, but in a way that more clearly exposes the logic of the app and eliminates a lot of Gunrock scaffolding/memory management/etc.
 
@@ -150,17 +151,17 @@ Performance is measured by the runtime of the approximate PageRank solver, given
 
  - a graph `G=(U, E)`
  - a (set of) seed node(s) `S`
- - some parameters controlling eg. the target conductivity of the output cluster (`rho`, `alpha`, ...)
+ - some parameters controlling e.g., the target conductivity of the output cluster (`rho`, `alpha`, ...)
 
 We do not compare the sweep-cut component, because we do not find it to be the meaningful component in this application.
 
 ### Implementation limitations
 
-PageRank runs on arbitrary graph -- it does not require any special conditions such as node attributes, etc.
+PageRank runs on arbitrary graphs -- it does not require any special conditions such as node attributes, etc.
 
-- **Memory size**: The dataset is assumed to be an undirected graph (with no self-loops). We were able to run on graphs of up to 6.2GB in size (7M vertices, 194M edges). The memory limitation should be the number of edges `2*|E| + 7*|U|`, which needs to be smaller than the GPU memory size (16GB for a single P100 on DGX-1). 
+- **Memory size**: The dataset is assumed to be an undirected graph (with no self-loops). We were able to run on graphs of up to 6.2 GB in size (7M vertices, 194M edges). The memory limitation should be the number of edges `2*|E| + 7*|U|`, which needs to be smaller than the GPU memory size (16 GB for a single P100 on DGX-1).
 
-- **Data type**: We have only tested our implementations using `int32` data type for node IDs.  However, we could also support `int64` node IDs for graphs with more than 4B edges.
+- **Data type**: We have only tested our implementations using an `int32` data type for node IDs.  However, we could also support `int64` node IDs for graphs with more than 4B edges.
 
 ### Comparison against existing implementations
 
@@ -185,7 +186,7 @@ sh test_big.sh
 All runtimes are in milliseconds (ms):
 
 Dataset          | UCB C++  | Gunrock C++ | Gunrock GPU    | Speedup
----------------- | -------- | ------------ | ------------- | ------------- 
+---------------- | -------- | ------------ | ------------- | -------------
 ak2010           | 97.99  | 72.08  | 3.04     | 32
 belgium_osm      | 2270   | 1663   | 2.97     | 726
 cit-Patents      | 40574  | 22148  | 16.41    | 2472
@@ -215,7 +216,7 @@ Other              | 147.89       | 20.3%
 
 __Note:__ "Other" includes HtoD and DtoH memcpy, smaller kernels such as scan, reduce, etc.
 
-By profiling the LB Advance kernel, we find that the performance of `advance` is bottlenecked by random memory accesses. In the first part of the computation --getting row pointers and column indices -- memory accesses can be coalesced and the profilers says we perform 4.9 memory transactions per access, which is close to the ideal of 4. However, once we start processing these neighbors, the memory access becomes random and we perform 31.2 memory transactions per access.
+By profiling the LB Advance kernel, we find that the performance of `advance` is bottlenecked by random memory accesses. In the first part of the computation -- getting row pointers and column indices -- memory accesses can be coalesced and the profilers says we perform 4.9 memory transactions per access, which is close to the ideal of 4. However, once we start processing these neighbors, the memory access becomes random and we perform 31.2 memory transactions per access.
 
 ## Next Steps
 
@@ -229,11 +230,11 @@ In theory, local graph clustering is appealing because you don't have to "touch"
 
 Gunrock currently supports all of the operations needed for this application. In particular, the `ForAll` and `ForEach` operators were very useful for this application.
 
-Additionally, `pygunrock` proved to be a useful tool for development -- correctly mapping the original (serial) algorithm to the Gunrock operators required a lot of attention to detail, and having an environment for rapid expedited experimentation.
+Additionally, `pygunrock` proved to be a useful tool for development -- correctly mapping the original (serial) algorithm to the Gunrock operators required a lot of attention to detail, and having an environment for rapid expedited experimentation facilitated the algorithmic development.
 
 ### Notes on multi-GPU parallelization
 
-Since this problem maps well to Gunrock operations, we expect parallelization to be similar to BFS and SSSP. The dataset can be effectively divided across multiple GPUs. 
+Since this problem maps well to Gunrock operations, we expect parallelization strategy would be similar to BFS and SSSP. The dataset can be effectively divided across multiple GPUs.
 
 ### Notes on dynamic graphs
 
@@ -241,15 +242,15 @@ N/A
 
 ### Notes on larger datasets
 
-If the data were too big to fit into the aggregate GPU memory of multiple GPUs on a single node, then we would need to look at multiple node solutions. Getting the application to work on multiple nodes would not be challenging, because it is very similar to BFS. However, optimizing it to achieve good scalability may require asynchronous communication, which we have experience with (see [Pan et al.](https://arxiv.org/pdf/1803.03922.pdf)).
+If the data were too big to fit into the aggregate GPU memory of multiple GPUs on a single node, then we would need to look at multiple-node solutions. Getting the application to work on multiple nodes would not be challenging, because it is very similar to BFS. However, optimizing it to achieve good scalability may require asynchronous communication, an area where we have some experience ([Pan et al.](https://arxiv.org/pdf/1803.03922.pdf)).
 
 ### Notes on other pieces of this workload
 
 N/A
 
-### How this work can lead to a paper publication
+### Potential future academic work
 
-This work can lead to a paper publication, because the coordinate descent implementation by Ben shows that Gunrock can be used as a coordinate descent solver. There have been more interest in coordinate descent recently, because coordinate descent can be used in ML as an alternative to stochastic gradient descent for SVM training. 
+The coordinate descent implementation (developed by Ben Johnson) shows that Gunrock can be used as a coordinate descent solver. There has been more interest in coordinate descent recently, because coordinate descent can be used in ML as an alternative to stochastic gradient descent for SVM training.
 
 ###### References
-Prof. Cho-Jul Hsieh from UC Davis is an expert in this field (see [1](http://www.jmlr.org/proceedings/papers/v37/hsieha15-supp.pdf), [2](https://www.semanticscholar.org/paper/HogWild%2B%2B%3A-A-New-Mechanism-for-Decentralized-Zhang-Hsieh/183d421bfb807378bd0463894415f40e0fca64d6), [3](http://www.stat.ucdavis.edu/~chohsieh/passcode_fix.pdf)).
+Prof. Cho-Jui Hsieh from UC Davis is an expert in this field (see [1](http://www.jmlr.org/proceedings/papers/v37/hsieha15-supp.pdf), [2](https://www.semanticscholar.org/paper/HogWild%2B%2B%3A-A-New-Mechanism-for-Decentralized-Zhang-Hsieh/183d421bfb807378bd0463894415f40e0fca64d6), [3](http://www.stat.ucdavis.edu/~chohsieh/passcode_fix.pdf)).
