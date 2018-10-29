@@ -13,6 +13,7 @@ full_length: true
 # Local Graph Clustering (LGC)
 
 From [Andersen et al.](https://projecteuclid.org/euclid.im/1243430567):
+
 > A local graph partitioning algorithm finds a cut near a specified starting vertex, with a running time that depends largely on the size of the small side of the cut, rather than the size of the input graph.
 
 A common algorithm for local graph clustering is called PageRank-Nibble (PRNibble), which solves the L1 regularized PageRank problem. We implement a coordinate descent variant of this algorithm found in [Fountoulakis et al.](https://arxiv.org/pdf/1602.01886.pdf), which uses the fast iterative shrinkage-thresholding algorithm (FISTA).
@@ -209,7 +210,7 @@ soc-orkut        | 111391 | 89752  | 18.05    | 6171
 
 ### Performance limitations
 
-We profiled the Gunrock GPU primitives on the `kron_g500-logn21` graph. The profiler adds approx. 100ms of overhead (728.48ms with profiler vs. 627.55ms without profiler). The breakdown of runtime by kernel looks like:
+We profiled the Gunrock GPU primitives on the `kron_g500-logn21` graph. The profiler adds approx. 100 ms of overhead (728.48 ms with profiler vs. 627.55 ms without profiler). The breakdown of runtime by kernel looks like:
 
 Gunrock Kernel     | Runtime (ms) | Percentage of Runtime
 ------------------ | ------------ | ---------------------
