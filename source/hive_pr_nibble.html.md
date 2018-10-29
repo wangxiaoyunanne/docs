@@ -17,6 +17,10 @@ From [Andersen et al.](https://projecteuclid.org/euclid.im/1243430567):
 
 A common algorithm for local graph clustering is called PageRank-Nibble (PRNibble), which solves the L1 regularized PageRank problem. We implement a coordinate descent variant of this algorithm found in [Fountoulakis et al.](https://arxiv.org/pdf/1602.01886.pdf), which uses the fast iterative shrinkage-thresholding algorithm (FISTA).
 
+## Summary of Results
+
+One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+
 ## Summary of Gunrock Implementation
 
 We implement Algorithm 2 from [Fountoulakis et al.](https://arxiv.org/pdf/1602.01886.pdf), which maps nicely to Gunrock. We present the pseudocode below along with the corresponding Gunrock operations:
