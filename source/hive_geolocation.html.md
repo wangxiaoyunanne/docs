@@ -274,7 +274,9 @@ Node [ 38 ]: Predicted = < 9.427616 , -110.640709 > Reference = < 9.427616 , -11
 
 ### Output
 
-When `quick` mode is disabled, the application performs the CPU reference implementation, which is used to validate the results from the GPU implementation by comparing the predicted latitudes and longitudes of each vertex with the CPU referencec implementation as well as the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git). Geolocation application also supports the `quiet` mode, which allows the user to skip the output and just report the performance metrics (note, this will run the CPU implementation in the background without any output).
+When `quick` mode is disabled, the application performs the CPU reference implementation, which is used to validate the results from the GPU implementation by comparing the predicted latitudes and longitudes of each vertex with the CPU reference implementation. Further correctness checking was performed by comparing results to the [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git). 
+
+Geolocation application also supports the `quiet` mode, which allows the user to skip the output and just report the performance metrics (note, this will run the CPU implementation in the background without any output).
 
 ## Performance and Analysis
 
@@ -286,14 +288,11 @@ One of our biggest limitations is that we are currently use a `|V|x|V|` array to
 
 ### Comparison against existing implementations
 
-+--------------------+----------+-----------+------------+--------------------+-----------------+----------+
-|                    |          |           |            | GT CPU             | GT CPU          |          |
-| Dataset            | \|V\|    | \|E\|     | Iterations |        (8 threads) |        (serial) | Gunrock  |
-+====================+==========+===========+============+====================+=================+==========+
-| geolocation-sample | 39       | 170       | 3          | 0.466108           | N/A             | 0.286102 |
-+--------------------+----------+-----------+------------+--------------------+-----------------+----------+
-| instagram          | 23731995 | 41355870  | 3          | 10.643214          | 63.82181        | 1.910632 |
-+--------------------+----------+-----------+------------+--------------------+-----------------+----------+
+|  GPU  | Dataset            | \|V\|    | \|E\|     | Iterations | Spatial Iters | GT CPU (8 threads) | GT CPU (serial) | Gunrock  |
+|-------|--------------------|----------|-----------|------------|---------------|--------------------|-----------------|----------|
+|  P100 | geolocation-sample | 39       | 170       | 3          | 1000          | 0.466108           | N/A             | 0.286102 |
+|  P100 | instagram          | 23731995 | 41355870  | 3          | 1000          | 10.643214          | 63.82181        | 1.910632 |
+|  V100 | twitter            | 50190344 | 251154219 | 3          | 1000          |                    |                 |          |
 
 On a workload that fills the GPU, gunrock outperforms GT's OpenMP C++ implementation by 5.5x. There is a lack of available datasets against which we can compare performance, so we use only the provided instagram dataset, and a toy sample for a sanity check on NVIDIA's P100 with 16GB of global memory. All tested implementations meet the criteria of accuracy, which is validated against the output of the original python implementation.
 
