@@ -221,7 +221,7 @@ UVM will resulted in very poor scalability; problem segmentation (i.e. only
 process portion of the graph at a time) may be necessary to have a scalable
 implementation for large graphs, but that will be quite complex.
 
-## Random walks
+## Random walks and graph search
 
 If the graph can be duplicated on each GPUs, the random walk multi-GPU
 implementation is trivial: just do a subset of the walks on each GPU. The
@@ -253,6 +253,32 @@ Using W as the number of walks, for each step, we have
 | Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |-----------------------|------------|---------------|----------------------|-------------|--------------|
 | Random walk           | W/p        | W/p x 24 bytes| 1 : 24               | very poor   | |
+
+Graph search is very similar to random walk, except that instead of randomly
+select any neighbor, it select the neighbor with the highest score when using
+greedy strategy, or with probabilities proportional to the neighbors' scores
+when using stochastic\_greedy strategy.
+
+For the greedy strategy, a straight
+forward implementation, when reaching a vertex, goes through the whole neighbor
+list of such vertex, and find the one with maximum score. A more optimized
+implementation could perform a per-visit to find the neighbor with maximum
+scored neighbor, with a cost of E/p; during the random walk process, the maximum scored neighbor
+will be known without going through the neighbor list.
+
+For the stochastic\_greedy strategy, the straight forward implementation would
+also go through all the neighbor, and select one based on their scores and a
+random number. Preprocessing can also help: perform a scan on the scores of
+each vertex's neighbor list, with a cost of E/p; during the random walk, a binary search would be
+sufficient to select a neighbor, with weighted probabilities.
+
+The cost analysis, depending on the walk strategy and optimization, we have:
+
+| Strategy | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|----------|------------|---------------|----------------------|-------------|--------------|
+| Uniform  | W/p        | W/p x 24 bytes| 1 : 24               | very poor   | |
+| Greedy   | Straight forward: dW/p <br> Pre-visit: W/p | W/p x 24 bytes | d : 24 <br> 1 : 24 | Poor <br> very poor | |
+| Stochastic Greedy | Straight forward: dW/p <br> Pre-visit: log(d)W/p | W/p x 24 bytes | d : 24 <br> log(d) : 24 | Poor <br> very poor | | 
 
 If the selection of neighbor is weighted random, instead of uniformly random,
 it will increase the computation workload to Wd /p, where d is the average
@@ -536,8 +562,11 @@ computation cost reduces to 2dE/p + E'.
 | Louvain     | E/p : 2V       | Okay | Hard |
 | Graph SAGE  | \~ CF : min(C, 2p)x4 | Good | Easy |
 | Random walk | Duplicated graph: infinity<br> Distributed graph: 1 : 24 | Perfect <br> Very poor | Trivial <br> Easy |
+| Graph search: Uniform  | 1 : 24               | very poor   | Easy |
+| Graph search: Greedy   | Straight forward: d : 24 <br> Pre-visit: 1:24 | Poor <br> very poor | Easy <br> Easy |
+| Graph search: Stochastic greedy | Straight forward: d : 24 <br> Pre-visit: log(d) : 24 | Poor <br> very poor | Easy <br> Easy | 
 | Geo location| Explicit movement: 25E/p : 4V<br> UVM or peer access: 25 : 1 | Okay <br> Good | Easy <br> Easy |
 | Vertex nomination | E : 8V x min(d, p) | Okay | Easy |
-| Scan statistics   | Duplicated graph: infinity<br> Distributed graph: \~ (d + a * log(d)) : 12 | Okay | Trivial <br> Easy |
+| Scan statistics   | Duplicated graph: infinity<br> Distributed graph: \~ (d + a * log(d)) : 12 | Perfect <br> Okay | Trivial <br> Easy |
 | Sparse fused lasso | \~ a:8 | Less than okay | Hard |
 | Graph projection | Duplicated graph : infinity <br> Distributed graph : dE/p + E' : 6E' | Perfect <br> Okay | Easy <br> Easy |
