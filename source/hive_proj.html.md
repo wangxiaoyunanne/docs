@@ -230,6 +230,10 @@ Implementation of additional semirings in GraphBLAS is currently in progress, an
 
 ### Comparison against existing implementations
 
+When the graph fits in its memory, the Gunrock implementation is approx. 5x faster than the GraphBLAS implementation and approx. 100x faster than PNNL's OpenMP CPU implemention w/ 64 threads.  Somewhat surprisingly, PNNL's implementation is substantially slower than a single-threaded scipy sparse matrix multiplication.
+
+When the graph does not fit in the Gunrock implementation's memory, our GPU GraphBLAS implementation is the fastest of the remaining implementations.
+
 #### Existing implementations
 
 ##### PNNL
@@ -327,7 +331,7 @@ This graph was chosen because it was used in benchmarks in [PNNL's gitlab repo](
 
 __Takeaway:__ GraphBLAS is approx. 5.7x faster than scipy, the next fastest implementation. Again, the PNNL OpenMP implementation is substantially faster than the single-threaded scipy implementation.
 
-_When the dataset can fit into memory_, Gunrock is \~4x faster than GraphBLAS.  Since the two implementations use slightly different algorithms, it's hard to tell where the Gunrock speedup comes from.  Our hunch is that Gunrock's superior load balancing gives better performance than GraphBLAS, but this is an interesting topic for further research.
+_When the dataset can fit into memory_, Gunrock is \~ 4x faster than GraphBLAS.  Since the two implementations use slightly different algorithms, it's hard to tell where the Gunrock speedup comes from.  Our hunch is that Gunrock's superior load balancing gives better performance than GraphBLAS, but this is an interesting topic for further research.
 
 ### Performance information
 
