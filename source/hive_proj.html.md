@@ -16,6 +16,10 @@ Given a (directed) graph `G`, graph projection outputs a graph `H` such that `H`
 
 Graph projection is most commonly used when the input graph `G` is bipartitite with node sets `U1` and `U2` and directed edges `(u, v)`.  In this case, the operation yields a unipartite projection onto one of the node sets.  However, graph projection can also be applied to arbitrary (unipartite) graphs.
 
+## Summary of Results
+
+One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+
 ## Summary of Gunrock Implementation
 
 We implement two versions of graph projections: one using [Gunrock](https://github.com/gunrock/gunrock) and one using [GraphBLAS](https://github.com/owensgroup/GraphBLAS).
