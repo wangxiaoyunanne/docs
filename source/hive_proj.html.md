@@ -14,11 +14,11 @@ full_length: true
 
 Given a (directed) graph `G`, graph projection outputs a graph `H` such that `H` contains edge `(u, v)` iff `G` contains edges `(w, u)` and `(w, v)` for some node `w`.  That is, graph projection creates a new graph where nodes are connected iff they are neighbors of the same node in the original graph.  Typically, the edge weights of `H` are computed via some (simple) function of the corresponding edge weights of `G`.
 
-Graph projection is most commonly used when the input graph `G` is bipartitite with node sets `U1` and `U2` and directed edges `(u, v)`.  In this case, the operation yields a unipartite projection onto one of the node sets.
+Graph projection is most commonly used when the input graph `G` is bipartitite with node sets `U1` and `U2` and directed edges `(u, v)`.  In this case, the operation yields a unipartite projection onto one of the node sets.  However, graph projection can also be applied to arbitrary (unipartite) graphs.
 
 ## Summary of Gunrock Implementation
 
-We implement two versions of graph projections.
+We implement two versions of graph projections: one using [Gunrock](https://github.com/gunrock/gunrock) and one using [GraphBLAS](https://github.com/owensgroup/GraphBLAS).
 
 #### Gunrock
 
@@ -29,25 +29,25 @@ def _advance_op(self, G, H_edges, src, dest):
         if dest != neib:
             H_edges[dest * G.num_nodes + neib] += 1
 ```
-That is, for each edge in the graph, we fetch the neighbors of the source node in `G`, then increment the weight of the edge between `dest` and each of the neighbors in `H`. 
+That is, for each edge in the graph, we fetch the neighbors of the source node in `G`, then increment the weight of the edge between `dest` and each of those neighbors in `H_edges`. 
 
-Note that we have only considered the unweighted case and a single method for computing the edgeweights of `H`, but the extension to weighted graphs and different weighting functions would be straightforward.
+Note that we have only implemented the unweighted case and a single method for computing the edgeweights of `H`, but the extension to weighted graphs and different weighting functions would be straightforward.
 
-We use a dense `|V|x|V|` array to store the edges of the output matrix `H`.  This is simple and fast, but uses an unrealistically large amount of memory (60k nodes -> 16gb).  Though, in the worst case, `H` may actually have all `|V|x|V|` possible edges, many real world graphs have far fewer.
+We use a dense `|V|x|V|` array to store the edges of the output matrix `H`.  This is simple and fast, but uses an unreasonably large amount of memory (a graph with 60k nodes requires 16gb).  In the worst case scenario, `H` may actually have all `|V|x|V|` possible edges, but many real world graphs have _far_ fewer edges in practice.
 
 #### GraphBLAS
 
-Second, we implement graph projection as a single sparse matrix-matrix multiply in [GraphBLAS](https://github.com/owensgroup/GraphBLAS), which wraps and extends cuSPARSE.  Graph projection admits a simple linear algebra formulation:
+Second, we implement graph projection as a single sparse matrix-matrix multiply in our [GraphBLAS](https://github.com/owensgroup/GraphBLAS) GPU library, which wraps and extends cuSPARSE.
+
+Graph projection admits a simple linear algebra formulation.  Given the adjacency matrix `A` of graph `G`, the projection is just:
 ```
-matmul(tranpose(A), A)
+H = matmul(tranpose(A), A)
 ```
 which can be concisely implemented via cuSPARSE's `csr2csc` and `csrgemm` functions.
 
-The `csrgemm` functions in cuSPARSE allocate memory more intelligently, on the order number of edges in output, and thus can scale to substantially larger matrices than our Gunrock implementation.  However, a single call to `csrgemm` is still restricted by GPU memory (16GB on the DGX-1) -- this limit can easily be hit by moderately sized graphs.
+The `csrgemm` functions in cuSPARSE allocate memory more intelligently than we do above, on the order number of edges in output.  Thus, our GraphBLAS implementation can scale to substantially larger matrices than our Gunrock implementation.  However, implementing graph projection via a single call to `csrgemm` requires both the input graph `G` and output graph `H` to fit in GPU memory (16GB on the DGX-1).  This limit can easily be hit, even for moderately sized `G`, as the number of edges in `H` is often orders of magnitude larger than in `G`.
 
-Thus, we implement a chunked matrix multiply.  Specifically, to compute `X.dot(Y)` w/ `X.shape = (n, m)` and `Y.shape = (m, k)`, we split `X` into `c` matrices `(X_1, ..., X_c)`, w/ `X_i.shape = (n / c, m)`.  Then we compute `X_i.dot(Y)` for each `X_i`, moving the output of each multiplication from GPU to CPU memory as we go.  This implementation addresses the case where we can fit both `X` and `Y` in GPU memory, but cannot fit `X.dot(Y)` which is often orders of magnitude more dense.
-
-The chunked matrix multiply clearly incurs a performance penalty, but allows us to run graph projections of much larger graphs on the GPU.
+Thus, we implement graph projections via a chunked matrix multiply.  Specifically, to compute `matmul(X, Y)` w/ `X.shape = (n, m)` and `Y.shape = (m, k)`, we split `X` into `c` matrices `(X_1, ..., X_c)`, w/ `X_i.shape = (n / c, m)`.  Then we compute `matmul(X_i, Y)` for each `X_i`, moving the output of each multiplication from GPU to CPU memory as we go.  This implementation addresses the common case where we can fit both `X` and `Y` in GPU memory, but `matmul(X, Y)` cannot. Obviously, the chunked matrix multiply incurs a performance penalty, but allows us to run graph projections of much larger graphs on the GPU.
 
 ## How To Run This Application on DARPA's DGX-1
 
@@ -64,9 +64,7 @@ make
 ```
 
 #### Application specific parameters
-```
-N/A
-```
+None
 
 #### Example Command
 ```bash
