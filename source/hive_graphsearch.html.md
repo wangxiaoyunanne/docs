@@ -22,6 +22,16 @@ The use case given by the HIVE government partner was sampling a graph: given so
 
 Use of these walk-based methods is motivated by the presence of homophily in many real world social networks: we expect interesting people to have relationships with interesting people.
 
+## Summary of Results
+
+Graph search is relatively minor modification to Gunrock's random walk application, and was straightforward to implement.  Though random walks are a "worst case scenario" for GPU memory bandwidth, we still achieve 3-5x speedup over a modified version of the OpenMP reference implementation.   
+
+The original OpenMP reference implementation actually ran slower with more threads -- we fixed the bugs, but the benchmarking experience highlights the need for performant and hardened CPU baselines.
+
+Until recently, Gunrock did not support parallelism _within_ the lambda functions run by the `advance` operator, so neighbor selection for a given step in the walk is done sequentially.  Methods for exposing more parallism to the programmer are currently being developed via parallel neighbor reduce functions.
+
+In an end-to-end graph search application, we'd need to implement the scoring function as well as the graph walk component.  For performance, we'd likely want to implement the scoring function on the GPU as well, which makes this a good example of a "Gunrock+X" app, where we'd need to integrate the high-performance graph processing component with arbitrary user code.
+
 ## Summary of Gunrock Implementation
 
 The scoring model can be an arbitrary function (eg of node metadata).  For example, if we were running GS on the Twitter friends/followers graph, the scoring model might be the output of a text classifier on each users' messages.  Thus, we do not implement the scoring model in our Gunrock implementation -- instead, we read scores from an input file and access them as necessary.
