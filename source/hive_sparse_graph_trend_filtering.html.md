@@ -12,8 +12,7 @@ full_length: true
 
 # Sparse Graph Trend Filtering
 
-Given each vertex on the graph has its own weight, the sparse graph trend filtering tries to learn a new weight that is (1) sparse (mostly of the vertices have weights 0), (2) close to the original weight in l2 norm, and (3) close to its neighbors' weight(s) in l1 norm. This algorithm is usually used in main trend filtering (denoising). The loss function is `0.5 * sum(y' - y)^2 + lambda1 * sum|yi' - yj'| + lambda2 * sum|yi'|`, where y
-is the input weights for each vertex and y' is the new weights for each vertex. For example, an image (grid graph) with noisy pixels can be applied with this algorithm to get a new image without the noisy pixels, which are "smoothed" out by its neighbors.
+Given a graph where each vertex on the graph has a weight, _sparse graph trend filtering_ tries to learn a new weight for each vertex that is (1) sparse (most vertices have weight 0), (2) close to the original weight in the l2 norm, and (3) close to its neighbors' weight(s) in the l1 norm. This algorithm is usually used in main trend filtering (denoising). The loss function is `0.5 * sum(y' - y)^2 + lambda1 * sum|yi' - yj'| + lambda2 * sum|yi'|`, where y is the input weights for each vertex and y' is the new weights for each vertex. For example, an image (grid graph) with noisy pixels can be filtered with this algorithm to get a new image without the noisy pixels, which are "smoothed out" by its neighbors.
 <https://arxiv.org/abs/1410.7690>
 
 ## Summary of Results
@@ -22,7 +21,7 @@ is the input weights for each vertex and y' is the new weights for each vertex. 
 
 ## Summary of Gunrock Implementation
 
-The graph is preprocessed by two files. The first file contains the original vertices' weights and the second file contains the directed graph connectivity without weights (edge pairs only). These two files and a parameter(lambda1) of the directed graph edge weights are the input to the preprocessing file. This results in a graph, where the edges excluding the ones connecting to source or sink have edge-weights lambda1, while the edges connecting to source or sink have edge-weights as in the `vertices' weights` file.
+The input graph is preprocessed by two files. The first file contains the original vertices' weights and the second file contains the directed graph connectivity without weights (edge pairs only). These two files and a parameter (`lambda1`) of the directed graph edge weights are the input to the preprocessing file. This results in a graph where the edges excluding the ones connecting to source or sink have edge-weights `lambda1`, while the edges connecting to source or sink have edge-weights as in the `vertices' weights` file.
 
 The Gunrock implementation of this application has two parts. The first part is the maxflow algorithm. We choose a push-relabel maxflow formulation, which is well-suited to parallelize on GPU with Gunrock. The output of this maxflow algorithm is (1) a residual graph where each edge weight is computed as `capacity - edge_flow`, and (2) a Boolean array indicating if each vertex is reachable from the source, once we have the residual graph.
 
@@ -30,7 +29,7 @@ The second part is a renormalization of the residual graph and clustering based 
 
 The outputs will be the normalized values assigned to each vertex.
 
-Lastly, these values will be passed into a soft-threshold function with `lambda2` to achieve the sparse representation by dropping the small absolute values. More specifically, the new weight will be subtracted by `lambda2` if the new weight is positive and larger than `lambda2`, or added by `lambda2` if the new weight is negative and smaller than -`lambda2`.
+Lastly, these values will be passed into a soft-threshold function with `lambda2` to achieve the sparse representation by dropping the small absolute values. More specifically, the new weight will be subtracted by `lambda2` if the new weight is positive and larger than `lambda2`, or added by `lambda2` if the new weight is negative and smaller than `-lambda2`.
 
 ## How To Run This Application on DARPA's DGX-1
 
@@ -120,10 +119,11 @@ We measure the runtime and loss function `0.5 * sum(y' - y)^2 + lambda1 * sum|yi
 
 ### Implementation limitations
 
-The time is mostly spent on maxflow computation. Each iteration of the GTF calls a maxflow. The time spent on maxflow vs. the rest of the GTF post-processing is around 20:1 (8922 vertices and 20349 edges) per iteration. The maxflow implementation has room for further optimization; we expect to have shorter runtime on maxflow in the future. We only implement serial GTF renormalization(second part) for correctness purposes. If the graph is larger, we expect the ratio between maxflow(first part) and GTF renormalization(second part) will be lower, because the runtime of the renormalization is serial.
+The time is mostly spent on maxflow computation. Each iteration of the GTF calls a maxflow. For a 8922-vertex, 20349-edge dataset, the time spent on maxflow vs. the rest of the GTF post-processing is around 20:1 per iteration. The maxflow implementation has room for further optimization; we expect to have shorter runtimes on maxflow in the future. We only implement serial GTF renormalization (second part) for correctness purposes. If the graph is larger, we expect the ratio between maxflow (first part) and GTF renormalization (second part) will be lower, because the runtime of the renormalization is serial.
 
 ### Comparison against existing implementations
-Graphtv is an official implementation of graph trend filtering algorithm with parametric maxflow backend. It is CPU serial implementation.
+
+Graphtv is an official implementation of graph trend filtering algorithm with a parametric maxflow backend. It is a CPU serial implementation.
 
 | DataSet | time starts | time ends | #E | #V | graphtv runtime | Gunrock GPU runtime |
 |-------------- |---------------------|--------------------|----------|----------|------| ---|
@@ -157,7 +157,7 @@ For CPU, the parametric maxflow algorithm works well, but it is not parallelizab
 
 GTF is the first algorithm that stacks previous applications. Some data pre-processing that is common to execute in the CPU requires better designs of the APIs which will facilitate new applications.
 
-Moreover, a unit test framework is super necessary. If we don't do unit tests per few functions, it is hard to track the problems and discover simple, avoidable but missing test cases, such as comparison between two double values in GTF. 
+Moreover, a unit test framework is super necessary. If we don't do unit tests per few functions, it is hard to track the problems and discover simple, avoidable but missing test cases, such as comparison between two double values in GTF.
 
 ### Notes on multi-GPU parallelization
 
@@ -183,4 +183,4 @@ Moreover, a unit test framework is super necessary. If we don't do unit tests pe
 
 > "{what you've done with respect to this workflow / what you could do} that you think has research value and could lead to a paper". We should write those down now when they're fresh in our minds. This is less for DARPA and more for us, for our discussion. I know not every one of these workflows will lead to a research advance. But there are research advances in implementing the workflow AND implementing interesting parts of the workflow (e.g., sparse data structures) AND other things we could use pieces of the workflow to solve (e.g., auction algorithm)
 
-Prof.Sharpnack indicates that this implementation could be generalized to multi-graph fused lasso. The idea is to set multiple edge values for the edges connecting to source/sink, while keeping the graph topology and edges values(lambda1) for the edges in the original graph(excluding source and sink) the same.  
+Prof. Sharpnack indicates that this implementation could be generalized to multi-graph fused lasso. The idea is to set multiple edge values for the edges connecting to source/sink, while keeping the graph topology and edge values (lambda1) for the edges in the original graph (excluding source and sink) the same.
