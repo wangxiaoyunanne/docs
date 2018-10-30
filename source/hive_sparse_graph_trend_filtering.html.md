@@ -117,25 +117,32 @@ Sample output is
 
 ## Performance and Analysis
 
-We measure the runtime, and accuracy, and loss function `0.5 * sum(y' - y)^2 + lambda1 * sum|yi' - yj'| + lambda2 * sum|yi'|`, where `y` is the old weight per vertex and `y'` is the new weight per vertex.
+We measure the runtime and loss function `0.5 * sum(y' - y)^2 + lambda1 * sum|yi' - yj'| + lambda2 * sum|yi'|`, where `y` is the old weight per vertex and `y'` is the new weight per vertex.
 
 ### Implementation limitations
 
-The time is mostly spent on maxflow computation. Each iteration of the GTF calls a maxflow. The time spent on maxflow vs. the rest of the GTF post-processing is around 100:1. The maxflow implementation has room for further optimization; we expect to have shorter runtime on maxflow in the future. The time complexity of the maxflow is `O(VE2)`, while the time complexity of the GTF renormalization is `O(V+E)`.
+The time is mostly spent on maxflow computation. Each iteration of the GTF calls a maxflow. The time spent on maxflow vs. the rest of the GTF post-processing is around 20:1 (8922 vertices and 20349 edges) per iteration. The maxflow implementation has room for further optimization; we expect to have shorter runtime on maxflow in the future. We only implement serial GTF renormalization(second part) for correctness purposes. If the graph is larger, we expect the ratio between maxflow(first part) and GTF renormalization(second part) will be lower, because the runtime of the renormalization is serial.
 
 ### Comparison against existing implementations
-Graphtv is a graph trend filtering algorithm with parametric maxflow backend. It is CPU serial implementation. We measure accuracy with a side-by-side comparison of the output weights per node.
+Graphtv is an official implementation of graph trend filtering algorithm with parametric maxflow backend. It is CPU serial implementation.
 
-| DataSet       | time starts         | time ends          | #E       | #V       | graphtv runtime   | Gunrock GPU runtime |
-|-------------- |--------------------:|-------------------:|---------:|---------:|------------------:| -------------------:|
-| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349    | 8922     | 0.11s             |                     |
-| NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259   | 107064   | 8.71s             |                     |
-| NY Taxi-1M    | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211   | 213360   | 103.62s           |                     |
+| DataSet | time starts | time ends | #E | #V | graphtv runtime | Gunrock GPU runtime |
+|-------------- |---------------------|--------------------|----------|----------|------| ---|
+| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 0.11s |  3.59s |
+| NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | 8.71s | |
+| NY Taxi-1M | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211 | 213360 | 103.62s |  |
+
+| DataSet | time starts | time ends | #E | #V | graphtv loss | Gunrock GPU loss |
+|-------------- |---------------------|--------------------|----------|----------|-------------------| -------------------|
+| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 132789.32 | 132789.32 |
+| NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | |                     |
+| NY Taxi-1M | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211 | 213360 | |                     |
 
 
 ### Performance limitations
 
 e.g., random memory access? talks about MF more?
+
 
 ## Next Steps
 
@@ -143,7 +150,7 @@ e.g., random memory access? talks about MF more?
 
 > If you had an infinite amount of time, is there another way (algorithm/approach) we should consider to implement this?
 
-For CPU, the parametric maxflow algorithm works pretty well, but it is not parallelizable to GPU. The push-relabel algorithm we have on Gunrock's maxflow should be the best implementation among the parallelizable algorithms on GPU.
+For CPU, the parametric maxflow algorithm works well, but it is not parallelizable to GPU. The push-relabel algorithm we have on Gunrock's maxflow should be the best implementation among the parallelizable algorithms on GPU.
 
 ### Gunrock implications
 
@@ -174,3 +181,5 @@ Python interfaces will help the students in statistics learn and utilize Gunrock
 ### Research opportunities
 
 > "{what you've done with respect to this workflow / what you could do} that you think has research value and could lead to a paper". We should write those down now when they're fresh in our minds. This is less for DARPA and more for us, for our discussion. I know not every one of these workflows will lead to a research advance. But there are research advances in implementing the workflow AND implementing interesting parts of the workflow (e.g., sparse data structures) AND other things we could use pieces of the workflow to solve (e.g., auction algorithm)
+
+Prof.Sharpnack indicates that this implementation could be generalized to multi-graph fused lasso. The idea is to set multiple edge values for the edges connecting to source/sink, while keeping the graph topology and edges values(lambda1) for the edges in the original graph(excluding source and sink) the same.  
