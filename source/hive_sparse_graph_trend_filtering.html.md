@@ -12,8 +12,8 @@ full_length: true
 
 # Sparse Graph Trend Filtering
 
-Given each vertex on the graph has its own weight, the sparse graph trend filtering tries to learn a weight that is (1) sparse (mostly of the vertices have weights 0), (2) close to the original weight in l2 norm, and (3) close to its neighbors' weight(s) in l1 norm. This algorithm is usually used in main trend filtering (denoising). The loss function is `0.5 * sum(y' - y)^2 + lambda1 * sum|yi' - yj'| + lambda2 * sum|yi'|`, where y
-is the input value for each vertex and y' is the output denoising value for each vertex.
+Given each vertex on the graph has its own weight, the sparse graph trend filtering tries to learn a new weight that is (1) sparse (mostly of the vertices have weights 0), (2) close to the original weight in l2 norm, and (3) close to its neighbors' weight(s) in l1 norm. This algorithm is usually used in main trend filtering (denoising). The loss function is `0.5 * sum(y' - y)^2 + lambda1 * sum|yi' - yj'| + lambda2 * sum|yi'|`, where y
+is the input weights for each vertex and y' is the new weights for each vertex. For example, an image (grid graph) with noisy pixels can be applied with this algorithm to get a new image without the noisy pixels, which are "smoothed" out by its neighbors.
 <https://arxiv.org/abs/1410.7690>
 
 ## Summary of Results
@@ -22,15 +22,15 @@ is the input value for each vertex and y' is the output denoising value for each
 
 ## Summary of Gunrock Implementation
 
-The graph is preprocessed by two files. The first file contains the original vertices' weights and the second file contains the directed graph connectivity without weights. These two files and a edge weight parameter (lambda1) are the input to the preprocessing file.
+The graph is preprocessed by two files. The first file contains the original vertices' weights and the second file contains the directed graph connectivity without weights (edge pairs only). These two files and a parameter(lambda1) of the directed graph edge weights are the input to the preprocessing file. This results in a graph, where the edges excluding the ones connecting to source or sink have edge-weights lambda1, while the edges connecting to source or sink have edge-weights as in the `vertices' weights` file.
 
-The Gunrock implementation of this application has two parts. The first part is the maxflow algorithm. We choose a push-relabel maxflow formulation, which is well-suited to parallelize on GPU with Gunrock. The output of this maxflow algorithm is (1) a residual graph where each edge value is computed as capacity `input edge weight - edge_flow`, and (2) a min-cut of the vertices, a Boolean array indicating if the this vertex is reachable from the source given the residual graph.
+The Gunrock implementation of this application has two parts. The first part is the maxflow algorithm. We choose a push-relabel maxflow formulation, which is well-suited to parallelize on GPU with Gunrock. The output of this maxflow algorithm is (1) a residual graph where each edge weight is computed as `capacity - edge_flow`, and (2) a Boolean array indicating if each vertex is reachable from the source, once we have the residual graph.
 
-The second part is a renormalization of the residual graph and clustering based on reachability of the vertex. After the renormalization is done, this renormalized residual graph is passed into the maxflow again. Several iterations between maxflow and renormalization are needed before the normalized values of different labels converge.
+The second part is a renormalization of the residual graph and clustering based on reachability of the vertex. The renormalization is a process where (1) averages of the new weights of vertices that are grouped together as communities are computed, and (2) the new weights are then subtracted by their own community averages. After the renormalization is done, this renormalized residual graph is passed into the maxflow again. Several iterations between maxflow and renormalization are needed before the new weights of different communities converge because vertices can be reassigned to different communities.
 
 The outputs will be the normalized values assigned to each vertex.
 
-Lastly, these values will be passed into a soft-threshold function with `lambda2` to achieve the sparse representation by dropping the small absolute values.
+Lastly, these values will be passed into a soft-threshold function with `lambda2` to achieve the sparse representation by dropping the small absolute values. More specifically, the new weight will be subtracted by `lambda2` if the new weight is positive and larger than `lambda2`, or added by `lambda2` if the new weight is negative and smaller than -`lambda2`.
 
 ## How To Run This Application on DARPA's DGX-1
 
@@ -89,7 +89,6 @@ Then three files are generated. The files `e` and `n` are for benchmarks, and `s
 
 ### Running the application
 ```
-market is the graph type for Gunrock
 --lambda2 is the sparsity regularization constant
 ```
 Sample command line with argument.
@@ -99,7 +98,7 @@ Sample command line with argument.
 
 ### Output
 
-The code will output two files in the current directory. One is called `output_pr.txt` (for CPU reference) and the other is called `output_pr_GPU.txt`.
+The code will output two files in the current directory. One is called `output_pr.txt` (for CPU reference) and the other is called `output_pr_GPU.txt` (for GPU GTF with push-relabel backend).
 Each vertex's new weight will be stored in each line of the two files. These outputs could be further processed into the resulting heatmap.
 
 Sample output is
@@ -156,7 +155,9 @@ For CPU, the parametric maxflow algorithm works well, but it is not parallelizab
 
 > What did we learn about Gunrock? What is hard to use, or slow? What potential Gunrock features would have been helpful in implementing this workflow?
 
-Python interfaces will help the students in statistics learn and utilize Gunrock for graph analysis.
+GTF is the first algorithm that stacks previous applications. Some data pre-processing that is common to execute in the CPU requires better designs of the APIs which will facilitate new applications.
+
+Moreover, a unit test framework is super necessary. If we don't do unit tests per few functions, it is hard to track the problems and discover simple, avoidable but missing test cases, such as comparison between two double values in GTF. 
 
 ### Notes on multi-GPU parallelization
 
