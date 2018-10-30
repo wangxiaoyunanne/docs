@@ -366,11 +366,7 @@ This was a straightforward adapatation of an existing Gunrock app.  SSSP is also
 
 ### Notes on multi-GPU parallelization
 
-__TODO__
-What will be the challenges in parallelizing this to multiple GPUs on the same node?
-
-__TODO__
-Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
+Discussion of multi-GPU scalability of VN can be found [here](https://github.com/sgpyc/docs/blob/scaling/source/hive_scaling.html.md).
 
 ### Notes on dynamic graphs
 

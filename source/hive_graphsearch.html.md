@@ -571,9 +571,9 @@ For the `greedy` and `stochastic_greedy` transition function, we have to sequent
 
 ### Notes on multi-GPU parallelization
 
-__TODO__
-What will be the challenges in parallelizing this to multiple GPUs on the same node?
-Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
+If the graph is small enough to be duplicated on each GPU, the implementation is trivial: just do a subset of the walks on each GPU.  The scalability with be perfect, as there is no communication involved at all.
+
+When the graph is distributed across multiple GPUs, we expect to have very poor scalability, as the ratio of computation to communication is very low.  A more detailed discussion is available [here](https://github.com/sgpyc/docs/blob/scaling/source/hive_scaling.html.md).
 
 ### Notes on dynamic graphs
 
@@ -581,8 +581,7 @@ This workflow does not have an explicit dynamic component. However, because step
 
 ### Notes on larger datasets
 
-__TODO__
-What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
+The random accesses inherent to graph search make it a particularly difficult workflow for larger than GPU memory datasets.  The most straightforward solution would be to let Unified Virtual Memory (UVM) in CUDA automatically handle memory movement, but we should expect to see a substantial reduction in performance.
 
 ### Notes on other pieces of this workload
 
