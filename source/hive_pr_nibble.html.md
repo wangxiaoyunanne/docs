@@ -247,7 +247,7 @@ It is not obvious how this algorithm would be extended to handle dynamic graphs.
 
 ### Notes on larger datasets
 
-If the data were too big to fit into the aggregate GPU memory of multiple GPUs on a single node, then we would need to look at multiple-node solutions. Getting the application to work on multiple nodes would not be challenging, because it is very similar to BFS. However, optimizing it to achieve good scalability may require asynchronous communication, an area where we have some experience ([Pan et al.](https://arxiv.org/pdf/1803.03922.pdf)).
+If the data were too big to fit into the aggregate GPU memory of multiple GPUs on a single node, then we would need to look at multiple-node solutions. Getting the application to work on multiple nodes would not be challenging, because it is very similar to BFS. However, optimizing it to achieve good scalability may require asynchronous communication, an area where we have some experience ([Pan et al.](https://arxiv.org/pdf/1803.03922.pdf)). Asynchronous communication may be necessary in order to reach better scalability in multi-node, because this application which can be formulated as sparse-matrix vector multiplication has limited computational intensity (low computation-to-communication).
 
 ### Notes on other pieces of this workload
 
