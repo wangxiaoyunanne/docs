@@ -199,109 +199,109 @@ Details of the datasets:
 
 | DataSet          | #V    | #E | #dangling vertices|
 |------------------|---------:|-----------:|-------:|
-| amazon           |   548551 |    1851744 | 213688 |
-| ca               |   108299 |     186878 |  85166 |
-| akamai           | 16956250 |   53300364 |      0 |
-| pokec            |  1632803 |   30622564 |      0 |
-| cnr-2000         |   325557 |    3128710 |      0 |
-| coPapersDBLP     |   540486 |  30481458* |      0 |
-| soc-LiveJournal1 |  4847571 |   68475391 |    962 |
-| channel-500x100x100-b050 | 4802000 | 85362744 | 0 |
-| uk-2002          | 18520486 |  292243663 |  37300 |
-| europe_osm       | 50912018 | 108109320* |      0 |
-| rgg_n_2_24_s0    | 16777216 | 265114400* |      1 |
-| webbase-1M       |  1000005 |   2105531  |   2453 |
-| preferentialAttachment | 100000 | 999970* |     0 |
+| ca               |   108299 |    186878  |  85166 |
+| preferentialAttachment | 100000| 999970* |     0 |
 | caidaRouterLevel |   192244 |   1218132* |      0 |
-| citationCiteseer |   268495 |   2313294* |      0 |
+| amazon           |   548551 |   1851744  | 213688 |
 | coAuthorsDBLP    |   299067 |   1955352* |      0 |
-| coPapersCiteseer |   434102 |  32073440* |      0 |
-| hollywood-2009   | 11399905 | 112751422* |  32662 |
+| webbase-1M       |  1000005 |   2105531  |   2453 |
+| citationCiteseer |   268495 |   2313294* |      0 |
+| cnr-2000         |   325557 |   3128710  |      0 |
 | as-Skitter       |  1696415 |  22190596* |      0 |
+| coPapersDBLP     |   540486 |  30481458* |      0 |
+| pokec            |  1632803 |  30622564  |      0 |
+| coPapersCiteseer |   434102 |  32073440* |      0 |
+| akamai           | 16956250 |  53300364  |      0 |
+| soc-LiveJournal1 |  4847571 |  68475391  |    962 |
+| channel-500x100x100-b050 | 4802000 | 85362744 | 0 |
+| europe_osm       | 50912018 | 108109320* |      0 |
+| hollywood-2009   | 11399905 | 112751422* |  32662 |
+| rgg_n_2_24_s0    | 16777216 | 265114400* |      1 |
+| uk-2002          | 18520486 | 292243663  |  37300 |
 
 Running time in seconds:
 
-| GPU  | Dataset          | Gunrock GPU | OMP    | Serial |
-|------|------------------|------------:|-------:|-------:|
-| P100 | amazon           |       0.160 |  0.203 |  0.648 |
-| P100 | ca               |       0.108 |  0.026 |  0.065 |
-| P100 | akamai           |       1.278 |  6.560 | 14.427 |
-| P100 | pokec            |       0.929 |  1.244 |  6.521 |
-| V100 | amazon           |       0.122 |  0.198 |  0.631 |
-| V100 | ca               |       0.089 |  0.029 |  0.067 |
-| V100 | akamai           |       0.934 |  6.343 | 13.266 |
-| V100 | pokec            |       0.624 |  1.083 |  6.110 |
-| V100 | cnr-2000         |       0.235 |  0.133 |  0.388 |
-| V100 | coPapersDBLP     |       0.358 |  0.437 |  1.860 |
-| V100 | soc-LiveJournal1 |       1.548 |  4.016 | 16.311 |
-| V100 | channel-500x100x100-b050 | 1.133 | 0.768 | 4.449 |
-| V100 | uk-2002          |       4.921 |  5.682 | 31.006 |
-| V100 | europe_osm       |       4.902 | 34.875 |101.320 |
-| V100 | rgg_n_2_24_s0    |       3.378 |  2.664 | 17.816 |
-| V100 | webbase-1M       |       0.107 |  0.168 |  0.318 |
-| V100 | preferentialAttachment | 0.076 |  0.096 |  0.235 |
-| V100 | caidaRouterLevel |       0.063 |  0.065 |  0.229 |
-| V100 | citationCiteseer |       0.074 |  0.111 |  0.432 |
-| V100 | coAuthorsDBLP    |       0.082 |  0.133 |  0.414 |
-| V100 | coPapersCiteseer |       0.353 |  0.391 |  1.592 |
-| V100 | hollywood-2009   |       1.230 |  1.721 |  9.419 |
-| V100 | as-Skitter       |       0.376 |  0.660 |  2.480 |
+| GPU  | Dataset          | Gunrock GPU | Speedup vs. OMP | OMP | Serial |
+|------|------------------|------------:|-----:|-------:|-------:|
+| P100 | ca               |       0.108 | 0.24 | **0.026** |  0.065 |
+| V100 | ca               |       0.089 | 0.33 | **0.029** |  0.067 |
+| V100 | preferentialAttachment | **0.076** | 1.26 | 0.096 |  0.235 |
+| V100 | caidaRouterLevel |     **0.063** | 1.03 | 0.065 |  0.229 |
+| P100 | amazon           |     **0.160** | 1.27 | 0.203 |  0.648 |
+| V100 | amazon           |     **0.122** | 1.62 | 0.198 |  0.631 |
+| V100 | coAuthorsDBLP    |     **0.082** | 1.62 | 0.133 |  0.414 |
+| V100 | webbase-1M       |     **0.107** | 1.57 | 0.168 |  0.318 |
+| V100 | citationCiteseer |     **0.074** | 1.50 | 0.111 |  0.432 |
+| V100 | cnr-2000         |       0.235 | 0.57 | **0.133** |  0.388 |
+| V100 | as-Skitter       |     **0.376** | 1.76 | 0.660 |  2.480 |
+| V100 | coPapersDBLP     |     **0.358** | 1.22 | 0.437 |  1.860 |
+| P100 | pokec            |     **0.929** | 1.34 | 1.244 |  6.521 |
+| V100 | pokec            |     **0.624** | 1.74 | 1.083 |  6.110 |
+| V100 | coPapersCiteseer |     **0.353** | 1.11 | 0.391 |  1.592 |
+| P100 | akamai           |     **1.278** | 5.13 | 6.560 | 14.427 |
+| V100 | akamai           |     **0.934** | 6.79 | 6.343 | 13.266 |
+| V100 | soc-LiveJournal1 |     **1.548** | 2.59 | 4.016 | 16.311 |
+| V100 | channel-500x100x100-b050 | 1.133 | 0.68 | **0.768** | 4.449 |
+| V100 | europe_osm       |     **4.902** | 7.11 | 34.875 |101.320 |
+| V100 | hollywood-2009   |     **1.230** | 1.40 | 1.721 |  9.419 |
+| V100 | rgg_n_2_24_s0    |       3.378 | 0.79 | **2.664** | 17.816 |
+| V100 | uk-2002          |     **4.921** | 1.15 | 5.682 | 31.006 |
 
 Resulting modularity:
 
-| GPU  | DataSet          | Gunrock GPU | OMP   | Serial   |
-|------|------------------|---------:|---------:|---------:|
-| P100 | amazon           | 0.908073 | 0.925721 | 0.926442 |
-| P100 | ca               | 0.711971 | 0.730217 | 0.731292 |
-| P100 | akamai           | 0.933362 | 0.907232 | 0.900488 |
-| P100 | pokec            | 0.693353 | 0.691351 | 0.694540 |
-| V100 | amazon           | 0.908944 | 0.925799 | 0.926442 |
-| V100 | ca               | 0.716568 | 0.728962 | 0.731292 |
-| V100 | akamai           | 0.933281 | 0.907444 | 0.900488 |
-| V100 | pokec            | 0.674148 | 0.676286 | 0.694540 |
-| V100 | cnr-2000         | 0.876618 | 0.878374 | 0.879678 |
-| V100 | coPapersDBLP     | 0.849409 | 0.843996 | 0.849065 |
-| V100 | soc-LiveJournal1 | 0.733556 | 0.545648 | 0.723852 |
-| V100 | channel-500x100x100-b050 | 0.900354 | 0.951188 | 0.850520 |
-| V100 | uk-2002          | 0.950671 | 0.960437 | 0.960437 |
-| V100 | europe_osm       | 0.997856 | 0.984438 | 0.983616 |
-| V100 | rgg_n_2_24_s0    | 0.992145 | 0.991991 | 0.989576 |
-| V100 | webbase-1M       | 0.894534 | 0.947102 | 0.955795 |
-| V100 | preferentialAttachment | 0.175757 | 0.228699 | 0.285213 |
-| V100 | caidaRouterLevel | 0.850029 | 0.836249 | 0.843553 |
-| V100 | citationCiteseer | 0.788792 | 0.760494 | 0.802499 |
-| V100 | coAuthorsDBLP    | 0.809231 | 0.813649 | 0.827131 |
-| V100 | coPapersCiteseer | 0.907459 | 0.905869 | 0.911000 |
-| V100 | hollywood-2009   | 0.743242 | 0.750153 | 0.751122 |
-| V100 | as-Skitter       | 0.836608 | 0.822323 | 0.813229 |
+| GPU  | DataSet | Gunrock GPU | Gunrock - Serial | OMP | OMP - Serial | Serial |
+|------|------------------|-------:|--------:|-------:|--------:|-------:|
+| P100 | ca               | 0.7112 | -0.0193 | 0.7302 | -0.0011 | **0.7313** |
+| V100 | ca               | 0.7166 | -0.0147 | 0.7290 | -0.0025 | **0.7313** |
+| V100 | preferentialAttachment | 0.1758 | -0.1095 | 0.2287 | -0.0565 | **0.2852** |
+| V100 | caidaRouterLevel | **0.8500** | +0.0065 | 0.8362 | -0.0073 | 0.8436 |
+| P100 | amazon           | 0.9081 | -0.0184 | 0.9257 | -0.0007 | **0.9264** |
+| V100 | amazon           | 0.9089 | -0.0175 | 0.9258 | -0.0006 | **0.9264** |
+| V100 | coAuthorsDBLP    | 0.8092 | -0.0179 | 0.8136 | -0.0135 | **0.8271** |
+| V100 | webbase-1M       | 0.8945 | -0.0613 | 0.9471 | -0.0087 | **0.9558** |
+| V100 | citationCiteseer | 0.7888 | -0.0137 | 0.7605 | -0.0420 | **0.8025** |
+| V100 | cnr-2000         | 0.8766 | -0.0031 | 0.8784 | -0.0013 | **0.8797** |
+| V100 | as-Skitter       | **0.8366** | +0.0234 | 0.8223 | +0.0091 | 0.8132 |
+| V100 | coPapersDBLP     | **0.8494** | +0.0003 | 0.8440 | -0.0051 | 0.8492 |
+| P100 | pokec            | 0.6933 | -0.0012 | 0.6914 | -0.0032 | **0.6945** |
+| V100 | pokec            | 0.6741 | -0.0204 | 0.6763 | -0.0183 | **0.6945** |
+| V100 | coPapersCiteseer | 0.9075 | -0.0035 | 0.9059 | -0.0051 | **0.9110** |
+| P100 | akamai           | **0.9334** | +0.0329 | 0.9072 | +0.0067 | 0.9005 |
+| V100 | akamai           | **0.9333** | +0.0328 | 0.9074 | +0.0070 | 0.9005 |
+| V100 | soc-LiveJournal1 | **0.7336** | +0.0097 | 0.5456 | -0.1782 | 0.7239 |
+| V100 | channel-500x100x100-b050 | 0.9004 | +0.0498 | **0.9512** | +0.1007 | 0.8505 |
+| V100 | europe_osm       | **0.9979** | +0.0142 | 0.9844 | +0.0008 | 0.9836 |
+| V100 | hollywood-2009   | 0.7432 | -0.0079 | 0.7502 | -0.0010 | **0.7511** |
+| V100 | rgg_n_2_24_s0    | **0.9921** | +0.0026 | 0.9920 | +0.0024 | 0.9896 |
+| V100 | uk-2002          | 0.9507 | -0.0098 | 0.9604 | +0.0000 | **0.9604** |
 
 The number of resulting communities:
 
 | GPU  | DataSet          | Gunrock GPU | OMP | Serial |
 |------|------------------|-------:|-------:|-------:|
-| P100 | amazon           |   7667 |    213 |    240 |
 | P100 | ca               |   1120 |    616 |    617 |
-| P100 | akamai           |  90285 | 130639 | 145785 |
-| P100 | pokec            | 154988 | 161709 | 166156 |
-| V100 | amazon           |   7671 |    233 |    240 |
 | V100 | ca               |   1076 |    615 |    617 |
-| V100 | akamai           |  90245 | 127843 | 145785 |
-| V100 | pokec            | 155100 | 162464 | 166156 |
-| V100 | cnr-2000         |  65621 |  59219 |  59253 |
-| V100 | coPapersDBLP     |     70 |    111 |    237 |
-| V100 | soc-LiveJournal1 | 506826 | 434272 | 447426 |
-| V100 | channel-500x100x100-b050 | 24 | 54 |     12 |
-| V100 | uk-2002          | 2402560| 2245355| 2245678|
-| V100 | europe_osm       |  17320 | 784171 | 828662 |
-| V100 | rgg_n_2_24_s0    |    344 |    359 |    311 |
-| V100 | webbase-1M       |   4430 |   1469 |   1362 |
 | V100 | preferentialAttachment | 18 |   14 |     39 |
 | V100 | caidaRouterLevel |    410 |    467 |    745 |
-| V100 | citationCiteseer |     67 |     48 |    141 |
+| P100 | amazon           |   7667 |    213 |    240 |
+| V100 | amazon           |   7671 |    233 |    240 |
 | V100 | coAuthorsDBLP    |     95 |    138 |    273 |
-| V100 | coPapersCiteseer |    108 |    110 |    358 |
-| V100 | hollywood-2009   |  12218 |  12593 |  12741 |
+| V100 | webbase-1M       |   4430 |   1469 |   1362 |
+| V100 | citationCiteseer |     67 |     48 |    141 |
+| V100 | cnr-2000         |  65621 |  59219 |  59253 |
 | V100 | as-Skitter       |    924 |   1945 |   2531 |
+| V100 | coPapersDBLP     |     70 |    111 |    237 |
+| P100 | pokec            | 154988 | 161709 | 166156 |
+| V100 | pokec            | 155100 | 162464 | 166156 |
+| V100 | coPapersCiteseer |    108 |    110 |    358 |
+| P100 | akamai           |  90285 | 130639 | 145785 |
+| V100 | akamai           |  90245 | 127843 | 145785 |
+| V100 | soc-LiveJournal1 | 506826 | 434272 | 447426 |
+| V100 | channel-500x100x100-b050 | 24 | 54 |     12 |
+| V100 | europe_osm       |  17320 | 784171 | 828662 |
+| V100 | hollywood-2009   |  12218 |  12593 |  12741 |
+| V100 | rgg_n_2_24_s0    |    344 |    359 |    311 |
+| V100 | uk-2002          | 2402560| 2245355| 2245678|
 
 ### Implementation limitations
 
@@ -313,9 +313,26 @@ The number of resulting communities:
 
 We compare against serial CPU and OpenMP implementations; both are Gunrock's CPU reference routines. PNNL's results and previous published works are also referenced, to make sure the resulting modularities and running times are sane.
 
-- **Modularity** The modularities have some variation from different implementations, mostly within +/- 0.05. On small graphs, the GPU implementation sees some modularity drops; on large graphs, the GPU implementation is most likely to yield modularity at least as good as the serial implementation, if not better. As mentioned in the output section, that variation could be caused by concurrent movement of vertices. Small graphs could suffer more than larger graphs, as movements to a community have a higher chance to happen concurrently.
+- **Modularity** The modularities have some variation from different
+  implementations, mostly within +/- 0.05. On small graphs, the GPU
+implementation sees some modularity drops; on large graphs, the GPU
+implementation is more likely to yield modularity at least as good as the serial
+implementation. The larger the graph is, the better relative modularity is
+expected from Gunrock, as compared to the serial implementation. As mentioned
+in the output section, that variation could be caused by concurrent movement of vertices. Small graphs could suffer more than larger graphs, as movements to a community have a higher chance to happen concurrently.
 
-- **Running time** Overall, the Gunrock implementation is 2x to 5x faster than previous work on GPU. Our OMP implementation is a bit faster than PNNL's, and much faster than previous work using multiple CPU threads. The sequential CPU is an order faster than previous sequential CPU work. Comparing across different Gunrock implementations, the GPU is not always the fastest: on small graphs, GPU could actually be slower, caused by GPU kernel overheads and hardware underutilization; so for small graphs, the OpenMP implementation may be a better choice.
+- **Running time** Overall, the Gunrock implementation is 2x to 5x faster than
+previous work on GPU (Naim 2017, Cheong 2013). Our OMP implementation is a bit
+faster than PNNL's, and much faster than previous work using multiple CPU
+threads (Lu 2015, Naim 2016). The sequential CPU is an order faster than previous
+sequential CPU work (Naim 2017, Naim 2016, Blondel 2008, Cheong 2013, Lu 2015).
+Comparing across different Gunrock implementations, the GPU is not always the
+fastest: on small graphs, GPU could actually be slower, caused by GPU kernel
+overheads and hardware underutilization; so for small graphs, the OpenMP
+implementation may be a better choice. Gunrock's GPU implementation particaully
+runs slower than OpenMP for mesh-like graphs, in which every vertex only has a
+very small neighbor list; the parallel formulation Gunrock uses does not work
+well on this kind of graphs.
 
 Published results (timing and modularity) from previous work are summarized in
 the [louvain_results.xlsx]( attachments/louvain/louvain_results.xlsx "Louvain
@@ -377,6 +394,17 @@ Louvain not only needs to store the key-value pairs, but also to accumulate  val
 
 This kind of hash table removes the strong restriction that the key-value pair needs to be able to support an atomic compare-and-exchange operation, which is imposed by vanilla hash table implementations. The custom hash table is also more value-accumulation-friendly. It replaces the sort-segmented reduce part, and can reduce the workload from about O(6|E|) to O(2|E|), and the memory requirement from 48|E| bytes to 24|E|. However, the memory access pattern now become irregular and uncoalesced, so it is still unknown whether it can actually yield a performance gain.
 
+#### Iteration and pass stop conditions
+
+The concurrent nature of the GPU implementation makes modularity gain
+calculation inaccurate. Community migrations are also observed. Because of
+these, the optimization iterations and the passes may run more than needed,
+and resulted in longer running time, especially in the first pass. Preliminary
+experiments to cap the number of iterations for the first pass can reduce the
+running time by about 40%, with the modularity value roughly unchanged. The
+actual cap is dataset dependent, and more study is needed to get a better
+understand how to set the cap.
+
 ### Gunrock implications
 
 The core of Louvain implementation mainly uses all-edges advance, sort, segmented reduce, and for loops. The sort-segmented reduce operation is actually a segmented keyed reduce; if that's a common operation that appears  in more algorithms, it could be made into a new operator. The all-edges advance is used quite often in several applications, so wrapping it with a simpler operator interface could be helpful.
@@ -400,3 +428,15 @@ Louvain needs to go over the whole graph once in each modularity optimization it
 ### Notes on other pieces of this workload
 
 All parts of Louvain are graph related, and fully implemented in Gunrock.
+
+**Reference**
+
+[1] Hao Lu, Mahantesh Halappanavar, Ananth Kalyanaraman. "Parallel Heuristics for Scalable Community Detection", https://arxiv.org/abs/1410.1237 (2015);
+
+[2] Cheong C.Y., Huynh H.P., Lo D., Goh R.S.M. "Hierarchical Parallel Algorithm for Modularity-Based Community Detection Using GPUs". Euro-Par 2013;
+
+[3] Md. Naim, Fredrik Manne, Mahantesh Halappanavar, and Antonio Tumeo. "Highly Scalable Community Detection Using a GPU", https://www.eecs.wsu.edu/~assefaw/CSC16/abstracts/naim-CSC16_paper_14.pdf (2016);
+
+[4] M. Naim, F. Manne, M. Halappanavar and A. Tumeo, "Community Detection on the GPU," IPDPS `17;
+
+[5] Vincent D. Blondel, Jean-Loup Guillaume, Renaud Lambiotte, Etienne Lefebvre, "Fast unfolding of communities in large networks". https://arxiv.org/abs/0803.0476 (2008);
