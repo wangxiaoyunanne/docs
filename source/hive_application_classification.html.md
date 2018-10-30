@@ -61,7 +61,7 @@ for iteration in range(num_iterations):
 
 where `normprob` is the column-wise log-softmax function.  That is, since `belief` is `data.num_nodes x patt.num_nodes`, each node in the `pattern` graph gets assigned a probability distribution over nodes in the `data` graph.
 
-Our implementation is based on the [PNNL implementation](https://gitlab.hiveprogram.com/pnnl/ApplicationClassification) rather than the [distributed GraphX reference implementation](https://gitlab.hiveprogram.com/jcromano/applicationClassification).  On all of the graphs we've tested, the output of our implementation exactly matches the output of the PNNL code.  According to PNNL, their implementation may give different results than the HIVE reference implementation (due to eg. different normalization schemes).
+Our implementation is based on the [PNNL implementation](https://gitlab.hiveprogram.com/pnnl/ApplicationClassification) rather than the [distributed GraphX reference implementation](https://gitlab.hiveprogram.com/jcromano/applicationClassification).  On all of the graphs we've tested, the output of our implementation exactly matches the output of the PNNL code.  According to PNNL, their implementation may give different results than the HIVE reference implementation (due to e.g. different normalization schemes).
 
 ## How To Run This Application on DARPA's DGX-1
 
@@ -260,7 +260,7 @@ The application was implemented outside of the Gunrock framework because it had 
 
 Most of the kernels are either row or column operations (reductions) over dense matrices, and thus relatively easy to partition over multiple nodes.  They would either end up being embarrassingly parallel or would require a per-node reduction and then a reduction across nodes.   Replacing CUB's `DeviceSegmentedReduce` with Gunrock's implementation would give us multi-GPU support for the remaining kernel.
 
-Alternatively, depending on the topology of the graph, we may be able to partition the data graph so that we can duplicate the pattern graph across nodes and run an indepent instance of application classification on each partition.  The partition would need to be constructed in a way that ensures that every subgraph is intact on _some_ GPU, which implies some partial duplication of the data graph.  If the data graph has a large diameter, or the pattern graph has a small diameter, this may be possible without excessive duplication.  If the data graph has a small diameter, we may still be able to partition the graph by eg. removing edges that are particularly dissimilar from edges in the pattern graph.  This kind of approach is clearly very application specific, and may not be possible at all in some cases.
+Alternatively, depending on the topology of the graph, we may be able to partition the data graph so that we can duplicate the pattern graph across nodes and run an independent instance of application classification on each partition.  The partition would need to be constructed in a way that ensures that every subgraph is intact on _some_ GPU, which implies some partial duplication of the data graph.  If the data graph has a large diameter, or the pattern graph has a small diameter, this may be possible without excessive duplication.  If the data graph has a small diameter, we may still be able to partition the graph by e.g. removing edges that are particularly dissimilar from edges in the pattern graph.  This kind of approach is clearly very application specific, and may not be possible at all in some cases.
 
 ### Notes on dynamic graphs
 

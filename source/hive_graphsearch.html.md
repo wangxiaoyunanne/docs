@@ -571,7 +571,7 @@ For the `greedy` and `stochastic_greedy` transition function, we have to sequent
 
 ### Notes on multi-GPU parallelization
 
-If the graph is small enough to be duplicated on each GPU, the implementation is trivial: just do a subset of the walks on each GPU.  The scalability with be perfect, as there is no communication involved at all.
+If the graph is small enough to be duplicated on each GPU, the implementation is trivial: just do a subset of the walks on each GPU.  The scalability will be perfect, as there is no communication involved at all.
 
 When the graph is distributed across multiple GPUs, we expect to have very poor scalability, as the ratio of computation to communication is very low.  A more detailed discussion is available [here](https://github.com/sgpyc/docs/blob/scaling/source/hive_scaling.html.md).
 
