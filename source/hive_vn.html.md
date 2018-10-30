@@ -18,7 +18,7 @@ Often, we have an attributed graph where we know of some "interesting" nodes, an
 
 ## Summary of Results
 
-One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+The term "vertex nomination" covers a variety of different node ranking schemes that fuse "content" and "context" information.  The HIVE reference code implements a "multiple-source shortest path" context scoring function, but uses a very suboptimal algorithm.  By using a more efficient algorithm, our serial CPU implementation achieves 1-2 orders of magnitude speedup over the HIVE implementation and our GPU implementation achieves another 1-2 orders of magnitude on top of that.  Implementation was straightforward, involving only a small modification to the existing Gunrock SSSP app.
 
 ## Summary of Gunrock Implementation
 
