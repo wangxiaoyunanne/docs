@@ -302,8 +302,7 @@ __Note:__ Small differences in the number of nonzero entries in the output (nnz_
 | PNNL OpenMP    | 16          | 286830790 | 188.701         |
 | PNNL OpenMP    | 32          | 286830790 | 102.964         |
 | PNNL OpenMP    | 64          | 286830790 | 163.731         |
-| Gunrock        | 1xP100 GPU  | 286830790 | _
-_ |
+| Gunrock        | 1xP100 GPU  | 286830790 | _out-of-memory_ |
 | GraphBLAS      | 1xP100 GPU  | 286830790 | __5.012__       |
 
 __Takeaway:__ When the graph is small enough, Gunrock graph projection is fastest, followed by GraphBLAS (approx. 5x slower).  The PNNL OpenMP implementation is consistently substantially slower than the single threaded scipy implementation, even when using 32+ threads.
