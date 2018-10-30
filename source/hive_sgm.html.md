@@ -286,7 +286,7 @@ Real-world applications of SGM to eg. social media or communications networks of
 
 If the dataset were too big to fit into the aggregate GPU memory of multiple GPUs on a node, then two directions can be taken in order to be able to tackle these larger datasets:
 
- 1. Out-of-memory: Compute using part of the dataset at a time on the GPU, and save your completed result to CPU memory. When all completed results on the CPU are ready to perform the next step, copy back to GPU (slower than distributed, but cheaper and easier to implement).
+ 1. Out-of-memory: Compute using part of the dataset at a time on the GPU, and save the completed result to CPU memory. This method is slower than distributed, but cheaper and easier to implement.
  2. Distributed memory: If the GPU memory on a single node is not enough, use multiple nodes. This method can be made to scale for arbitrarily large datasets provided the implementation is good enough (faster than out-of-memory, but more expensive and difficult).
 
 ### Notes on other pieces of this workload
