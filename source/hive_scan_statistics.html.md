@@ -62,9 +62,9 @@ Note: This run / these runs need to be on DARPA's DGX-1.
 
 ### Output
 
-What is output when you run? Output file? JSON? Anything else? How do you extract relevant statistics from the output?
+The output of this app is two values: one is the scan statistic value we've got and the other is the node id which has this statistic. The output file will be in txt format with the aforementioned two values.
 
-How do you make sure your output is correct/meaningful? (What are you comparing against?)
+We compare the output with python version of this app on the CPU.
 
 ## Performance and Analysis
 
@@ -102,9 +102,10 @@ What did we learn about Gunrock? What is hard to use, or slow? What potential Gu
 
 ### Notes on multi-GPU parallelization
 
-What will be the challenges in parallelizing this to multiple GPUs on the same node?
+Graph partitioning will be a bottle neck on multi-GPU parallelization. Because we need the info of each node's two-hop neighbors, unbalanced workload will decrease the performance and increase the communication bottleneck. 
 
-Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
+Dataset needs to be replicated if we cannot fit all two-hop neighors of each node on the same GPU.
+
 
 ### Notes on dynamic graphs
 
