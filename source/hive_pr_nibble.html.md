@@ -20,7 +20,9 @@ A common algorithm for local graph clustering is called PageRank-Nibble (PRNibbl
 
 ## Summary of Results
 
-One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+This variant of local graph clustering (L1 regularized PageRank via FISTA) is a natural fit for Gunrock's frontier-based programming paradigm.  We observe speedups of 2-3 orders of magnitude over the HIVE reference implementation.
+
+The reference implementation of the algorithm was not explicitly written as `advance`/`filter`/`compute` operations, but we were able to quickly determine how to map the operations by using [a lightweight Python implementation of the Gunrock programming API](https://github.com/gunrock/pygunrock/blob/master/apps/pr_nibble.py) as a development environment.  Thus, LGC was a good exercise in implementing a non-trivial end-to-end application in Gunrock from scratch.
 
 ## Summary of Gunrock Implementation
 
@@ -230,6 +232,8 @@ By profiling the LB Advance kernel, we find that the performance of `advance` is
 PRNibble can also be implemented in terms of matrix operations using our GPU [GraphBLAS](https://github.com/owensgroup/GraphBLAS/) library -- this implementation is currently in progress.
 
 In theory, local graph clustering is appealing because you don't have to "touch" the entire graph.  However, all LGC implementations that we are aware of first load the entire graph into CPU/GPU memory, which limits the size of the graph that can be analyzed.  Implementations that load data from disk "lazily" as computation happens would be interesting and practically useful.
+
+[Ligra](https://github.com/jshun/ligra) includes some high performance implementations of similar algorithms.  In the future, it would be informative to benchmark our GPU implementation against those performance optimized multi-threaded CPU implementations.  
 
 ### Gunrock implications
 
