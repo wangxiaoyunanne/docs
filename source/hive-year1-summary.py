@@ -50,12 +50,13 @@ Specific notes on applications and scaling follow:
 
 with open('hive_year1_summary.html.md', 'a') as dest:
     for f in files:
+        fname = f[:-3]
         with open(f) as file:
             contents = file.read()
             title = re.search('\n# (.*)\n', contents).group(1)
             summary = re.search(
                 '\n## Summary of Results\n\n([^#]*)\n\n#', contents).group(1)
-            dest.write(f'**[{title}]({f})** {summary}\n\n')
+            dest.write(f'**[{title}](https://gunrock.github.io/docs/{fname})** {summary}\n\n')
 
 files.insert(0, 'hive_year1_summary.html.md')
 

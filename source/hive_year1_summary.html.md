@@ -23,10 +23,20 @@ Herein UC Davis produces the following three deliverables that it promised to de
 Specific notes on applications and scaling follow:
 
 
-**[Geolocation](hive_geolocation.html.md)** One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+**[Application Classification](https://gunrock.github.io/docs/hive_application_classification.html)** (fill this in)
 
-**[Community Detection (Louvain)](hive_louvain.html.md)** One or two sentences that summarize "if you had one or two sentences to sum up
+**[Geolocation](https://gunrock.github.io/docs/hive_geolocation.html)** One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+
+**[Community Detection (Louvain)](https://gunrock.github.io/docs/hive_louvain.html)** One or two sentences that summarize "if you had one or two sentences to sum up
 your whole effort, what would you say". I will copy this directly to the high-level
 executive summary in the first page of the report. Talk to JDO about this.
 Write it last, probably.
+
+**[Local Graph Clustering (LGC)](https://gunrock.github.io/docs/hive_pr_nibble.html)** One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+
+**[Graph Projections](https://gunrock.github.io/docs/hive_proj.html)** One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+
+**[Seeded Graph Matching (SGM)](https://gunrock.github.io/docs/hive_sgm.html)** One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+
+**[Vertex Nomination](https://gunrock.github.io/docs/hive_vn.html)** One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
 
