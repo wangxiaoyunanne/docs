@@ -18,11 +18,13 @@ From [Fishkind et al.](https://arxiv.org/pdf/1209.0367.pdf):
 
 That is, given two graphs `A` and `B`, we seek to find the permutation matrix `P` that maximizes the number of adjacency agreements between `A` and `P * B * P.T`, where `*` represents matrix multiplication.  The algorithm Fishkind et al. propose first relaxes the hard 0-1 constraints on `P` to the set of doubly stochastic matrices (each row and column sums to 1), then uses the Frank-Wolfe algorithm to minimize the objective function  ```sum((A - P * B * P.T) ** 2)```.  Finally, the relaxed solution is projected back onto the set of permutation matrices to yield a feasible solution.
 
-SGM is only appropriate for pairs of graphs w/ some kind of correspondence between the nodes.  This could be an explicit correspondance (users on Twitter and users on Instagram, people in a cell phone network and people on an email network), or an implicit correspondence (two people play similar roles at similar companies).
-
 ## Summary of Results
 
-One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+SGM is a fruitful workful to optimize, because the existing implementations were not written with performance in mind.  By making minor modifications to the algorithm that allow use of sparse data structures, we enable scaling to larger datasets than previously possible.  
+
+The application involves solving a linear assignment problem (LSAP) as a subproblem.  Solving these problems on the GPU is an active area of research -- though papers have been written descripting high-performance parallel LSAP solvers, reference implementations are not available.  We implement a GPU LSAP solver via Bertsekas' auction algorithm, and make it available as as [standalone library](https://github.com/bkj/cbert).
+
+SGM is an approximate algorithm that minimizes graph adjacency disagreements via the Frank-Wolfe algorithm. Certain uses of the auction algorithm can introduce additional approximation in the gradients of the Frank-Wolfe iterations.  An interesting direction for future work would be   a rigorous study of the effects of this kind of approximation on a variety of different graph tolopogies.
 
 ## Summary of Gunrock Implementation
 
@@ -140,6 +142,8 @@ Per-iteration runtime is not necessarily meaningful, because different iteration
 Bertsekas' auction algorithm allows us to make a tradeoff between runtime and accuracy.  With appropriate parameter settings, it produces the exact same answer as the JV or Hungarian algorithms.  However, with different parameter settings, the auction algorithm may run substantially faster (>10x), at the cost of a lower quality assignment.  Since SGM is already an approximate algorithm, _we do not currently know the SGM's sensitivity to this kind of approximation._  Experiments to explore these tradeoffs would be an interesting direction for future research.  In general, we run our SGM implementation with some approximation, and thus we rarely produce the exactly optimal solution for the LSAP subproblems.  However, we often produce _SGM solutions_ of comparable quality to those SGM implementations that exactly solve the LSAP subproblems.
 
 ### Implementation limitations
+
+SGM is only appropriate for pairs of graphs w/ some kind of correspondence between the nodes.  This could be an explicit correspondance (users on Twitter and users on Instagram, people in a cell phone network and people on an email network), or an implicit correspondence (two people play similar roles at similar companies).
 
 Currently, our implementation of SGM only supports undirected graphs -- an extension to directed graphs is mathematically straightforward, but requires a bit of code refactoring.  We have only tested on unweighted graphs, though the code should also work on weighted graphs out-of-the-box.
 
@@ -298,3 +302,5 @@ There are no non-graph pieces of the SGM workload.
 Ben and Carl think this work can lead to a nice paper, because there aren't a lot of highly optimized parallel Linear Assignment Problem (LAP) solvers. A lot of the research Ben could find from 20+ years ago tends to assume that the input matrices are uniformly random. However, our use case is on cost matrices formed by the dot product of sparse matrices (so the `(i, j)`th entry is the number of neighbors node i and j have in common), which has a totally different distribution (closer to a power law). There may be some optimizations we can find that target this distribution (similar to how direction-optimized BFS targets power law graphs).
 
 There is potential research in tie-breaking for the auction algorithm. In one of the popular Python/C++ LAP solvers, they're clearly not handling ties smartly, and the runtime can be improved ~10x by adding random values in a specific way. For these types of data, we find a lot of people assuming there aren't many ties. But with graphs, Ben notices many entries are ties, so some randomization is clearly beneficial.
+
+Further development on the standalone auction algorithm will happen [here](https://github.com/bkj/cbert).  This will include porting the current implementation to CUDA CUB to take better advantage of available parallelism, as well as writing Python bindings for ease of use.
