@@ -20,11 +20,11 @@ That is, given two graphs `A` and `B`, we seek to find the permutation matrix `P
 
 ## Summary of Results
 
-SGM is a fruitful workful to optimize, because the existing implementations were not written with performance in mind.  By making minor modifications to the algorithm that allow use of sparse data structures, we enable scaling to larger datasets than previously possible.  
+SGM is a fruitful workflow to optimize, because the existing implementations were not written with performance in mind.  By making minor modifications to the algorithm that allow use of sparse data structures, we enable scaling to larger datasets than previously possible.  
 
-The application involves solving a linear assignment problem (LSAP) as a subproblem.  Solving these problems on the GPU is an active area of research -- though papers have been written descripting high-performance parallel LSAP solvers, reference implementations are not available.  We implement a GPU LSAP solver via Bertsekas' auction algorithm, and make it available as as [standalone library](https://github.com/bkj/cbert).
+The application involves solving a linear assignment problem (LSAP) as a subproblem.  Solving these problems on the GPU is an active area of research -- though papers have been written describing high-performance parallel LSAP solvers, reference implementations are not available.  We implement a GPU LSAP solver via Bertsekas' auction algorithm, and make it available as as [standalone library](https://github.com/bkj/cbert).
 
-SGM is an approximate algorithm that minimizes graph adjacency disagreements via the Frank-Wolfe algorithm. Certain uses of the auction algorithm can introduce additional approximation in the gradients of the Frank-Wolfe iterations.  An interesting direction for future work would be   a rigorous study of the effects of this kind of approximation on a variety of different graph tolopogies.
+SGM is an approximate algorithm that minimizes graph adjacency disagreements via the Frank-Wolfe algorithm. Certain uses of the auction algorithm can introduce additional approximation in the gradients of the Frank-Wolfe iterations.  An interesting direction for future work would be   a rigorous study of the effects of this kind of approximation on a variety of different graph tolopogies.  Understanding of those dynamics could allow further scaling beyond what our current implementations can handle.
 
 ## Summary of Gunrock Implementation
 
