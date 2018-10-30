@@ -1,5 +1,5 @@
--i-
-title: Template for HIVE workflow report
+---
+title: HIVE workflow report for GraphSAGE GPU implementation
 
 toc_footers:
   - <a href='https://github.com/gunrock/gunrock'>Gunrock&colon; GPU Graph Analytics</a>
@@ -10,67 +10,87 @@ search: true
 full_length: true
 ---
 
-<aside class="notice">
-  JDO notes, delete these when you copy this to `hive_yourworkflowname`: The goal of this report is to be useful to DARPA and to your colleagues. This is not a research paper. Be very honest. If there are limitations, spell them out. If something is broken or works poorly, say so. Above all else, make sure that the instructions to replicate the results you report are good instructions, and the process to replicate are as simple as possible; we want anyone to be able to replicate these results in a straightforward way.
-</aside>
+# GraphSAGE
 
-# GraphSage
+SAGE is a way to fit graphs into a neural networks: instead of getting the
+embedding of a vertex from all its neighbors' features as in conventional
+implementations, SAGE select some 1-hop neighbors, some 2-hop neighbors
+connected to those 1-hop neighbors, and compute the embedding based on the
+features of the 1-hop and 2-hop neighbors.
 
-This application is based on GraphSage paper (Inductive Representation Learning on Large Graphs).  
-We implement Algorithm 2 in our code. Given a graph G, input features, and weight matrix W^k, non-linear activition function, the output is embedding vector of each node.
-Note that we only impletement the inference part of the paper, we did not implement the training part to get W^k and parameters of aggregation functions. The aggregation function we use is Mean aggregator. 
 ## Summary of Results
 
-One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+One or two sentences that summarize "if you had one or two sentences to sum up
+your whole effort, what would you say". I will copy this directly to the
+high-level executive summary in the first page of the report. Talk to JDO
+about this. Write it last, probably.
 
 ## Summary of Gunrock Implementation
 
-As long as you need. Provide links (say, to papers) where appropriate. What was the approach you took to implementing this on a GPU / in Gunrock? Pseudocode is fine but not necessary. Whatever is clear.
+Gunrock's implementation for the 1st year is only the embedding / inferencing
+phase, without the training phase. It is based on Algorithm 2 with K=2 of GraphSage
+paper ("Inductive Representation Learning on Large Graphs",
+https://arxiv.org/abs/1706.02216).  
 
-Be specific about how to map the algorithm to Gunrock operators. That is helpful for everyone.
+Given a graph G, the inputs are per-vertex features, weight matrices W^k, and a
+non-linear activation function (ReLu); the output from SAGE is the embedding vector
+of each vertex. The Gunrock implementation uses Mean aggregator at the moment;
+using other aggregators is possible with small modifications. Similarly, neighbors
+are selected randomly in the current implementation, and simple changes to the
+code can enable other selection methods, such as weighted uniform, importance
+sampling (used by FaseGCN) and random walk probability like DeepWalk or Node2Vec
+(used by PinSage).
 
-Be specific about what you actually implemented with respect to the entire workflow (most workflows have non-graph components; as a reminder, our goal is implementing single-GPU code on only the graph components where the graph is static).
-
-We implement Inductive Representation Learning on Large Graphs (GraphSage) paper https://www-cs-faculty.stanford.edu/people/jure/pubs/graphsage-nips17.pdf. 
-We implement algorithm 2, GraphSage minibatch forward popagation algorithm. 
-In our implementatoin, we employee depth K = 2 which is the same as GraphSage paper and other graph machine learning papers such as GCN, FastGCN, PinSage. K =2 gives the best result in these methods.
-The aggegration fucntion we use is the Mean aggregator. And activation function we use is ReLu. 
-We sample neighbours based on the uniform distribution. 
-The default batch size is 512. 
-
-Instead of using B2, B1 and B0 name the nodes, we use `source`, `child`, and `leaf` to name three different groups of nodes. 
-In GraphSage paper, figure 1 (2) shows aggregating feature information from neighbors, where read node is what we called `source` here and blue nodes are `child`, and green nodes are `leaf`. 
-
-The CPU psudocode is as follows:
+The pseudocode of Gunrock's implementation is as following. The GraphSage uses
+B2, B1 and B0 for the sources, the 1-hop neighbors and the 2-hop neighbors; for
+easier understanding of the code, we use `sources`, `children` and `leafs` for
+these three groups of vertices instead. To manage the memory usage by the
+intermedia data, batches of source vertices are processed one by one, with each
+of size B.
 
 ```
-    for source in Batch:
-        // sample n neighbors as children of source
-        children <- selectNeighbor (source, n) ;
+source_start := 0;
+While (source_source < V)
+    num_sources := (source_start + B > V) ? V - source_start : B;
 
-        for child in children :
-            //sample m neighbors as leaves of child:
-            leafs <- selectNeighbor (child, m) ;
-            
-            child_temp <- relu (concat (child.features * wf1, Mean (leaf.features) * wa1)); 
-            child_temp <- child_temp / ||child_temp||_2;
-                    
-        source_temp <- relu(concat (source.features * wf1, Mean(child.features) * wa1));
-        source_temp <- source_temp / ||source_temp||_2;
-   
-        source_result <- relu(concat (source_temp * wf2, Mean(child_temp) * wa2));
-        source_result <- source_result / ||source_result||_2;   
-          
-        save source_result;
+    // Kernel1: pick children and leafs
+    For children# from 0 to num_children_per_source x num_sources:
+        source := source_start + (children# / num_children_per_source);
+        child := SelectNeighbor(source);
+        leafs_feature := {0};
+        For i from 1 to num_leafs_per_child:
+            leaf := SelectNeighbor(child);
+            leafs_feature += feature[leaf];
+
+        children[children#] := child;
+        leafs_features[children#] := leafs_feature;
+
+    // Kernel2: Child-centric computation
+    For children# from 0 to num_children_per_source x num_sources:
+        child_temp := ReLu(concatenate(
+            feature[children[children#]] x Wf1,
+            Mean(leafs_features[children#]) x Wa1));
+        child_temp /= sqrt(sum(child_temp));
+        children_temp    [children# / num_children_per_source] += child_temp;
+        children_features[children# / num_children_per_source] += feature[child];
+
+    // Kernel3: Source-centric computation
+    For source# from 0 to num_sources - 1:
+        source := source_start + source#;
+        source_temp := ReLu(concatenate(
+            feature[source] x Wf1,
+            Mean(children_features[source#] x Wa1)));
+        source_temp /= sqrt(sum(source_temp));
+
+        result := ReLu(concatenate(
+            source_temp x Wf2,
+            Mean(children_temp[source#]) x Wa2));
+        result /= sqrt(sum(result));
+        source_embedding[source#] := result;
+
+    Move source_embedding from GPU to CPU;
+    source_start += B;
 ```
-
-where `source_result` is each node's embedding vector `z_u` in algorithm 2. `|| . ||_2` is the L2-norm of a vector.  
-The `selectNeighbor ()`  function we use is uniform, you can change it to the algorithm you need, 
-such as weighted uniform, importance sampling (FaseGCN paper use this) or random walk probability like DeepWalk or Node2vec (PinSage paper use this). 
-
-The GPU is very similar to CPU code. We did not use advance operator or filter operator. 
-Our parallelism is based on source-child pairs. i.e. .... do not know how to discribe this. 
- 
 
 ## How To Run This Application on DARPA's DGX-1
 
@@ -98,86 +118,397 @@ At this point, there should be an executable `test_sage_<CUDA version>_x86_64`
 in `tests/sage/bin`.
 
 The datasets are assumed to have been placed in `/raid/data/hive`, and converted
-to proper matrix market format (.mtx). At the time of testing,
-  `pokec` is available in that directory. 
+to proper matrix market format (.mtx). At the time of testing, `pokec`, `amazon`,
+'flickr', 'twitter' and 'cit-Patents' are available in that directory.
 
-Note that GraphSage is an inductive representation learning algorithm.
-We assume that there is no dangling nodes in graph. 
-So before running it please remove the dangling nodes in graph. 
+Note that GraphSage is an inductive representation learning algorithm,
+so it reasonable to assume that there is no dangling vertices in the graph.
+*Before running GraphSAGE, please remove the dangling vertices from the graph. *
+In the case when dangling vertices are present, the dangling vertices themselves
+will be treated as their neighbors.  
 
-The testing is done with Gunrock using `dev-refactor` branch at commit `2699252`
-(Oct. 18, 2018), using CUDA 10.2 with NVIDIA driver 390.30.
+The testing is done with Gunrock using `dev-refactor` branch at commit `0ed72d5`
+(Oct. 25, 2018), using CUDA 9.2 with NVIDIA driver 390.30 on a Tesla P100 GPU in
+the DGX-1 machine, and using CUDA 10.0 with NVIDIA driver 410.66 on a Tesla V100
+GPU on Bowser.
+
 ### Running the application
 
+#### Application specific parameters
+```
+--Wa1 : std::string, default =
+	<weight matrix for W^1 matrix in algorithm 2, aggregation part>
+	 dimension 64 by 128 for pokec;
+	 It should be leaf feature length by a value you want for W2 layer
+--Wa1-dim1 : int, default = 128
+	Wa1 matrix column dimension
+--Wa2 : std::string, default =
+	<weight matrix for W^2 matrix in algorithm 2, aggregation part>
+	 dimension 256 by 128 for pokec;
+	 It should be child_temp length by output length
+--Wa2-dim1 : int, default = 128
+	Wa2 matrix column dimension
+--Wf1 : std::string, default =
+	<weight matrix for W^1 matrix in algorithm 2, feature part>
+	 dimension 64 by 128 for pokec;
+	 It should be child feature length by a value you want for W2 layer
+--Wf1-dim1 : int, default = 128
+	Wf1 matrix column dimension
+--Wf2 : std::string, default =
+	<weight matrix for W^2 matrix in algorithm 2, feature part>
+	 dimension 256 by 128 for pokec;
+	 It should be source_temp length by output length
+--Wf2-dim1 : int, default = 128
+	Wf2 matrix column dimension
+--feature-column : std::vector<int>, default = 64
+	feature column dimension
+--features : std::string, default =
+	<features matrix>
+    dimension |V| by 64 for pokec;
+--omp-threads : int, default = 32
+    number of threads to run CPU reference
+--num-children-per-source : std::vector<int>, default = 10
+	number of sampled children per source
+--num-leafs-per-child : std::vector<int>, default = -1
+	number of sampled leafs per child; default is the same as num-children-per-source
+--batch-size : std::vector<int>, default = 65536
+	number of source vertex to process in one iteration
+```
+
+#### Example Command
 <code>
-./bin/test_sage_10.0_x86_64 \
- market /raid/data/hive/[DataSet]/[DataSet].mtx  --undirected \
- --vertex-start-from-zero=true --Wf1 ../../gunrock/app/sage/wf1.txt \
- --Wa1 ../../gunrock/app/sage/wa1.txt --Wf2 ../../gunrock/app/sage/wf2.txt \
- --Wa2 ../../gunrock/app/sage/wa2.txt --features ../../gunrock/app/sage/features.txt \
- --num-runs=10 --device=2 \
- --batch-size=128,256,512,1024,2048 \
- --validation=each
+./bin/test_sage_9.2_x86_64 \
+ market /raid/data/hive/pokec/pokec.mtx  --undirected \
+ --Wf1 ../../gunrock/app/sage/wf1.txt \
+ --Wa1 ../../gunrock/app/sage/wa1.txt \
+ --Wf2 ../../gunrock/app/sage/wf2.txt \
+ --Wa2 ../../gunrock/app/sage/wa2.txt \
+ --features ../../gunrock/app/sage/features.txt \
+ --num-runs=10 \
+ --batch-size=16384
 </code>
 
-
+When `Wf1`, `Wa1`, `Wf2`, `Wa2` or `features` are not available, random values
+are used. The embeddings may be not useful at all, but the memory access patterns
+and the computation workload are the same, regardless of whether the random
+inputs are used. Using the random inputs enable us testing on any graph, without
+requiring the associative arrays.
 
 ### Output
 
-What is output when you run? Output file? JSON? Anything else? How do you extract relevant statistics from the output?
+The outputs are in the `sage` directory, look for the .txt files. An example is
+shown below for the `pokec` dataset:
+```
+Loading Matrix-market coordinate-formatted graph ...
+  ... Loading progress ...
+Converting 1632803 vertices, 44603928 directed edges ( ordered tuples) to CSR format...Done (0s).
+Degree Histogram (1632803 vertices, 44603928 edges):
+    Degree 0: 0 (0.000000 %)
+    Degree 2^0: 163971 (10.042301 %)
+    Degree 2^1: 201604 (12.347111 %)
+    Degree 2^2: 238757 (14.622523 %)
+    Degree 2^3: 273268 (16.736128 %)
+    Degree 2^4: 298404 (18.275567 %)
+    Degree 2^5: 265002 (16.229882 %)
+    Degree 2^6: 148637 (9.103180 %)
+    Degree 2^7: 38621 (2.365319 %)
+    Degree 2^8: 4089 (0.250428 %)
+    Degree 2^9: 418 (0.025600 %)
+    Degree 2^10: 23 (0.001409 %)
+    Degree 2^11: 3 (0.000184 %)
+    Degree 2^12: 3 (0.000184 %)
+    Degree 2^13: 3 (0.000184 %)
 
-How do you make sure your output is correct/meaningful? (What are you comparing against?)
+==============================================
+ feature-column=64 num-children-per-source=10 num-leafs-per-child=-1
+Computing reference value ...
+__________________________
+rand-seed = 1540498523
+--------------------------
+CPU Reference elapsed: 25242.941406 ms.
+Embedding validation: PASS
+==============================================
+ batch-size=512
+Using randomly generated Wf1
+Using randomly generated Wa1
+Using randomly generated Wf2
+Using randomly generated Wa2
+Using randomly generated features
+Using advance mode LB
+Using filter mode CULL
+rand-seed = 1540498553
+__________________________
+--------------------------
+Run 0 elapsed: 2047.366858 ms, #iterations = 3190
+... More runs
+__________________________
+--------------------------
+Run 9 elapsed: 2013.216972 ms, #iterations = 3190
+Embedding validation: PASS
+[Sage] finished.
+ avg. elapsed: 2042.503190 ms
+ iterations: 3190
+ min. elapsed: 2009.524107 ms
+ max. elapsed: 2243.710995 ms
+ load time: 1600.46 ms
+ preprocess time: 3997.880000 ms
+ postprocess time: 2106.487989 ms
+ total time: 26634.360075 ms
+```
+
+There is 1 OMP reference run on the CPU for each combination of <`feature-column`,
+`num-children-per-source`, `num-leafs-per-child`>, with the timing reported after
+`CPU Reference elapsed`. There are 10 GPU runs for each combination of the
+pervious three parameters, plus `batch-size`. The computation workload of the
+GPU runs are the same as the reference CPU run, with different batch sizes. The
+GPU timing is reported after `Run x elapsed:`, and the average running time of
+the 10 GPUs is reported after `avg. elapsed`.
+
+The mathematical formula of the SAGE algorithm is relatively simple and repeats
+itself three times in the form of `Normalize(C x Wf + Mean(D) x Wa)`. Because of
+this simplicity, it is still possible to verify the implementation by visually
+inspecting the code. The resulted embeddings are also checked for the L2 norm,
+which should be close to 1 for every vertex.
 
 ## Performance and Analysis
 
-How do you measure performance? What are the relevant metrics? Runtime? Throughput? Some sort of accuracy/quality metric?
+The OpenMP and GPU implementations are tested for running time. It would be very
+useful to validate the successful rate of the whole pipeline with the training
+process in place; but this may be the task for year 2.
+
+The datasets used for experiments are:
+
+| Dataset | V       | E        |
+|---------|--------:|---------:|
+| flickr  | 105938  | 4633896  |
+| amazon  | 548551  | 1851744  |
+| pokec   | 1632803 | 44603928 |
+| cit-Patents | 3774768 | 33037894 |
+| twitter | 7199978 | 43483326 |
+
+The running times in milliseconds are list below, for both machines. F stands
+for the length of features, C stands for the number of children per source,
+the same as the number of leafs per child, and B notes the batch size that
+produces the shortest running time on GPU among {512, 1024, 2048, 4096, 8192,
+16384}.
+
+The running time on DGX-1 with Tesla P100 GPU:
+
+| Dataset | F   | C   | B     | Gunrock GPU | OpenMP   | Speedup |
+|---------|----:|----:|------:|----------:|-----------:|-----:|
+| flickr  |  64 |  10 | 16384 |   113.431 |   1607.468 | 14.17|
+| flickr  |  64 |  25 | 16384 |   248.523 |   2630.659 | 10.59|
+| flickr  |  64 | 100 |  2048 |  1139.007 |  10702.981 |  9.40|
+| flickr  | 128 |  10 | 16384 |   192.916 |   1800.150 |  9.33|
+| flickr  | 128 |  25 |  8192 |   442.226 |   4022.799 |  9.10|
+| flickr  | 128 | 100 |  2048 |  2116.955 |  20655.732 |  9.76|
+| amazon  |  64 |  10 | 16384 |   579.342 |   8905.530 | 15.37|
+| amazon  |  64 |  25 | 16384 |  1235.168 |  18034.229 | 14.60|
+| amazon  |  64 | 100 |  4096 |  5486.910 |  45337.011 |  8.26|
+| amazon  | 128 |  10 | 16384 |   976.759 |   9418.961 |  9.64|
+| amazon  | 128 |  25 | 16384 |  2193.159 |  29645.709 | 13.52|
+| amazon  | 128 | 100 |  4096 | 10112.228 |  80677.594 |  7.98|
+| pokec   |  64 |  10 | 16384 |  1744.602 |  25242.941 | 14.47|
+| pokec   |  64 |  25 | 16384 |  3806.404 |  34517.180 |  9.07|
+| pokec   |  64 | 100 |  2048 | 17486.692 | 133920.000 |  7.66|
+| pokec   | 128 |  10 | 16384 |  2950.606 |  41414.535 | 14.04|
+| pokec   | 128 |  25 |  8192 |  6791.829 |  74983.391 | 11.04|
+| pokec   | 128 | 100 |  2048 | 32000.378 | 297979.438 |  9.31|
+| cit-Patents |  64 |  10 | 16384 |  4005.860 |  52094.125 | 13.00|
+| cit-Patents |  64 |  25 | 16384 |  8541.500 |  93715.789 | 10.97|
+| cit-Patents |  64 | 100 |  4096 | 38494.688 | 293333.781 |  7.62|
+| cit-Patents | 128 |  10 | 16384 |  6784.752 |  95639.117 | 14.10|
+| cit-Patents | 128 |  25 |  8192 | 15250.170 | 146539.250 |  9.61|
+| cit-Patents | 128 | 100 |  4096 | 70074.883 | 530910.375 |  7.58|
+| twitter |  64 |  10 | 16384 |  7594.364 | 103753.961 | 13.66|
+| twitter |  64 |  25 | 16384 | 16212.790 | 162819.531 | 10.04|
+| twitter |  64 | 100 |  4096 | 73488.745 | 636224.625 |  8.66|
+| twitter | 128 |  10 | 16384 | 12753.125 | 147705.375 | 11.58|
+| twitter | 128 |  25 | 16384 | 28827.354 | 282497.438 |  9.80|
+| twitter | 128 | 100 |  4096 |134027.966 |1105741.500 |  8.25|
+
+The running time on Bowser with a Tesla V100 GPU
+
+| Dataset | F   | C   | B     | Gunrock GPU | OpenMP   | Speedup vs. CPU| Speed vs. P100 |
+|---------|----:|----:|------:|----------:|-----------:|-----:|-----:|
+| flickr  |  64 |  10 | 16384 |    39.894 |   1094.377 | 27.43| 2.90 |
+| flickr  |  64 |  25 |  8192 |    91.810 |   2177.953 | 23.72| 2.76 |
+| flickr  |  64 | 100 |  1024 |   448.888 |   8641.063 | 19.25| 2.57 |
+| flickr  | 128 |  10 | 16384 |    65.131 |   1849.658 | 28.40| 2.95 |
+| flickr  | 128 |  25 |  4096 |   156.965 |   3981.435 | 25.37| 2.84 |
+| flickr  | 128 | 100 |   512 |   802.966 |  16471.338 | 20.51| 2.70 |
+| amazon  |  64 |  10 | 16384 |   196.079 |   6142.780 | 31.33| 2.95 |
+| amazon  |  64 |  25 |  8192 |   423.145 |  12674.514 | 29.95| 2.92 |
+| amazon  |  64 | 100 |  2048 |  1963.691 |  49205.359 | 25.06| 2.79 |
+| amazon  | 128 |  10 | 16384 |   324.067 |   9978.198 | 30.79| 3.10 |
+| amazon  | 128 |  25 |  8192 |   733.181 |  21726.697 | 29.63| 2.99 |
+| amazon  | 128 | 100 |  2048 |  3361.894 |  86967.164 | 25.87| 3.01 |
+| pokec   |  64 |  10 | 16384 |   602.116 |  17111.664 | 28.42| 2.84 |
+| pokec   |  64 |  25 |  8192 |  1379.450 |  35887.129 | 26.02| 2.71 |
+| pokec   |  64 | 100 |  1024 |  6793.011 | 140751.234 | 20.72| 2.54 |
+| pokec   | 128 |  10 | 16384 |  1000.310 |  28987.953 | 28.98| 2.96 |
+| pokec   | 128 |  25 |  4096 |  2366.202 |  63863.352 | 26.99| 2.82 |
+| pokec   | 128 | 100 |   512 | 11859.789 | 265325.281 | 22.37| 2.64 |
+| cit-Patents |  64 |  10 | 16384 |  1374.782 |  38803.195 | 28.22| 2.95 |
+| cit-Patents |  64 |  25 |  8192 |  3006.717 |  78112.516 | 25.98| 2.87 |
+| cit-Patents |  64 | 100 |  2048 | 13910.529 | 291278.125 | 20.94| 2.78 |
+| cit-Patents | 128 |  10 | 16384 |  2276.261 |  65735.234 | 28.88| 2.99 |
+| cit-Patents | 128 |  25 |  8192 |  5201.184 | 141957.922 | 27.29| 2.96 |
+| cit-Patents | 128 | 100 |  2048 | 23922.527 | 560321.438 | 23.42| 2.94 |
+| twitter |  64 |  10 | 16384 |  2575.303 |  72372.484 | 28.10| 2.91 |
+| twitter |  64 |  25 |  8192 |  5658.345 | 148938.422 | 26.32| 2.84 |
+| twitter |  64 | 100 |  2048 | 26468.915 | 569925.500 | 21.53| 2.77 |
+| twitter | 128 |  10 | 16384 |  4270.454 | 125431.766 | 29.37| 2.98 |
+| twitter | 128 |  25 |  8192 |  9744.686 | 267841.563 | 27.49| 2.93 |
+| twitter | 128 | 100 |  2048 | 45604.444 |1098039.375 | 24.08| 2.93 |
 
 ### Implementation limitations
 
-e.g.:
+* Memory usage * Gunrock's GPU implementation uses `B x (C x (Wf2.x + F + 1) +
+2Wf2.x + 2R.x) x 4` bytes in additional to the features that takes up `VF x 4`
+bytes and the graph itself. Because the batch size B can be adjusted, the main
+memory consumption is from the feature array. For P100 with 16 GB memory, if
+the feature length is 64, the maximum number of vertices it can handle before
+hitting OOM is about 60 million. The largest dataset tested so far is the twitter
+dataset with 7.2M vertices and 43.5M edges. Larger datasets should be tested, if
+time permits.
 
-- Size of dataset that fits into GPU memory (what is the specific limitation?)
-- Restrictions on the type/nature of the dataset
+* Data types * The vertex Ids and edge Ids are both presented as 32bit unsigned
+integers. Input features, weights, output embeddings and intermedia results are
+represented as 32bit floating point numbers. A not so recent trend in machine
+learning research is to use less precision in neural networks. Half precision /
+16-bit floating points are quite common, and supported by recent GPUs. Using
+half precision cuts the computation time to about half, as compared to single
+precision, and also cuts the memory usage to store the features half. It would
+be interesting to see what would happen if the data type is changed to half
+precision.
+
+* Graph types * The training process requires the graph to be undirected
+(enforced by `--undirected` in Gunrock's command line parameters). Behavior of
+sampling a zero-length neighbor list is undefined, and currently it will return
+the source vertex itself.
 
 ### Comparison against existing implementations
 
-- Reference implementation (python? Matlab?)
-- OpenMP reference
+Because computation on each vertex is independent on each other, SAGE is an
+embarrassingly parallel problem when parallel across vertices. Running a simple
+test with the `pokec` dataset, feature length as 64, num_children_per_source and
+num_leafs_per_child both at 10, the serial run (when omp-threads forced to 1)
+on the DGX-1 takes 366390.250 ms, as compared to 25242.941 ms using 32 threads;
+using 32 threads is about 14.5X faster than a single thread, which shows SAGE
+scales pretty well on the CPU.
 
-Comparison is both performance and accuracy/quality.
+Comparing the running time of 32 thread OpenMP and Gunrock's GPU implementation,
+the P100 is about 7.5X to 15X faster. Increasing the feature length from 64 to
+128 roughly doubles the computation workload, and the speedup does not change
+very much for datasets with more than about 1M vertices. However, increasing the
+number of children per source and the number of leafs per child decreases the
+speedup. The OMP's running time increases slower than the number of neighbors
+selected, while GPU's running time increases faster than the number of neighbors
+selected. This may attribute to the cache effect: the parallelism on CPU is
+limited, so data reuse rate is high, even when the number of neighbors increases;
+however, the number of source or children processed on the GPU at the same time
+is much larger, with a much bigger working set, and this decreases the cache hit
+rate, so as longer running time.
 
-
+It's more interesting when comparing the running time on V100 and P100: V100 is
+about 3X faster than P100 when running SAGE. This large performance difference
+is caused by the different limiting factors when running SAGE on these two GPUs;
+details are in the the Performance limitations section. Compared to OpenMP, V100
+is about 20X to 30X faster.
 
 ### Performance limitations
 
-e.g., random memory access?
+Profiling SAGE with the pocket dataset on a Titan Xp GPU (profiling on P100
+caused internal error in the profiler itself; Titan Xp has roughly the same SM
+design as P100, but has only 30 SMs vs. 56 on the P100; P100 also has 16 GB
+HMB2 memory, and Titan Xp only has 12 GB GDDR5X; running time on Titan Xp and
+P100 is similar), kernel2 takes up about 60% of
+the computation of an batch, 10.64 ms out of 17.76 ms for pocket with 64 feature
+length, 10 neighbors and batch size at 16384. Kernel1 takes 1.56 ms, or 8.8%,
+and Kernel3 takes 5.52 ms, or 31.1%.
+
+Further detail profiling of Kernel2, on Titan Xp shows the
+utilization of the memory system:
+
+| Type        | Transactions | Bandwidth     | Utilization |
+|---------------|-----------:|--------------:|-------------|
+| Shared Loads  |    2129920 |   31.997 GB/s | |
+| Shared Stores |    1638400 |   24.613 GB/s | |
+| Shared Total  |    3768320 |   56.611 GB/s | Idle to low |
+| Local Loads   |          0 |        0 GB/s | |
+| Local Stores  |          0 |        0 GB/s | |
+| Global Loads  | 2685009922 | 1575.871 GB/s | |
+| Global Stores |          0 |        0 GB/s | |
+| Texture Reads |  671252480 | 2521.025 GB/s | |
+| **Unified Total** | **3356262402** | **4096.897 GB/s** | **High** |
+| L2 Reads      |  264170192 |  992.145 GB/s | |
+| L2 Writes     |   10485773 |   39.381 GB/s | |
+| L2 Total      |  274655965 | 1031.526 GB/s | Low to medium |
+| Device Reads  |    2181833 |    8.194 GB/s | |
+| Device Writes |     543669 |    2.042 GB/s | |
+| Device Total  |    2725502 |   10.236 GB/s | Idle to low |
+
+![Sage_Pokec_TianXp]( attachments/sage/pokec_TitanXp.png "Memory statics")
+
+It's clearly that the unified cache is almost fully utilized, at 4 TBps out of
+the 5 TBps theoretical upper bound, and being the bottleneck.
+This is because the W arrays and the intermedia arrays are highly reusable.
+
+
 
 ## Next Steps
 
 ### Alternate approaches
 
-If you had an infinite amount of time, is there another way (algorithm/approach) we should consider to implement this?
+** Things tried but not really work **
+
+An simple implementation that use a thread to process the per-source or per-child
+computation is coded, but it runs about 10X slower than the current
+implementation that uses a block to process such units. One reason is the use
+of block level parallel primitives, such as block reduce. Another reason is that
+by using a whole block, instead of a thread, to process the same computation,
+the working set is greatly reduced together with the parallelism, and the whole
+working set can fit into the cache system. When using higher parallelism, the
+working set is larger, and forced to be evict into the global memory, and
+creates a bottleneck. Actually during the experiment for the thread level
+parallelism implementation, reducing the number of blocks of the kernel improves
+its running time, the opposite to normally what would be expected from running
+other kernels.
 
 ### Gunrock implications
 
-What did we learn about Gunrock? What is hard to use, or slow? What potential Gunrock features would have been helpful in implementing this workflow?
+One thing that Gunrock does not provide, or intensionally hides, is the block
+level parallelism. However, it comes as handy when implementing the custom
+kernels for SAGE: each block can process a one dimension vector, with each
+thread holds one element, then use block level reduce to get the sum of those
+elements; this way is highly efficient, and actually reduces the parallelism,
+thus eventually the working set of data.
 
 ### Notes on multi-GPU parallelization
 
-What will be the challenges in parallelizing this to multiple GPUs on the same node?
-
-Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
+The main memory usage is caused by the feature data, so it is critical to not
+duplicate the features. The side effect is the computation need to be divided
+into child-centric and source-centric parts, and exchange data in between. It
+should be scalable, and easy to implement.
 
 ### Notes on dynamic graphs
 
-(Only if appropriate)
-
-Does this workload have a dynamic-graph component? If so, what are the implications of that? How would your implementation change? What support would Gunrock need to add?
+SAGE does not have a dynamic graph component, but it should able to work on a
+dynamic graph. Some of the data may be reusable if the graph has not been
+significantly changed; but the resulted memory requirement to store the intermedia
+data may make the data reuse impossible.
 
 ### Notes on larger datasets
 
-What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
+If the dataset is so large, that the graph and the per-vertex feature data are
+larger than the combined GPU memory, it's possible to accumulate the features
+of leafs and children on CPU, transfer the data on to GPU, and perform the
+computation. Running time will increase significantly as compared to the cases when
+the full data can fit in the GPU memory; but whether that will increase above
+the OpenMP implementation is still unknown.
 
 ### Notes on other pieces of this workload
 
-Briefly: What are the important other (non-graph) pieces of this workload? Any thoughts on how we might implement them / what existing approaches/libraries might implement them?
+The main part of SAGE is actually the training process. How to connect the
+training with the Gunrock GPU implementation is the main task going forward.
