@@ -16,7 +16,9 @@ The application classification (AC) workflow is an implementation of probabalist
 
 ## Summary of Results
 
-(fill this in)
+Application classification involves a number of dense-matrix operations, which did not make it an obvious candidate for implementation in Gunrock.  However, our GPU implementation using the CUDA CUB library shows substantial speedups (10-50x) over the multi-threaded OpenMP implementations.
+
+However, there are two neighbor reduce operations that may benefit from the kind of load balancing implemented in Gunrock.  Thus, it would be useful to either expose lightweight wrappers of high-performance Gunrock primitives for easy intergration into outside projects _or_ come up with a workflow inside of Gunrock that makes programming applications with lots of non-graph operations straightforward.
 
 ## Summary of CUDA Implementation
 
