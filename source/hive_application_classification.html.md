@@ -258,10 +258,9 @@ The application was implemented outside of the Gunrock framework because it had 
 
 ### Notes on multi-GPU parallelization
 
-__TODO__
-What will be the challenges in parallelizing this to multiple GPUs on the same node?
+Most of the kernels are either row or column operations (reductions) over dense matrices, and thus relatively easy to partition over multiple nodes.  They would either end up being embarrassingly parallel or would require a per-node reduction and then a reduction across nodes.   Replacing CUB's `DeviceSegmentedReduce` with Gunrock's implementation would give us multi-GPU support for the remaining kernel.
 
-Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
+Alternatively, depending on the topology of the graph, we may be able to partition the data graph so that we can duplicate the pattern graph across nodes and run an indepent instance of application classification on each partition.  The partition would need to be constructed in a way that ensures that every subgraph is intact on _some_ GPU, which implies some partial duplication of the data graph.  If the data graph has a large diameter, or the pattern graph has a small diameter, this may be possible without excessive duplication.  If the data graph has a small diameter, we may still be able to partition the graph by eg. removing edges that are particularly dissimilar from edges in the pattern graph.  This kind of approach is clearly very application specific, and may not be possible at all in some cases.
 
 ### Notes on dynamic graphs
 
@@ -269,8 +268,7 @@ In practice, it's likely that practitioners would like to run application classi
 
 ### Notes on larger datasets
 
-__TODO__
-What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
+We may be able to use a partitioning scheme like the one described in the multi-GPU section above to handle data graphs that are larger than GPU memory.
 
 ### Notes on other pieces of this workload
 

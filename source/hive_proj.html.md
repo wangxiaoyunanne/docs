@@ -360,6 +360,8 @@ Multiple GPU support for GraphBLAS is on the roadmap. Unlike the Seeded Graph Ma
 
 Even though extending matrix multiplication to multiple GPUs can be straightforward, doing so in a backend-agnostic fashion that abstracts away the placement (i.e. which part of matrix A goes on which GPU) may still be quite challenging.
 
+Further discussion can be found [here](https://github.com/sgpyc/docs/blob/scaling/source/hive_scaling.html.md).
+
 ### Notes on dynamic graphs
 
 This workflow does not have an explicit dynamic component.  The graph projection operation seems like it would be fairly straightforward to adapt to dynamic graphs -- as nodes/edges are added to `G`, we create/increment the weight of the appropriate edges in `H`.  However, this adds an additional layer of complexity to the memory allocation step, as we can't use the two-pass approach to allocate memory conservatively.
