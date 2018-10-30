@@ -19,10 +19,16 @@ A commonly used algorithm for community detection is Louvain
 
 ## Summary of Results
 
-One or two sentences that summarize "if you had one or two sentences to sum up
-your whole effort, what would you say". I will copy this directly to the high-level
-executive summary in the first page of the report. Talk to JDO about this.
-Write it last, probably.
+The Gunrock uses sort and segmented reduce to implement the
+Louvain algorithm, different from the commonly used hash table mapping. The GPU
+implementation is about ~1.5X faster than the OpenMP implementation, and also
+faster than pervious GPU works. It is still unknown whether the sort and
+segmented reduce formulation maps the problem batter than hash table on the GPU. The
+modularities resulted from the GPU implementation are within small differences
+as the serial implementation, and are better when the graph is larger. A custom
+hash table can potentially improve the running time. The GPU Louvain
+implementation should have moderate scalability across multiple GPUs in an
+DGX-1.
 
 ## Summary of Gunrock Implementation
 
@@ -163,7 +169,7 @@ For example, when DataSet = `akamai`, and LogDir = `eval/DGX1-P100x1`, the comma
 
 ### Output
 
-The outputs are in the `louvain` directory. Look for the `.txt` files: running time is after `Run x elapsed:`, and the number of communities and the resulting modularity is in the line that starts with `Computed:`. There are 12 runs in each `.txt` file: 1 single thread CPU run for reference, 1 OpenMP multiple-thread (32 threads in the example, may not be optimal) run, and 10 GPU runs.
+The outputs are in the [louvain](attachments/louvain "louvain") directory. Look for the `.txt` files: running time is after `Run x elapsed:`, and the number of communities and the resulting modularity is in the line that starts with `Computed:`. There are 12 runs in each `.txt` file: 1 single thread CPU run for reference, 1 OpenMP multiple-thread (32 threads in the example, may not be optimal) run, and 10 GPU runs.
 
 The output was compared against PNNL's results on the number of communities and
 modularity for the amazon and ca datasets. Note that PNNL's code does not count
