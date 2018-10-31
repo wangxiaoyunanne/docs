@@ -20,7 +20,7 @@ __TODO__
 One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
 
 ## Algorithm: Scan Statistics
-Input is an undirected graph
+Input is an undirected graph w/o self loops.
 ```
 scan_stats = [len(graph.neighbors(u)) for u in graph.nodes]
 for (u, v) in graph.edges:
