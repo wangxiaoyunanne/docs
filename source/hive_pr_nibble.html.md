@@ -179,17 +179,6 @@ We compare our Gunrock GPU implementation with two CPU reference implementations
 
 We find the Gunrock implementation is 3 orders of magnitude faster than either reference CPU implementation. The minimum, geometric mean, and maximum speedups are 7.25x, 1297x, 32899x, respectively.
 
-Comparison can be replicated by doing the following.
-
-```bash
-# download datasets
-cd dataset/large
-make -j16
-
-# run script
-sh test_big.sh
-```
-
 All runtimes are in milliseconds (ms):
 
 Dataset          | HIVE Ref. C++  | Gunrock C++ | Gunrock GPU    | Speedup
