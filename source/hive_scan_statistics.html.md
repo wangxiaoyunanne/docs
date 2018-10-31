@@ -40,6 +40,22 @@ for each node i in G:
 return [max_node, max_scan_stat]
 ```
 
+## Summary of Gunrock implementation
+
+```
+max_scan_stat = -1
+node = -1
+src_node_ids[nodes]
+scan_stats[nodes] = degrees[nodes]
+node_ids[nodes]
+
+Advance + Filter (src_node_ids): remove all edges whose src id is larger than dest to avoid visiting the same edge two times later
+Intersection (src_node_ids, scan_stats): intersect neighoring nodes of both nodes of each edge to get number of triangles and accumulate the count to each node in scan_stats
+Sort(scan_stats, node_ids): sort the node ids based on the scan_stats' values from largest to smallest
+
+return [scan_stats[0], node_ids[0]]
+```
+
 ## How To Run This Application on DARPA's DGX-1
 
 ### Prereqs/input
@@ -72,9 +88,7 @@ We compare the output with python version of this app on the CPU.
 
 ## Performance and Analysis
 
-__TODO__
-
-How do you measure performance? What are the relevant metrics? Runtime? Throughput? Some sort of accuracy/quality metric?
+We measure the performance by runtime. The whole process is ran on the GPU and we don't include the data copy time which is included in the pre-procesing time. The accuracy measurement is set since the algorithm is deterministic.
 
 ### Implementation limitations
 
@@ -87,10 +101,8 @@ e.g.:
 
 ### Comparison against existing implementations
 
-__TODO__
-
-- Reference implementation (python? Matlab?)
-- OpenMP reference
+- Reference implementation is in python on the CPU
+- OpenMP reference is not available yet
 
 Comparison is both performance and accuracy/quality.
 
@@ -110,7 +122,7 @@ If you had an infinite amount of time, is there another way (algorithm/approach)
 
 ### Gunrock implications
 
-__TODO__
+Gunrock is helpful in the implementation. The only hard part is the accumulation when doing intersection. Intersection is designed to ount the total number of triangles for each edge. But in the app, we need the triangle counts for each node which introduces extra atomic add when doing accumulation when multiple edges share the same node since we are doing traingle counting in parallel for each edge.
 
 What did we learn about Gunrock? What is hard to use, or slow? What potential Gunrock features would have been helpful in implementing this workflow?
 
