@@ -1,5 +1,5 @@
 ---
-title: Scaling analysis for Hive applications
+title: Scaling analysis for HIVE applications
 
 toc_footers:
   - <a href='https://github.com/gunrock/gunrock'>Gunrock&colon; GPU Graph Analytics</a>
@@ -10,39 +10,43 @@ search: true
 full_length: true
 ---
 
-The purpose of this document is to understand how the Hive applications would
-scale out on multiple GPUs, with the focus on tarting the DGX-1 platform.
-Before diving into per application analysis, a brief summary of the potential
-hardware platforms, the communication methods and models, and graph
-partitioning schemes will be given.
+# Scaling analysis for HIVE applications
 
-# Hardware platforms
+The purpose of this document is to understand how the HIVE v0
+applications would scale out on multiple GPUs, with a focus on the
+DGX-1 platform. Before diving into per-application analysis, we give a
+brief summary of the potential hardware platforms, the communication
+methods and models, and graph partitioning schemes.
 
-There are at least three kinds of potential multi-GPU platforms the Hive apps
-can run on. They have different GPU-communication properties, and that may
-affect the choice of communication models and / or graph partitioning schemes,
-thus may have different scaling results.
+## Hardware platforms
 
-## DGX-1
+There are at least three kinds of potential multi-GPU platforms for
+HIVE apps. They have different GPU communication properties, and that
+may affect the choice of communication models and/or graph
+partitioning schemes, thus may have different scaling results.
 
-The DGX-1 with P100 GPUs has 4 NVLinks lanes per GPU, and they are connected as
-![DGX1-NVLink]( attachments/scaling/NVLink-DGX1.png "DGX1 NVLink Topology").
+### DGX-1
 
-Each of the NVLink runs at 20 GBps per direction, which is higher
-than PCIe 3.0 x16 at about 16 GBps for the whole GPU. But the
-topology is not all to all, and GPUs may not be able to access every other
-GPU's memory. For example, GPU0 can't use peer access on GPU5, 6 and 7. This
-makes implementations using peer-access more complex than one could hope. DGX-1
-with V100 GPUs increases the NVLink speed to 25 GBps per direction per lane,
-and increases the number of lanes per GPU to 6, but the peer accessibility has
-not been changed. This issue is finally addressed in DGX-2 with the NVSwitch.
+The DGX-1 with P100 GPUs has 4 NVLink lanes per GPU, connected as
+follows. ![DGX1-NVLink]( attachments/scaling/NVLink-DGX1.png "DGX1
+NVLink Topology")
 
-Using a benchmark program to test the throughput and latency shows the following
-results. `Self` indicates local GPU accesses, `peer` indicates peer accesses,
-`host` indicates accesses to the CPU memory via. UVM, and `all` indicates accesses to
-all peer accessible GPUs.
+Each of the NVLink links runs at 20 GBps per direction, higher than
+PCIe 3.0 x16 (16 GBps for the whole GPU). But the topology is not
+all-to-all, and GPUs may not be able to access every other GPU's
+memory. For example, GPU0 can't use peer access on GPUs 5, 6 and 7.
+This makes implementations using peer access more complex than a full
+all-to-all topology. DGX-1 with V100 GPUs increases the NVLink speed
+to 25 GBps per direction per lane, and increases the number of lanes
+per GPU to 6, but peer accessibility has not been changed. This issue
+is finally addressed in DGX-2 with the NVSwitch.
 
-Throughput in GBps
+Using a benchmark program to test throughput and latency shows the
+following results. `Self` indicates local GPU accesses, `peer`
+indicates peer accesses, `host` indicates accesses to the CPU memory
+via UVM, and `all` indicates accesses to all peer-accessible GPUs.
+
+Throughput in GBps:
 
 | Operation      | Self | Peer | Host | All |
 |----------------|------:|------:|------:|-----:|
@@ -53,7 +57,7 @@ Throughput in GBps
 | Random write   | 6.63 | 1.14 | 3.47E-5 | 3.82 |
 | Random update  | 3.44 | 0.83 | 1.92E-5 | 2.08 |
 
-Latency in microsecond (us)
+Latency in microseconds (us):
 
 | Operation      | Self | Peer | Host | All |
 |----------------|------:|------:|------:|-----:|
@@ -64,35 +68,39 @@ Latency in microsecond (us)
 | Random write   | 3.28 | 1.05 | 15.88 | 1.39 |
 | Random update  | 5.69 | 1.28 | 21.76 | 1.38 |
 
-All the regular throughputs are at least 80% of the theoretical upper bounds. The
-latencies when accessing local GPUs seem odd, but other latencies look
-reasonable. It's clear that local regular accesses have much higher throughput
-than inter-GPU connections, about 20 to 30 times from this experiment. The ratio of
-random accesses are lower, but still at about 5 times. The implication on the
-scalabilities of graph applications is that, the local memory access to
-communication ratio needs to be around 10 to 1. Because most graph
-implementations are memory bound, the computation cost is counted by the number
-of elements accessed by the kernels; this means the computation to
-communication ratio should be about 2.5 operations to 1 byte to have some
-scalability.
+All the regular throughputs are at least 80% of their theoretical
+upper bounds. The latencies when accessing local GPUs seem odd, but
+other latencies look reasonable. It's clear that local regular
+accesses have much higher throughput than inter-GPU connections, about
+20 to 30 times from this experiment. The ratio of random accesses are
+lower, but still at about 5 times. The implication on the
+scalabilities of graph applications is that for scalable behavior, the
+local-memory-access-to-communication ratio needs to be at least 10 to
+1. Because most graph implementations are memory bound, the
+computation cost is counted by the number of elements accessed by the
+kernels; this means the computation to communication ratio should be
+at least 2.5 operations to 1 byte to exhibit scalable behavior.
 
-The UVM doesn't work as expected for most cases, only when the accesses are read
-only and the data can be duplicated on each GPU. Otherwise the throughputs are
-significantly lower, caused by memory migration and going over the PCIe
-interfaces. It must be noted that, at the time of testing, the DGX-1 has CUDA
-9.1 and NVIDIA driver 390.30 installed, which are more than one year old. Newer
-CUDA version and NVIDIA driver could improve the UVM performance.
+Unified virtual memory (UVM) doesn't work as expected for most cases,
+instead only when the accesses are read only and the data can be
+duplicated on each GPU. Otherwise the throughputs are significantly
+lower, caused by memory migration and going over the PCIe interfaces.
+It must be noted that, at the time of testing, the DGX-1 has CUDA 9.1
+and NVIDIA driver 390.30 installed, which are more than one year old.
+A newer CUDA version and NVIDIA driver could potentially improve the
+UVM performance.
 
-## DGX-2
+### DGX-2
 
-The DGX-2 system has very different NVLink topology: the GPUs are connected by
-NVSwitches, and all to all peer accesses are available.
+The DGX-2 system has a very different NVLink topology: the GPUs are
+connected by NVSwitches, and all to all peer accesses are available.
 
 ![DGX2-NVLink]( attachments/scaling/NVLink-DGX2.png "DGX2 NVLink Topology").
 
-At the time of report, the DGX-2 is hardly available. What we have are two
-Quadro GV100 GPUs directly connected by 4 NVLink2 lanes. Although the setup is
-much smaller than the DGX-2, it still can provide some ideas on how the
+At the time of this report, the DGX-2 is hardly available, and not to
+us. What we have locally at UC Davis are two Quadro GV100 GPUs
+directly connected by 4 NVLink2 lanes. Although the setup is much
+smaller than the DGX-2, it still can provide some ideas on how the
 inter-GPU communication would perform on the DGX-2.
 
 Throughput in GBps
@@ -117,97 +125,106 @@ Latency in microsecond (us)
 | Random write   | 0.13 | 0.08 | 0.08 | 0.15 |
 | Random update  | 0.15 | 0.09 | 0.09 | 0.17 |
 
-The local to peer memory throughput ratios, at about 8 for regular accesses and
-about 2 for random accesses, in this experiment are much lower than the DGX-1.
-The decreases are mainly from using all the 4 lanes for communication, instead
-of 1 in the DGX-1 cases. If using one a single lane, the ratios would become 32
-and 8, even higher than the DGX-1. The actual effect from the NVSwitch is still
-unclear, but DGX-2 is expected to have similar scalabilities as DGX-1 for
-graph applications.
+On this machine configuration, the local-to-peer memory throughput
+ratios, about 8 for regular accesses and about 2 for random accesses,
+are much lower than the DGX-1. The decreases are mainly from using all
+the 4 lanes for communication, instead of 1 in the DGX-1 cases. If
+using only a single lane, the ratios would become 32 and 8, even
+higher than the DGX-1. The actual effect from the NVSwitch is still
+unclear, but DGX-2 is expected to have similar scalabilities as DGX-1
+for graph applications.
 
-## GPU clusters
+### GPU clusters
 
-Going from multiple GPUs within the same node, to multiple GPUs across
-different nodes significantly decreases the inter-GPU throughput. While NVLink
-runs at 80 GBps per direction per GPU for the DGX-1, the aggregated InfiniBand
-bandwidth is only 400 Gbps, which is only one twelfth of the aggregated
-inter-GPU bandwidth. This means the local access to communication bandwidth
-ratio drops an order, making scaling graph applications across nodes an order
-harder. Using the same approximation method as the DGX-1, a graph implementation
-needs to have 30 operations / local memory operations for each byte
-going across the nodes. Focus may need to switch to the communication, instead
-of the local computation, to get a scalable implementation on GPU clusters.
+Going from multiple GPUs within the same node to multiple GPUs across
+different nodes significantly decreases the inter-GPU throughput.
+While NVLink runs at 80 GBps per direction per GPU for the DGX-1, the
+aggregated InfiniBand bandwidth is only 400 Gbps, which is only one
+twelfth of the aggregated inter-GPU bandwidth. This means the local
+access-to-communication-bandwidth ratio drops an order of magnitude,
+making scaling graph applications across nodes a corresponding order
+of magnitude harder. Using the same approximation method as the DGX-1,
+a graph implementation needs to have 30 operations / local memory
+operations for each byte going across the nodes. The implementation
+focus may need to switch to communication, rather than local
+computation, to achieve a scalable implementation on GPU clusters.
 
-# Communication methods / models
+## Communication methods / models
 
-There are multiple ways to move data between GPUs: explicit movement, peer
-accesses and unified virtual memory (UVM). They have different performances and
-implications in programming the graph implementations.
+There are multiple ways to move data between GPUs: explicit movement,
+peer accesses, and unified virtual memory (UVM). They have different
+performance and implications in implementing graph workflows.
 
-## Explicit data movement
+### Explicit data movement
 
-The most tradition way is to explicitly move the data: using `cudaMemcpyAsync`
-to copy a block of memory from one GPU to another. The source and destination
-GPUs are not required to be peer accessible. CUDA will automatically select the
-best route: if GPUs are peer-accessible, the traffic will go through the
-inter-GPU connection, be it NVLink or PCIe; if they are not peer-accessible,
-the data will be first copied to CPU memory, and then copied to the destination
-GPU.
+The most traditional way to communicate is to explicitly move the
+data: use `cudaMemcpyAsync` to copy a block of memory from one GPU to
+another. The source and destination GPUs are not required to be peer
+accessible. CUDA will automatically select the best route: if GPUs are
+peer-accessible, the traffic will go through the inter-GPU connection,
+be it NVLink or PCIe; if they are not peer-accessible, the data will
+be first copied to CPU memory, and then copied to the destination GPU.
 
-One of the advantage of explicit data movement is throughput. `cudaMemcpyAsync`
-is highly optimized, and the data for communication are always dense. The
-throughput should be close to the hardware limit, if the size of data is not too
-small, say at least a few tens of MB. Explicit data movement also isolates
-local computation and communication. No need to consider the data layout or
-different accessing latency from local or remote data, the implementation and
-optimization of computation kernels can be much simpler. It also enables
-connection to other communication libraries, such as MPI.
+One of the advantage of explicit data movement is throughput.
+`cudaMemcpyAsync` is highly optimized, and the data for communication
+are always dense. The throughput should be close to the hardware
+limit, if the size of data is not too small, say at least a few tens
+of MB. Explicit data movement also isolates local computation and
+communication. Because there is no need to consider the data layout or
+different access latencies from local or remote data, the implementation
+and optimization of computation kernels can be much simpler. It also
+enables connection to other communication libraries, such as MPI.
 
-However, explicit memory copy requires data for communication are packed in
-continuous memory space. For most applications, this means additional
-computation to prepare the data. Since the computing power of GPU is huge, and
-graph applications are mostly memory bound, a little extra computation should
-only have minimal impact on the running time.
+However, explicit memory copy requires that data for communication are
+packed in a continuous memory space. For most applications, this means
+additional computation to prepare the data. Since the computing power
+of GPUs is huge, and graph applications are mostly memory-bound, this
+extra computation should only have minimal impact on the running time.
 
-A lot of graph algorithms are written using the bulk synchronous parallel (BSP)
-model: computations are carried out in iterations, and the results of
-computation will only guarantee to be visible after the iteration boundary. The
-BSP model provides a natural communication point: at the iteration boundary. The
-current Gunrock multi-GPU framework follows the BSP model.
+Many graph algorithms are written using the bulk synchronous parallel
+(BSP) model: computations are carried out in iterations, and the
+results of computation are only guaranteed to be visible after the
+iteration boundary. The BSP model provides a natural communication
+point: at the iteration boundary. The current Gunrock multi-GPU
+framework follows the BSP model.
 
-Depending on the algorithm, there are several communication models can be used:
-- *Peers to host GPU*
-This communication model is used when data of a vertex or edge on peer GPUs need to be
-accumulated / aggregated onto the host GPU of the vertex. When the vertex or
-edge is only adjacent to a few GPUs, it may be beneficial to use direct p2p
-communication; when the vertex is adjacent to most GPUs, a `Reduce` from all
-GPUs to the host GPU may be better.
+Depending on the algorithm, there are several communication models
+that can be used:
+
+- *Peer to host GPU*
+This communication model is used when data of a vertex or edge on peer
+GPUs need to be accumulated / aggregated onto the host GPU of the
+vertex. When the vertex or edge is only adjacent to a few GPUs, it may
+be beneficial to use direct p2p communication; when the vertex is
+adjacent to most GPUs, a `Reduce` from all GPUs to the host GPU may be
+better.
 
 - *Host GPU to peers*
-This is the opposite to the peers to host model. It propagates data of a vertex
-or edge from its host GPU to all GPUs adjacent to the vertex. Similarly, if the number
-of adjacent GPUs are small, point to point communication should do the work;
-otherwise, `broadcast` from the host GPU may be better.
+This is the opposite to the peer-to-host model. It propagates data of
+a vertex or edge from its host GPU to all GPUs adjacent to the vertex.
+Similarly, if the number of adjacent GPUs are small, point-to-point
+communication should do the work; otherwise, `broadcast` from the host
+GPU may be better.
 
 - *All reduce*
-When updates on the same vertex or edge come from many GPUs, and the result are
-needed on many GPUs, `AllReduce` may be the best choice. It can be viewed as an
-`peers to host` followed by an `host to peers` communications. It can also be
-used without partitioning the graph: it works without knowing or assigning a
-host GPU to an vertex or edge.
+When updates on the same vertex or edge come from many GPUs, and the
+results are needed on many GPUs, `AllReduce` may be the best choice. It
+can be viewed as an `peers to host` followed by an `host to peers`
+communication. It can also be used without partitioning the graph: it
+works without knowing or assigning a host GPU to an vertex or edge.
 
 - *Mix all reduce with peers to host GPU or host GPU to peers*
-This is a mix of `AllReduce` and peer to peer communications: for vertices or
+This is a mix of `AllReduce` and peer-to-peer communications: for vertices or
 edges that touch a large number of GPUs, `AllReduce` is used; for other
-vertices or edges, direct peer to peer communications are used. This
+vertices or edges, direct peer-to-peer communications are used. This
 communication model is coupled with the high / low degree partitioning scheme.
 The paper "Scalable Breadth-First Search on a GPU Cluster"
-(https://arxiv.org/abs/1803.03922) has more details on this model.
+<https://arxiv.org/abs/1803.03922> has more details on this model.
 
-## Peer accesses
+### Peer accesses
 
-If a pair of GPU is peer-accessible, they can directly dereference each other's
-memory pointer within CUDA kernels. This provides a more asynchronized way for
+If a pair of GPUs is peer-accessible, they can directly dereference each other's
+memory pointers within CUDA kernels. This provides a more asynchronous way for
 inter-GPU communication: there is no need to wait for the iteration boundary.
 Atomic operations are also supported if the GPUs are connected by NVLink. The
 implementation can also be kept simple, since no data preparing and explicit
@@ -215,63 +232,66 @@ movement is needed. The throughput is also acceptable, although not as good as
 explicit movement.
 
 However, this essentially forces the kernel to work on a NUMA (non-uniform
-memory access) domain formed by local and remote GPU memory. Some kernel
-optimized under the assumption on a flat memory domain may not work well. Peer
+memory access) domain formed by local and remote GPU memory. Some kernels
+optimized under the assumption of a flat memory domain may not work well. Peer
 accesses also give up the opportunity to aggregate local updates on the same
 vertex or edge before communication, so the actual communication volume may be
 larger.
 
-## Unified virtual memory (UVM)
+### Unified virtual memory (UVM)
 
 UVM is similar to peer accesses, as it also enables multiple GPUs to access the
 same memory space. However, the target memory space is allocated in the CPU
 memory. When needed on a GPU, a memory page will be moved to the GPU's memory
-via the page fault mechanism. Updates to the data is cached on GPU memory
+via the page fault mechanism. Updates to the data are cached in GPU memory
 first, and will eventually be written to the CPU memory. UVM provides a
-transparent view of the CPU memory on GPU, and significantly reduce the coding
-complexity if running time is not a concern. It also enable the GPU to process
-dataset that can't fit in the combined GPU memory, without explicitly streaming
+transparent view of the CPU memory on GPU, and significantly reduces the coding
+complexity if running time is not a concern. It also enables the GPU to process
+datasets that can't fit in combined GPU memory without explicitly streaming
 the data from CPU to GPU.
 
-But there are some caveats here. The actual placement of a memory page /
-piece of data relies on hints given by `cudaMemAdvise`, otherwise it will need
-to be fetch from CPU to GPU when first used by any GPU, and bounces between
-GPUs when updated by multiple GPUs. The hints essentially come from
-partitioning the data, but sometimes there is no good way to partition, and
-data bouncing is unavoidable. In worst cases, the data can be moved back to
-CPU, and any further access will need to go through the slow PCIe bridge again.
-The performance of UVM is not as good as explicit data movement or peer
-accesses; in worst cases, it can be a few orders slower. When data is larger
-than the GPU memory, UVM's throughput drops significantly; as a result, it's
-easier to code, but it will be slower than streaming the graph for datasets
-larger than GPU memory.
+But there are some caveats. The actual placement of a memory
+page/piece of data relies on hints given by `cudaMemAdvise`, otherwise
+it will need to be fetched from CPU to GPU when first used by any GPU,
+and bounces between GPUs when updated by multiple GPUs. The hints
+essentially come from partitioning the data, but sometimes there is no
+good way to partition, and data bouncing is unavoidable. In the worst
+cases, the data can be moved back to CPU, and any further access will
+need to go through the slow PCIe bridge again. The performance of UVM
+is not as good as explicit data movement or peer accesses; in the
+worst cases, it can be a few orders of magnitude slower. When data is
+larger than the GPU memory, UVM's throughput drops significantly; as a
+result, it's easier to code, but it will be slower than streaming the
+graph for datasets larger than GPU memory.
 
-# Graph partitioning scheme
+## Graph partitioning scheme
 
-The graph need to be cut into smaller pieces, when put onto multiple GPUs.
-Duplicating the graph on each may work for some problems, provided the graph is
-not too large; but duplication is not suitable for all problems. Graph
-partitioning is a long lasting research topic, and we decided to use existing
-partitioners, such as Metis, instead of implementing some complicated ones our
-own. For a large number of graphs, especial those with high connectivities,
-they are really difficult to partition; it turns out, random partitioning works
-quite well in terms of time taken by the partitioner, load balancing,
-programming simplicity and still manageable communication cost. By default,
-Gunrock uses the random partitioner.
+Graphs may be cut into smaller pieces to put them onto multiple GPUs.
+Duplicating the graph on each may work for some problems, provided the
+graph is not too large; but duplication is not suitable for all
+problems, and does not scale in graph size. Graph partitioning is a
+long-lasting research topic, and we decided to use existing
+partitioners, such as Metis, instead of implementing some complicated
+ones of our own. A large number of graphs, especially those with high
+connectivities, are really difficult to partition; our results suggest
+that random partitioning works quite well in terms of time taken by
+the partitioner, load balancing, programming simplicity and still
+manageable communication cost. By default, Gunrock uses the random
+partitioner.
 
-What makes bigger difference is the partitioning scheme: whether the graph is
-partitioned in 1 dimension, 2 dimensions, or differently for low and high
-degree vertices.
+What makes a bigger difference is the partitioning scheme: whether the
+graph is partitioned in 1 dimension, 2 dimensions, or differently for
+low and high degree vertices.
 
-## 1D partitioning
+### 1D partitioning
 
 1D partitioning distributes the edges in a graph either by the source vertices
 or the destination vertices. It's simple to work with, and scales well when the
 number of GPUs are small. It should still work on the DGX-1 with 8 GPUs for a
-large number of graph applications. But that may be touching 1D partitioning's
+large number of graph applications. But that may approach 1D partitioning's
 scalability limit.
 
-## 2D partitioning
+### 2D partitioning
 
 2D partitioning distributes the edges by both the source and the destination
 vertices. When a graph is visualized in a dense matrix representation, 2D
@@ -280,54 +300,62 @@ be too small for 2D partitioning to be useful; it may worth trying out on DGX-2
 with 16 GPUs. 2D partitioning of sparse graphs may create significant load
 imbalance between partitions.
 
-## High / low degree partitioning
+### High/low degree partitioning
 
-The main idea is simple: for vertices with low out degrees and their out-going
-edges, distribute edges based on their source vertices; for vertices with high
-out degrees and their out-going edges, distribute edges based on the
-destination vertices; if both vertices have high out-degrees, distribute the
-edge based on the one with lower degree. The result is that, low degree
-vertices are only adjacent to very few GPUs, while high degree vertices' edges
-are scattered among all GPUs. Graph applications scale very well when using the
-p2p communication model for low degree vertices, and the `AllReduce` model for
-high degree vertices.   
+The main idea of high/low degree partitioning is simple: for vertices
+with low out-degrees and their outgoing edges, distribute edges based
+on their source vertices; for vertices with high out-degrees and their
+outgoing edges, distribute edges based on the destination vertices;
+if both vertices have high out-degrees, distribute the edge based on
+the one with lower degree. The result is that low degree vertices are
+only adjacent to very few GPUs, while high degree vertices' edges are
+scattered among all GPUs. Graph applications scale very well when
+using the p2p communication model for low degree vertices, and the
+`AllReduce` model for high degree vertices.
 
-# Scaling of the Hive applications
+## Scaling of the HIVE applications
 
-As the target platform DGX-1 has 8 GPUs. Although that's more than people
-normally used for single scaling studies, the simple 1D graph partitioning
-scheme should still work. The marginal performance improvement by using more GPUs
-may be insignificant at this scale, and a small number of applications might even see
-performance decreases with some datasets. However, the 1D partitioning makes
-the scaling analysis simple and easily understandable. If other partitioning
-scheme could work better for a specific application, it would be noted.
+The target platform DGX-1 has 8 GPUs. Although that is more than we
+normally see for single scaling studies, the simple 1D graph
+partitioning scheme should (in general) still work. The marginal
+performance improvement by using more GPUs may be insignificant at
+this scale, and a small number of applications might even see
+performance decreases with some datasets. However, the 1D partitioning
+makes the scaling analysis simple and easily understandable. If other
+partitioning schemes could work better for a specific application, it
+would be noted.
 
-## How scalings are considered
+### How scalings are considered
 
-The bandwidth of NVLink is much faster than PCIe 3.0: 20 x 3 and 25 x 6 GBps
-bidirectional for each Tesla P100 and V100 GPUs respectively in an DGX-1. But
-compared to the several TFLOPs computing power and several hundred GBps device
-bandwidth, the inter-GPU bandwidth is still considerably less. For any
-application to have a good scalability, the communication time should be able
-to: 1) hidden by overlapping with computation, or 2) kept as a small portion as
-the computation. The computation to communication ratio is a good indicator to
-predict the scalability: higher ratio means better scalability. Specific to the
-DGX-1 system with P100 GPUs, a ratio larger than about 10 to 1 is expected for
-an app to have okay-ish scalability. With GPUs newer than P100, the computation
-power and memory bandwidth improve faster than the inter connects, the compute
-to communicate ratio needs to be higher to start seeing positive scaling.
+The bandwidth of NVLink is much faster than PCIe 3.0: 20x3 and 25x6
+GBps bidirectionally for each Tesla P100 and V100 GPUs respectively in
+an DGX-1. But compared to the several TFLOPs computing power and
+several hundred GBps device bandwidth, the inter-GPU bandwidth is
+still considerably less. For any application to have good scalability,
+the communication time should be able to be either: 1) hidden by
+overlap with computation, or 2) kept as a small portion of the
+computation. The computation-to-communication ratio is a good
+indicator to predict the scalability: a higher ratio means better
+scalability. Specific to the DGX-1 system with P100 GPUs, a ratio
+larger than about 10 to 1 is expected for an app to have at least
+marginal scalability. For GPUs newer than P100, the computation power
+and memory bandwidth improve faster than interconnect bandwidth, so
+the compute-to-communicate ratio needs to grow even more to start
+seeing positive scaling.
 
-## Community Detection (Louvain)
+### Community Detection (Louvain)
 
-The main and most time consuming part of the Louvain algorithm is the
-modularity optimization iterations. The aggregated edge weights between
-vertices and their respective adjacent communities, as well as the out-going
-edge weights of each community, are needed for the modularity optimization. The
-vertex-community weights can be computed locally, if the community assignments
-of all neighbors of local vertices are available; to achieve this, a vertex
-needs to broadcast its new community when the assignment changes. The
-per-community out-going edge weights can be computed by `AllReduce` across all
-GPUs. The modularity optimization with inter-GPU communication can be done as:
+The main and most time-consuming part of the Louvain algorithm is the
+modularity optimization iterations. The aggregated edge weights
+between vertices and their respective adjacent communities, as well as
+the outgoing edge weights of each community, are needed for the
+modularity optimization. The vertex-community weights can be computed
+locally, if the community assignments of all neighbors of local
+vertices are available; to achieve this, a vertex needs to broadcast
+its new community when the assignment changes. The per-community
+outgoing edge weights can be computed by `AllReduce` across all GPUs.
+The modularity optimization with inter-GPU communication can be done
+as:
 
 ```
 Do
@@ -338,7 +366,7 @@ Do
 While iterations stop condition not met
 ```
 
-The local computation cost is in the order of O(|E| + |V|)/p, but with a large
+The local computation cost is on the order of O(|E| + |V|)/p, but with a large
 constant hidden by the O() notation. From experiments, the constant factor is
 about 10, considering the cost of sort or the random memory access penalty of
 hash table. The community assignment broadcast has a cost of |V| x 4 bytes, and
@@ -347,14 +375,15 @@ bound, assuming there are |V| communities, and all vertices update their
 community assignments. In practice, the communication cost can be much lower,
 depending on the dataset.
 
-The graph contraction can be done as below on multiple GPUs
+  The graph contraction can be done as below on multiple GPUs:
+
 ```
 temp_graph := Contract the local sub-graph based on community assignments;
 Send edges <v, u, w> in temp_graph to host_GPU(v);
 Merge received edges and form the new local sub-graph;
 ```
 
-In the worst cases, assuming the number of edges in the contracted graph is
+In the worst case, assuming the number of edges in the contracted graph is
 |E'|, the communication cost could be |E'| x 8 bytes, with the computation cost
 at about 5|E|/p + |E'|. For most datasets, the size reduction of graph from the
 contraction step is significant, so the memory needed to receive edges from the
@@ -374,13 +403,13 @@ is dominant.
 | Louvain                 | 10(E + V) / p    | 20V bytes | E/p : 2V        | Okay | 88E/p + 12V + 16E' bytes |
 
 Louvain could be hard to implement on multiple GPUs, but the scalability should
-okay.
+be okay.
 
-## Graph SAGE
+### GraphSAGE
 
 The main memory usage and computation of SAGE are related to the features of
-vertices. While directly accessing the feature data of neighbors via. peer
-access is possible and memory efficient, it will create a huge amount of
+vertices. While directly accessing the feature data of neighbors via peer
+access is possible and memory-efficient, it will create a huge amount of
 inter-GPU traffic that makes SAGE unscalable in terms of running time. Using
 UVM to store the feature data is also possible, but that will move the traffic
 from inter-GPU to the GPU-CPU connection, which is even less desirable. Although
@@ -388,7 +417,7 @@ there is a risk of using up the GPU memory, especially on graphs that have high
 connectivity, a more scalable way is to duplicate the feature data of neighboring
 vertices. Depending on the graph size and the size of features, not all of the
 above data distribution schemes are applicable. The following analysis focuses
-on the feature duplication scheme, with other schemes' result in the summary
+on the feature duplication scheme, with other schemes' results in the summary
 table.
 
 SAGE can be separated into three parts, depending on whether the computation
@@ -400,16 +429,16 @@ For each source in local batch:
     Send <source, child> pairs to host_GPU(child);
 
 // Part2: Child-centric computation
-For each received <source, child> pair:    
+For each received <source, child> pair:
     child_feature = feature[child];
     send child_feature to host_GPU(source);
 
     feature_sums := {0};
-    For i from 1 to num_leafs_per_child:
+    For i from 1 to num_leaves_per_child:
         Select a leaf from child's neighbors;
-        leafs_feature += feature[leaf];
+        leaves_feature += feature[leaf];
     child_temp = L2_normalize( concatenate(
-        feature[child] * Wf1, leafs_feature * Wa1));
+        feature[child] * Wf1, leaves_feature * Wa1));
     send child_temp to host_GPU(source);
 
 // Part3: Source-centric computation
@@ -424,7 +453,7 @@ For each source in local batch:
 ```
 
 Assume the size of local batch is B, the number of children per source is C,
-the number of leafs per child is L, and the feature length per vertex is F.
+the number of leaves per child is L, and the feature length per vertex is F.
 Dimensions of 2D matrices are noted as (x, y). The
 computation and communication costs for each part are:
 
@@ -433,10 +462,10 @@ Part 1, communication: B x C x 8 bytes. <br>
 Part 2, computation  : B x C x F + B x C x (F + L x F + F x (Wf1.y + Wa1.y)).<br>
 Part 2, communication: B x C x (F + Wf1.y + Wa1.y) x 4 bytes.<br>
 Part 3, computation  : B x (C x (F + Wf1.y + Wa1.y) + F x (Wf1.y + Wa1.y) + (Wf1.y + Wa1.y) x (Wf2.y + Wa2.y)). <br>
-Part 3, communication: 0 byte.
+Part 3, communication: 0.
 
 For Part 2's communication, if C is larger than about 2p, using `AllReduce` to
-sum up child\_feature and child\_temp for each source will cost less, at B x (F + Wf1.y + Wa1.y) x 2p x 4 bytes.
+sum up `child_feature` and `child_temp` for each source will cost less, at B x (F + Wf1.y + Wa1.y) x 2p x 4 bytes.
 
 *Summary of Graph SAGE multi-GPU scaling*
 
@@ -456,23 +485,23 @@ sum up child\_feature and child\_temp for each source will cost less, at B x (F 
 | Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) | 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU + 4BCLF bytes over GPU-CPU | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor | |
 | Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU + 4BCFL bytes over GPU-CPU | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor | |
 
-When the number of features are at least several tens, the computation workload
+When the number of features is at least several tens, the computation workload
 will be much more than communication, and SAGE should have good scalability.
 Implementation should be easy, as only simple p2p or AllReduce communication
 models are used. If memory usage is an issue, falling back to peer-access or
-UVM will resulted in very poor scalability; problem segmentation (i.e. only
+UVM will result in very poor scalability; problem segmentation (i.e,. only
 process portion of the graph at a time) may be necessary to have a scalable
 implementation for large graphs, but that will be quite complex.
 
-## Random walks and graph search
+### Random walks and graph search
 
-If the graph can be duplicated on each GPUs, the random walk multi-GPU
+If the graph can be duplicated on each GPU, the random walk multi-GPU
 implementation is trivial: just do a subset of the walks on each GPU. The
 scalability will be perfect, as there is no communication involved at all.
 
 A more interesting multi-GPU implementation would be when the graph is
 distributed across the GPUs. In this case, each step of a walk not only needs
-to send the <walk#, step#, v> information to host\_GPU(v), but also to the GPU that
+to send the `<walk#, step#, v>` information to `host_GPU(v)`, but also to the GPU that
 stores the result for such walk.
 ```
 For each walk starting from local vertex v:
@@ -497,25 +526,28 @@ Using W as the number of walks, for each step, we have
 |-----------------------|------------|---------------|----------------------|-------------|--------------|
 | Random walk           | W/p        | W/p x 24 bytes| 1 : 24               | very poor   | |
 
-Graph search is very similar to random walk, except that instead of randomly
-select any neighbor, it select the neighbor with the highest score when using
-greedy strategy, or with probabilities proportional to the neighbors' scores
-when using stochastic\_greedy strategy.
+Graph search is very similar to random walk, except that instead of
+randomly selecting any neighbor, it selects the neighbor with the
+highest score (when using the `greedy` strategy), or with probabilities
+proportional to the neighbors' scores (when using the `stochastic_greedy`
+strategy).
 
-For the greedy strategy, a straight
-forward implementation, when reaching a vertex, goes through the whole neighbor
-list of such vertex, and find the one with maximum score. A more optimized
-implementation could perform a per-visit to find the neighbor with maximum
-scored neighbor, with a cost of E/p; during the random walk process, the maximum scored neighbor
-will be known without going through the neighbor list.
+For the `greedy` strategy, a straightforward implementation, when
+reaching a vertex, goes through the whole neighbor list of thatsuch
+vertex and finds the one with maximum score. A more optimized
+implementation could perform a per-visit to find the neighbor with
+maximum scored neighbor, with a cost of E/p; during the random walk
+process, the maximum scored neighbor will be known without going
+through the neighbor list.
 
-For the stochastic\_greedy strategy, the straight forward implementation would
-also go through all the neighbor, and select one based on their scores and a
+For the `stochastic_greedy` strategy, the straightforward implementation would
+also go through all the neighbors, selecting one based on their scores and a
 random number. Preprocessing can also help: perform a scan on the scores of
 each vertex's neighbor list, with a cost of E/p; during the random walk, a binary search would be
 sufficient to select a neighbor, with weighted probabilities.
 
-The cost analysis, depending on the walk strategy and optimization, we have:
+The cost analysis, depending on the walk strategy and optimization,
+                          results in:
 
 | Strategy | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |----------|------------|---------------|----------------------|-------------|--------------|
@@ -523,18 +555,20 @@ The cost analysis, depending on the walk strategy and optimization, we have:
 | Greedy   | Straight forward: dW/p <br> Pre-visit: W/p | W/p x 24 bytes | d : 24 <br> 1 : 24 | Poor <br> very poor | |
 | Stochastic Greedy | Straight forward: dW/p <br> Pre-visit: log(d)W/p | W/p x 24 bytes | d : 24 <br> log(d) : 24 | Poor <br> very poor | |
 
-If the selection of neighbor is weighted random, instead of uniformly random,
+If the selection of a neighbor is weighted-random, instead of uniformly-random,
 it will increase the computation workload to Wd /p, where d is the average
-degree of vertices in the graph. As a result, the computation to communication
-ratio will increase to d : 24; for most graphs, it's still not high enough to
+degree of vertices in the graph. As a result, the computation-to-communication
+ratio will increase to d:24; for most graphs, this is still not high enough to
 have good scalability.
 
-## Geo Location
+### Geolocation
 
-In each iteration, Geo updates a vertex's location based on its neighbors. For
-multiple GPUs, neighboring vertices's location information need to be
-available, either by direct access, UVM, or explicit data movement. The following
-shows how explicit data movement can be implemented.
+In each iteration, Geolocation updates a vertex's location based on
+its neighbors. For multiple GPUs, neighboring vertices's location
+information needs to be available, either by direct access, UVM, or
+explicit data movement. The following shows how explicit data movement
+can be implemented.
+
 ```
 Do
     Local geo location updates on local vertices;
@@ -542,27 +576,30 @@ Do
 While no more update
 ```
 
-The computation cost is in the order of O(|E|/p), if each iteration all
-vertices are looking for possible location updates from neighbors. Because the
-spatial median function has a lot of mathematical computation inside,
-particularly a haversine() for each edge, the constant factor hidden by O() is
-large; for simplicity, 100 is used as the constant factor here. Assuming
-broadcasting every vertex's location gives the upper bound of communication,
-but in reality, the communication should be much less: 1) not every vertex
-updates location every iteration; 2) vertices may not have neighbors on each
-GPUs, so instead of broadcast, p2p communication may be used to reduce the
-communication cost, especially when the graph connectivity is low.
+The computation cost is on the order of O(|E|/p), if in each iteration
+all vertices are looking for possible location updates from neighbors.
+Because the spatial median function has a lot of mathematical
+computation inside, particularly a haversine() for each edge, the
+constant factor hidden by O() is large; for simplicity, 100 is used as
+the constant factor here. Assuming that we broadcast every vertex's
+location gives the upper bound of communication, but in reality, the
+communication should be much less, because 1) not every vertex updates
+its location every iteration and 2) vertices may not have neighbors on
+each GPU, so instead of broadcast, p2p communication may be used to
+reduce the communication cost, especially when the graph connectivity
+is low.
 
 | Comm. method          | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |-----------------------|------------|---------------|----------------------|-------------|--------------|
 | Explicit movement     | 100E/p     | 2V x 8 bytes  | 25E/p : 4V           | Okay        | |
 | UVM or peer access    | 100E/p     | E/p x 8 bytes | 25 : 1               | Good        | |
 
-## Vertex Nomination
+### Vertex Nomination
 
-Vertex nomination is very much a single source shortest path (SSSP) problem,
-except it starts from a group of vertices, instead of a single source. One
-multi-GPU implementation is as following:
+Vertex nomination is very similar to a single source shortest path
+(SSSP) problem, except it starts from a group of vertices, instead of
+a single source. One possible multi-GPU implementation is:
+
 ```
 Set the starting vertex / vertices;
 While has new distance updates
@@ -576,46 +613,52 @@ While has new distance updates
         Send <u, distance[u]> to host_GPU(u);
 ```
 
-Assuming on average, each vertex has its distance updated a times, and the
-average degree of vertices is d, the computation and the communication costs are:
+Assuming on average, each vertex has its distance updated `a` times, and the
+average degree of vertices is `d`, the computation and the communication costs are:
 
 | Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |-----------------------|------------|---------------|----------------------|-------------|--------------|
 | Vertex nomination     | aE/p       | aV/p x min(d, p) x 8 bytes | E : 8V x min(d, p) | Okay | |
 
-The min(d, p) part in the communication cost comes from update aggregation on
-each GPU: when a vertex has more than one distance updates, only the smallest
-is sent out; for a vertex that has a lot of neighbors and neighboring to all
-GPUs, its communication cost is capped by p x 8 bytes.
+The min(d, p) part in the communication cost comes from update
+aggregation on each GPU: when a vertex has more than one distance
+update, only the smallest is sent out; a vertex that has a lot of
+neighbors and is connected to all GPUs has its communication cost
+capped by p x 8 bytes.
 
-## Scan Statistics
+### Scan Statistics
 
-Scan statistics is triangle counting (TC) for each vertex plus a simple post
-processing step. The current Gunrock TC implementation is intersection based:
-for an edge <v, u>, intersecting neighbors[u] and neighbors[v] gives the number
-of triangles including edge <v, u>. This neighborhood intersection based
-algorithm only works, if the neighborhood of end points of all edges need to
-count triangles for can reside in the memory of a single GPU. For graphs
-with low connectivities, such as road networks and meshes, it's still possible
-to partition the graph; for graphs with high connectivity, such as social
-networks or some web graphs, it's almost impossible to partition the graph, and
-any sizable partition of the graph may touch a large portion of vertices of
-the graph. As a result, for general graphs, the intersection based algorithm
-requires the graph can be duplicated on each GPU. Under this condition, the
-multi-GPU implementation is trivial: only count triangles for a subset of edges
+Scan statistics is essentially triangle counting (TC) for each vertex
+plus a simple post-processing step. The current Gunrock TC
+implementation is intersection-based: for an edge `<v, u>`,
+intersecting `neighbors[u]` and `neighbors[v]` gives the number of
+triangles including `edge <v, u>`. This
+neighborhood-intersection-based algorithm only works if the
+neighborhood of end points of all edges for which we need to count
+triangles can reside in the memory of a single GPU. For graphs with
+low connectivities, such as road networks and meshes, it is still
+possible to partition the graph; for graphs with high connectivity,
+such as social networks or some web graphs, it's almost impossible to
+partition the graph, and any sizable partition of the graph may touch
+a large portion of vertices of the graph. As a result, for general
+graphs, the intersection-based algorithm requires the graph can be
+duplicated on each GPU. Under this condition, the multi-GPU
+implementation is trivial: only count triangles for a subset of edges
 on each GPU, and no communication is involved.
 
-A more distributed friendly TC algorithm is wedge checking based (
-https://e-reports-ext.llnl.gov/pdf/890544.pdf). The main idea is this: for each
-triangle A-B-C, where degree(A) >= degree(B) >= degree(C), both A and
-B are in C's neighborhood, and A is in B's neighborhood; when testing for
-possible triangle D-E-F, with degree(D) >= degree(E) >= degree(F), the wedge
-(two edges share the same end point) need to be checked is D-E, and the
-checking can be simply done by verifying whether D is in E's neighborhood. As
-this algorithm is designed for distributed systems, it should be well suited
-for multi-GPU system. The ordering requirements are imposed to reduce the
-number of wedge checking and to balance the workload. The multi-GPU pseudo code
-is as following:
+A more distributed-friendly TC algorithm is wedge-checking-based
+(<https://e-reports-ext.llnl.gov/pdf/890544.pdf>). The main idea is
+this: for each triangle A-B-C, where `degree(A) >= degree(B) >=
+degree(C)`, both A and B are in C's neighborhood, and A is in B's
+neighborhood; when testing for possible triangle D-E-F, with
+`degree(D) >= degree(E) >= degree(F)`, the wedge (two edges that share
+the same end point) that needs to be checked is D-E, and the checking
+can be simply done by verifying whether D is in E's neighborhood. As
+this algorithm is designed for distributed systems, it should be
+well-suited for multi-GPU system. The ordering requirements are
+imposed to reduce the number of wedge checks and to balance the
+workload. The multi-GPU pseudo code is:
+
 ```
 For each local edge < v, u >:
     If (degree(v) > degree(u)) continue;
@@ -640,17 +683,18 @@ For each vertex v in the graph:
         max_ss_node := v;
 ```
 
-Using T as the number of triangles in the graph, the number of wedge checks is
-normally a few times of T, noted as aT. For the three graphs tested by the
-LLNL paper, Twitter, WDC 2012 and Rmat-Scale 34, a ranges from 1.5 to 5. The
-large number of wedges can use up the GPU memory, if they are stored and
-communicated all at once. The solution is to generate a batch of wedges and check
-them, then generate another batch and check them, loop until all wedges are
+Using T as the number of triangles in the graph, the number of wedge
+checks is normally a few times `T`, noted as `aT`. For the three
+graphs tested by the LLNL paper---Twitter, WDC 2012, and Rmat-Scale
+34---`a` ranges from 1.5 to 5. The large number of wedges can use up
+the GPU memory, if they are stored and communicated all at once. The
+solution is to generate a batch of wedges and check them, then
+generate another batch and check them, loop until all wedges are
 checked.
 
 Assuming the neighbor lists of every vertex are sorted, the membership checking
-can be done in log(#neighbors). As a result, using d as the averaged out degree
-of vertices, the costs analysis are:
+can be done in log(#neighbors). As a result, using `d` as the average outdegree
+of vertices, the cost analysis is:
 
 | Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |-----------------------|------------|---------------|----------------------|-------------|--------------|
@@ -662,17 +706,18 @@ of vertices, the costs analysis are:
 | Scan Statistics (wedge checks) | (d + a x log(d))E/p + 2V + V/p | 12aE/p + 8V bytes | \~ (d + a x log(d)) : 12a | Okay | |
 | Scan Statistics (intersection) | Vdd + V/p | 8V bytes | dd : 8 | Perfect | |
 
-## Sparse Fused Lasso (GTF)
+### Sparse Fused Lasso (GTF)
 
 The sparse fused lasso iteration is mainly a max-flow (MF), plus some
 per-vertex calculation to update the capacities in the graph. The reference and
-most non-parallel implementations of MF are argumenting path based; but finding
+most non-parallel implementations of MF are augmenting-path-based; but finding
 the argumenting path and subsequent residual updates are both serial. The
-push-relabel algorithm is more parallelable, and used by Gunrock's MF
+push-relabel algorithm is more parallelizable, and used by Gunrock's MF
 implementation. Each time the push operation updates the flow on an edge, it
 also needs to update the flow on the reverse edge; but the reverse edge may be
-host by another GPU, and that creates a large amount of inter-GPU traffic. The
-pseudo code for one iteration of MF with inter-GPU communication is following:
+hosted by another GPU, and that creates a large amount of inter-GPU traffic. The
+pseudocode for one iteration of MF with inter-GPU communication is:
+
 ```
 // Push phase
 For each local vertex v:
@@ -716,18 +761,22 @@ are known.
 | Relabel | VE/p     | V^2 x 8 bytes | d/p : 8              | Okay | |
 | MF (Push-Relabel) | (aV + a + 1)VE/p | V^2((V+1)d/p + 1) x 8 bytes | \~ a:8 | Less than okay | |
 
-The GTF specific parts are more complicated than MF in terms of communication:
-it keeps some data, such as weights and sizes, for each community of vertices,
-and multiple GPUs could be updating such data simultaneously. It's almost
-impossible to do explicit data movement for this part, and the best option is to
-use direct access or UVM; each vertex may update its community once, so the
-communication cost is still manageable. One iteration of GTF is like this:
+The GTF-specific parts are more complicated than MF in terms of
+communication: the implementation must keep some data, such as weights
+and sizes, for each community of vertices, and multiple GPUs could be
+updating such data simultaneously. It's almost impossible to do
+explicit data movement for this part, and the best option is to use
+direct access or UVM; each vertex may update its community once, so
+the communication cost is still manageable. One iteration of GTF is:
+
+
 ```
 MF;
 BFS to find the min-cut;
 Vertex-Community updates;
 Updates source-vertex and vertex-destination capacities;
 ```
+
 
 | Parts | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |-------|------------|---------------|----------------------|-------------|--------------|
@@ -737,19 +786,22 @@ Updates source-vertex and vertex-destination capacities;
 | Capacity updates | V/p | V/p x 4 bytes | 1 : 4            | Less than okay | |
 | GTF | (aV + a + 1)VE/p + 2E/p + V/p | V^2((V+1)d/p + 1) x 8  + 2V x 4 + V/p x 4 bytes | \~ a:8 | Less than okay | |
 
-It's unsurprising that GTF may not scale: the compute and communicate heavy part
-of GTF is the MF, and in MF, each push needs communication to update its
-reverse edge. A more distributed friendly MF algorithm is needed to over come
-this problem.
 
-## Graph Projection
+It's unsurprising that GTF may not scale: the compute- and
+communicate-heavy part of GTF is the MF, and in MF, each push needs
+communication to update its reverse edge. A more distributed-friendly
+MF algorithm is needed to overcome this problem.
 
-Graph project is very similar to triangle counting by wedge checking; but
-instead of counting the triangles, it actually records the wedges. The problem
-here is not computation or communication, but rather the memory requirement of
-the result: all vertex projection may create a very dense graph, which means
-much larger than the original graph. One possible solution is to process the
-results in batch:
+### Graph Projection
+
+Graph projection is very similar to triangle counting by wedge
+checking; but instead of counting the triangles, it actually records
+the wedges. The problem here is not computation or communication, but
+rather the memory requirement of the result: projecting all vertices
+may create a very dense graph, which may be much larger than the
+original graph. One possible solution is to process the results in
+batches:
+
 
 ```
 vertex_start := 0;
@@ -782,8 +834,9 @@ While (vertex_start < num_vertices)
     vertex_start += batch_size;
 ```
 
-Using E' to denote the number of edges in the projected graph, and d to denote
-the average degree of vertices, the costs are:
+Using `E'` to denote the number of edges in the projected graph, and
+`d` to denote the average degree of vertices, the costs are:
+
 
 | Parts | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |-------|------------|---------------|----------------------|-------------|--------------|
@@ -793,18 +846,21 @@ the average degree of vertices, the costs are:
 | Merging  | E' | E' x 12 bytes | | | |
 | Graph Projection | 2dE/p + 2E' | 12E' bytes | dE/p + E' : 6E' | Okay | |
 
-If the graph can be duplicated on each GPU, instead of processing distributed
-edges, each GPU can process only u that hosted by the GPU. This eliminate the
-merging step; as a result, there is no communication needed, and the
-computation cost reduces to 2dE/p + E'.
 
-## Local Graph Clustering
+If the graph can be duplicated on each GPU, instead of processing
+distributed edges, each GPU can process only `u` vertices that are
+hosted on that GPU. This eliminates the merging step; as a result,
+there is no communication needed, and the computation cost reduces to
+2dE/p + E'.
+
+### Local Graph Clustering
 
 The Gunrock implementation of Local Graph Clustering (LGC) uses
-PageRank-Nibble, an variance of the PageRank algorithm. PR-Nibble's
-communication pattern is the same as standard PR: accumulate changes to the
-vertices to their host GPUs. As a result, PR-Nibble should be scalable, same
-as standard PR. PR-Nibble with communication can be done as:
+PageRank-Nibble, a variant of the PageRank algorithm. PR-Nibble's
+communication pattern is the same as standard PR: accumulate changes
+for each vertex to its host GPU. As a result, PR-Nibble should be
+scalable, just as standard PR. PR-Nibble with communication can be
+done as:
 
 ```
 // Per-vertex updates
@@ -857,7 +913,7 @@ For each local vertex u with gradient updated:
         gradient_scale := 1;
 ```
 
-The cost analysis is as following:
+The cost analysis is:
 
 | Parts | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
 |-------|------------|---------------|----------------------|-------------|--------------|
@@ -866,17 +922,20 @@ The cost analysis is as following:
 | Gradient updates    | V/p | 0 bytes | | | |
 | Local graph clustering | (12V + 2E)/p | 8V bytes | (6 + d)/p : 4 | good | |
 
-## Seed Graph Matching and Application Classification
+### Seeded Graph Matching and Application Classification
 
-The implementations of these two applications are linear algebra based,
-compared to other applications in native graph (vertex-edge) formulations used
-by Gunrock. The linear algebra based, or BLAS based formulation, especially the
-ones that involved with matrix-matrix multiplications, may impose a large
+The implementations of these two applications are
+linear-algebra-based, as opposed to other applications where we used
+Gunrock and its native graph (vertex-edge) data structures. The
+linear-algebra-based (BLAS-based) formulations, especially the ones
+that require matrix-matrix multiplications, may impose a large
 communication requirement. Advance matrix-matrix and vector-matrix
-multiplication kernels use optimizations that build on top of specific layout of the
-data, which may be not distribution friendly. A different method of analyzing
-the computation and the communication costs, thus the computation vs.
-communication ratio, is needed for these applications.
+multiplication kernels use optimizations that build on top of a
+specific layout of the data, which may be not distribution-friendly. A
+different method of analyzing the computation and the communication
+costs---the computation vs. communication ratio---is needed for these
+applications.
+
 
 ## Summary of Results
 
@@ -894,5 +953,5 @@ communication ratio, is needed for these applications.
 | Sparse fused lasso | \~ a:8 | Less than okay | Hard |
 | Graph projection | Duplicated graph : infinity <br> Distributed graph : dE/p + E' : 6E' | Perfect <br> Okay | Easy <br> Easy |
 | Local graph clustering | (6 + d)/p : 4 | Good | Easy |
-| Seed graph matching | | | |
+| Seeded graph matching | | | |
 | Application classification | | | |
