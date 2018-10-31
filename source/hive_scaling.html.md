@@ -248,11 +248,49 @@ larger than GPU memory.
 
 # Graph partitioning scheme
 
+The graph need to be cut into smaller pieces, when put onto multiple GPUs.
+Duplicating the graph on each may work for some problems, provided the graph is
+not too large; but duplication is not suitable for all problems. Graph
+partitioning is a long lasting research topic, and we decided to use existing
+partitioners, such as Metis, instead of implementing some complicated ones our
+own. For a large number of graphs, especial those with high connectivities,
+they are really difficult to partition; it turns out, random partitioning works
+quite well in terms of time taken by the partitioner, load balancing,
+programming simplicity and still manageable communication cost. By default,
+Gunrock uses the random partitioner.
+
+What makes bigger difference is the partitioning scheme: whether the graph is
+partitioned in 1 dimension, 2 dimensions, or differently for low and high
+degree vertices.
+
 ## 1D partitioning
+
+1D partitioning distributes the edges in a graph either by the source vertices
+or the destination vertices. It's simple to work with, and scales well when the
+number of GPUs are small. It should still work on the DGX-1 with 8 GPUs for a
+large number of graph applications. But that may be touching 1D partitioning's
+scalability limit.
 
 ## 2D partitioning
 
+2D partitioning distributes the edges by both the source and the destination
+vertices. When a graph is visualized in a dense matrix representation, 2D
+partitioning is like cutting the matrix by a 2D grid. 8 GPUs in the DGX-1 may
+be too small for 2D partitioning to be useful; it may worth trying out on DGX-2
+with 16 GPUs. 2D partitioning of sparse graphs may create significant load
+imbalance between partitions.
+
 ## High / low degree partitioning
+
+The main idea is simple: for vertices with low out degrees and their out-going
+edges, distribute edges based on their source vertices; for vertices with high
+out degrees and their out-going edges, distribute edges based on the
+destination vertices; if both vertices have high out-degrees, distribute the
+edge based on the one with lower degree. The result is that, low degree
+vertices are only adjacent to very few GPUs, while high degree vertices' edges
+are scattered among all GPUs. Graph applications scale very well when using the
+p2p communication model for low degree vertices, and the `AllReduce` model for
+high degree vertices.   
 
 # Scaling of the Hive applications
 
