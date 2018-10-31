@@ -20,7 +20,7 @@ features of the 1-hop and 2-hop neighbors. The embedding can be considered as
 a vector containing hash values describing the interesting properties of a
 vertex.
 
-During the training process, the embedding are feed into a neural network, the
+During the training process, the adjacency matrix and features of nodes are fed into a neural network, the
 parameters (the W arrays in the algorithm) are updated after each batch by the
 difference between the predicted labels and the real labels. The per-vertex
 features won't change, but the parameters will, so the GraphSAGE computation needs
