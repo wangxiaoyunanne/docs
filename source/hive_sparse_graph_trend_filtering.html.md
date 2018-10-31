@@ -1,5 +1,5 @@
 ---
-title: Sparse Graph Trend Filtering (HIVE)
+title: Sparse Fused Lasso (HIVE)
 
 toc_footers:
   - <a href='https://github.com/gunrock/gunrock'>Gunrock&colon; GPU Graph Analytics</a>
@@ -10,9 +10,9 @@ search: true
 full_length: true
 ---
 
-# Sparse Graph Trend Filtering
+# Sparse Fused Lasso
 
-Given a graph where each vertex on the graph has a weight, _sparse graph trend filtering_ tries to learn a new weight for each vertex that is (1) sparse (most vertices have weight 0), (2) close to the original weight in the l2 norm, and (3) close to its neighbors' weight(s) in the l1 norm. This algorithm is usually used in main trend filtering (denoising). The loss function is `0.5 * sum(y' - y)^2 + lambda1 * sum|yi' - yj'| + lambda2 * sum|yi'|`, where y is the input weights for each vertex and y' is the new weights for each vertex. For example, an image (grid graph) with noisy pixels can be filtered with this algorithm to get a new image without the noisy pixels, which are "smoothed out" by its neighbors.
+Given a graph where each vertex on the graph has a weight, _sparse fused lasso (SFL)_, also named _sparse graph trend filter (GTF)_, tries to learn a new weight for each vertex that is (1) sparse (most vertices have weight 0), (2) close to the original weight in the l2 norm, and (3) close to its neighbors' weight(s) in the l1 norm. This algorithm is usually used in main trend filtering (denoising). The loss function is `0.5 * sum((y' - y)^2) + lambda1 * sum(abs(y_i' - y_j')) + lambda2 * sum(abs(yi'))`, where y is the input weight (observation) for each vertex and y' (fitted weight) is the new weight for each vertex. For example, an image (grid graph) with noisy pixels can be filtered with this algorithm to get a new image without the noisy pixels, which are "smoothed out" by its neighbors.
 <https://arxiv.org/abs/1410.7690>
 
 ## Summary of Results
@@ -21,53 +21,50 @@ Given a graph where each vertex on the graph has a weight, _sparse graph trend f
 
 ## Summary of Gunrock Implementation
 
-The graph is preprocessed by two files. The first file contains the original vertices' weights and the second file contains the directed graph connectivity without weights (edge pairs only). These two files and a parameter(lambda1) of the directed graph edge weights are the input to the preprocessing file. Two extra nodes, source and sink, are added to the original graph as well. This results in a graph, where the edges excluding the ones connecting to source or sink have edge-weights lambda1, while the edges connecting to source or sink have edge-weights as in the `vertices' weights` file.
+The graph is preprocessed by two files. The first file contains the original vertices' weights and the second file contains the directed graph connectivity without weights (edge pairs only). These two files and a edge_regularization_strength (`lambda1`) of the directed graph edge weights are the input to the preprocessing file. Two extra nodes, source and sink, are added to the original graph as well. They serve as two "labels" of different segments on the graph. This results in a graph, where the edges excluding the ones connecting to source or sink have edge-weights `lambda1`, while the edges connecting to source or sink have edge-weights as in the `vertices' weights` file.
 
-The Gunrock implementation of this application has two parts. The first part is the maxflow algorithm. We choose a push-relabel maxflow formulation, which is well-suited to parallelize on GPU with Gunrock. The output of this maxflow algorithm is (1) a residual graph where each edge weight is computed as `capacity - edge_flow`, and (2) a Boolean array indicating if each vertex is reachable from the source, once we have the residual graph. Given the graph has only one connected component, in the maxflow/min-cut problem, a graph will be segmented into two sub-graphs, where one sub-graph is only reachable from the source, and the other sub-graph is only reachable from the sink. The reachability of a vertex from the source is defined as that it is possible to find a path between the source and the vertex.  
+The Gunrock implementation of this application has two parts. The first part is the maxflow algorithm. We choose a push-relabel maxflow formulation, which is well-suited to parallelize on GPU with Gunrock. The output of this maxflow algorithm is (1) a residual graph where each edge weight is computed as `capacity - edge_flow`, and (2) a Boolean array that marks which nodes are reachable from the source after the mincut.
 
-The second part is a renormalization of the residual graph and clustering based on reachability of the vertex. The renormalization is a process where (1) averages of the new weights of vertices that are grouped together as communities are computed, and (2) the new weights are then subtracted by their own community averages. After the renormalization is done, this renormalized residual graph is passed into the maxflow again. Several iterations between maxflow and renormalization are needed before the new weights of different communities converge because vertices can be reassigned to different communities. In each of the GTF iteration, two non-overlapped sub-graphs will be generated by maxflow/min-cut, and thus the big communities in the last GTF iteration will be splitted into small communities. The vertices in a specific community will have the same new weights assigned to them.    
+The second part is a renormalization of the residual graph and clustering based on reachability of the vertex. The renormalization is a process where (1) averages of the new weights of vertices that are grouped together as communities are computed, and (2) the new weights are then subtracted by their own community averages. After the renormalization is done, this renormalized residual graph is passed into the maxflow again. Several iterations between maxflow and renormalization are needed before the new weights of different communities converge because vertices can be reassigned to different communities. In each of the SFL iteration, two non-overlapped sub-graphs will be generated by maxflow/min-cut, and thus the big communities in the last SFL iteration will be splitted into small communities. The vertices in a specific community will have the same new weights assigned to them.    
 
 The outputs will be the normalized values assigned to each vertex.
 
 Lastly, these values will be passed into a soft-threshold function with `lambda2` to achieve the sparse representation by dropping the small absolute values. More specifically, the new weight will be subtracted by `lambda2` if the new weight is positive and larger than `lambda2`, or added by `lambda2` if the new weight is negative and smaller than `-lambda2`. If the new weight is in between `-lambda2` to `lambda2`, then the new weights will be 0.
 
-Pseudocode for the core GTF algorithm is as follows (simplified version):
+Pseudocode for the core SFL algorithm is as follows (simplified version):
 
 ```
 Load the graph and normalize edge weights
 
 for iteration till converge:
 
-    # Maxflow
+    # First part: Maxflow
     Call maxflow data preprocessing
     Call maxflow and return boolean reachability array and residual graph
 
 
-    # Reset available community
+    # Second part: Reset available community
     for comm till num_comms
         community_weights[comm] = 0
         community_sizes  [comm] = 0
         next_communities [comm] = 0
 
-    # Accumulate the weights and count the number of vertices belong to the communities
+    # Second part (1): Accumulate the weights and count the number of vertices belong to the communities
     for vertex in the graph
         if vertex accessible from the source
             comm = next_communities[curr_communities[vertex]];
                 if comm == 0
                     update comm
-            community_sizes[comm] += 1
+            community_sizes[comm]++
             community_weights[comm] += weight between source and this current vertex
         else
             community_weights[comm] -= weight between vertex and this sink
-            community_sizes [comm] ++;
+            community_sizes [comm] ++
 
-    # Normalize community
+    # Second part (2): Normalize community
     for comm in num_communities
-        if comm is active and next_communities[comm] is not zero
-            community_weights[comm] /= community_sizes[comm]
-            community_accus [comm] += community_weights[comm]
-
-
+        community_weights[comm] /= community_sizes[comm]
+        community_accus [comm] += community_weights[comm]
 
     # Update the residual graph
     for vertex in the graph
@@ -79,7 +76,12 @@ for iteration till converge:
         else
             edge[vertex->sink] += community_weights[comm]
             if edge[vertex->sink] < 0
-            swap(edge[source->vertex], -edge[vertex->sink])
+                swap(edge[source->vertex], -edge[vertex->sink])
+
+# Part 3
+Sparsify community_accus by lambda2
+
+output: community_accus
 ```
 
 
@@ -115,7 +117,7 @@ The testing is done with Gunrock using `dev-refactor` branch at commit `2699252`
 Prepare the data; skip this step if you are just running the sample dataset.
 
 Refer to `parse_args()` in taxi_tsv_file_preprocessing.py for dataset preprocessing options.
-Set the lambda1 (see equation above) in generate_graph.py for Gunrock.
+Set the `lambda1` (see equation above) in generate_graph.py for Gunrock.
 
 ```shell
 cd gunrock/tests/gtf/_data
@@ -140,7 +142,7 @@ Then three files are generated. The files `e` and `n` are for benchmarks, and `s
 
 ### Running the application
 ```
---lambda2 is the sparsity regularization constant
+--lambda2 is the sparsity regularization strength
 ```
 Sample command line with argument.
 ```shell
@@ -149,21 +151,21 @@ Sample command line with argument.
 
 ### Output
 
-The code will output two files in the current directory. One is called `output_pr.txt` (for CPU reference) and the other is called `output_pr_GPU.txt` (for GPU GTF with push-relabel backend).
-Each vertex's new weight will be stored in each line of the two files. These outputs could be further processed into the resulting heatmap.
+The code will output two files in the current directory. One is called `output_pr.txt` (for CPU reference) and the other is called `output_pr_GPU.txt` (for GPU SFL with push-relabel backend).
+Each vertex's index and new weight will be stored in each line of the two files. These outputs could be further processed into the resulting heatmap.
 The printout after running `gtf_main_<CUDA version>_x86_64` includes the timing of the application.
 
 Sample output in the `.txt` is
 ```
-0
-0
-0
-0
-0
-0
--11.375
--0.307292
-0
+0 0
+1 0
+2 0
+3 0
+4 0
+5 0
+6 -11.375
+7 -0.307292
+8 0
 ```
 
 Sample important printf on the screen is
@@ -213,14 +215,14 @@ transfering to host!!!: 8924
 
 ## Performance and Analysis
 
-We measure the runtime and loss function `0.5 * sum(y' - y)^2 + lambda1 * sum|yi' - yj'| + lambda2 * sum|yi'|`, where `y` is the old weight per vertex and `y'` is the new weight per vertex.
+We measure the runtime and loss function `0.5 * sum((y' - y)^2) + lambda1 * sum(abs(y_i' - y_j')) + lambda2 * sum(abs(yi'))`, where y is the input weight (observation) for each vertex and y' (fitted weight) is the new weight for each vertex.
 
 ### Implementation limitations
 
-The time is mostly spent on maxflow computation. Each iteration of the GTF calls a maxflow. For a 8922-vertex, 20349-edge dataset, the time spent on maxflow vs. the rest of the GTF post-processing is around 20:1 per iteration. The maxflow implementation has room for further optimization; we expect to have shorter runtimes on maxflow in the future. We only implement serial GTF renormalization (second part) for correctness purposes. If the graph is larger, we expect the ratio between maxflow (first part) and GTF renormalization (second part) will be lower, because the runtime of the renormalization is serial.
+The time is mostly spent on maxflow computation. Each iteration of the SFL calls a maxflow. For a 8922-vertex, 20349-edge dataset, the time spent on maxflow vs. the rest of the SFL post-processing is around 20:1 per iteration. The maxflow implementation has room for further optimization; we expect to have shorter runtimes on maxflow in the future. We only implement serial SFL renormalization (second part) for correctness purposes. If the graph is larger, we expect the ratio between maxflow (first part) and SFL renormalization (second part) will be lower, because the runtime of the renormalization is serial.
 
 ### Comparison against existing implementations
-Graphtv is an official implementation of graph trend filtering algorithm with a parametric maxflow backend. It is a CPU serial implementation. The Gunrock GPU runtime is measured between the application enactor and it is an output of the application.
+Graphtv is an official implementation of sparse fused lasso algorithm with a parametric maxflow backend. It is a CPU serial implementation <https://www.cs.ucsb.edu/~yuxiangw/codes/gtf_code.zip>. The Gunrock GPU runtime is measured between the application enactor and it is an output of the application.
 
 | DataSet | time starts | time ends | #E | #V | graphtv runtime | Gunrock GPU runtime |
 |-------------- |---------------------|--------------------|----------|----------|------| ---|
@@ -253,9 +255,9 @@ For CPU, the parametric maxflow algorithm works well, but it is not parallelizab
 
 > What did we learn about Gunrock? What is hard to use, or slow? What potential Gunrock features would have been helpful in implementing this workflow?
 
-GTF is the first algorithm that stacks previous applications. Some data pre-processing that is common to execute in the CPU requires better designs of the APIs which will facilitate new applications. For example, gtf_enactor needs to call mf_problem.reset. Since the current maxflow code does not have any preprocessing of the graph on GPU, GTF has to transfer the data back and forth between CPU and GPU and unnecessary arrays to store the Maxflow input arrays are needed in GTF. It would have been much better if maxflow has more preprocessing on GPU.
+SFL is the first algorithm that stacks previous applications. Some data pre-processing that is common to execute in the CPU requires better designs of the APIs which will facilitate new applications. For example, gtf_enactor needs to call mf_problem.reset. Since the current maxflow code does not have any preprocessing of the graph on GPU, SFL has to transfer the data back and forth between CPU and GPU and unnecessary arrays to store the Maxflow input arrays are needed in SFL. It would have been much better if maxflow has more preprocessing on GPU.
 
-Moreover, a unit test framework is super necessary. If we don't do unit tests per few functions, it is hard to track the problems and discover simple, avoidable but missing test cases, such as comparison between two double values in GTF. A mockito test framework is best for reference. http://www.vogella.com/tutorials/Mockito/article.html
+Moreover, a unit test framework is super necessary. If we don't do unit tests per few functions, it is hard to track the problems and discover simple, avoidable but missing test cases, such as comparison between two double values in SFL. A mockito test framework is best for reference. http://www.vogella.com/tutorials/Mockito/article.html
 
 ### Notes on multi-GPU parallelization
 
