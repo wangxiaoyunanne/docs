@@ -19,13 +19,6 @@ Scan statistics as described in [Priebe et al](http://www.cis.jhu.edu/~parky/CEP
 __TODO__
 One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
 
-## Summary of Gunrock Implementation
-
-## Reference
-[Scan Statistics on Enron Graphs](http://www.cis.jhu.edu/~parky/CEP-Publications/PCMP-CMOT2005.pdf)
-
-[Statistical inference on random graphs: Comparative power analyses via Monte Carlo](http://cis.jhu.edu/~parky/CEP-Publications/PCP-JCGS-2010.pdf)
-
 ## Algorithm: Scan Statistics
 Input is an undirected graph
 ```
@@ -145,3 +138,9 @@ Other important pieces of this work includes statistical time series analysis on
 This application takes the advantage of a classic traingle counding problem to solve a more complex statistics problem. Instead of directly using the existing solution, it's solved from a different angle. Instead of counting the total number of triangles in the graph, we count triangles from each node's respective.
 
 From this app, we find the flexibility our Gunrock's intersection operation. And it could be potentially used in other graph analytics research such as community detection, etc.
+
+## Reference
+[Scan Statistics on Enron Graphs](http://www.cis.jhu.edu/~parky/CEP-Publications/PCMP-CMOT2005.pdf)
+
+[Statistical inference on random graphs: Comparative power analyses via Monte Carlo](http://cis.jhu.edu/~parky/CEP-Publications/PCP-JCGS-2010.pdf)
+
