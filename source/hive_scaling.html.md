@@ -25,9 +25,118 @@ thus may have different scaling results.
 
 ## DGX-1
 
+The DGX-1 with P100 GPUs has 4 NVLinks lanes per GPU, and they are connected as
+![DGX1-NVLink]( attachments/scaling/NVLink-DGX1.png "DGX1 NVLink Topology").
+
+Each of the NVLink runs at 20 GBps per direction, which is higher
+than PCIe 3.0 x16 at about 16 GBps for the whole GPU. But the
+topology is not all to all, and GPUs may not be able to access every other
+GPU's memory. For example, GPU0 can't use peer access on GPU5, 6 and 7. This
+makes implementations using peer-access more complex than one could hope. DGX-1
+with V100 GPUs increases the NVLink speed to 25 GBps per direction per lane,
+and increases the number of lanes per GPU to 6, but the peer accessibility has
+not been changed. This issue is finally addressed in DGX-2 with the NVSwitch.
+
+Using a benchmark program to test the throughput and latency shows the following
+results. `Self` indicates local GPU accesses, `peer` indicates peer accesses,
+`host` indicates accesses to the CPU memory via. UVM, and `all` indicates accesses to
+all peer accessible GPUs.
+
+Throughput in GBps
+
+| Operation      | Self | Peer | Host | All |
+|----------------|------:|------:|------:|-----:|
+| Regular read   | 448.59 | 14.01 | 444.74 | 12.17 |
+| Regular write  | 442.98 | 16.21 | 16.18 | 12.17 |
+| Regular update | 248.80 | 11.71 | 0.0028 | 6.00 |
+| Random read    | 6.78 | 1.43 | | 4.04 |
+| Random write   | 6.63 | 1.14 | | 3.82 |
+| Random update  | 3.44 | 0.83 | | 2.08 |
+
+Latency in microsecond (us)
+
+| Operation      | Self | Peer | Host | All |
+|----------------|------:|------:|------:|-----:|
+| Regular read   | 2.12 | 1.18 | 1.30 | 1.49 |
+| Regular write  | 1.74 | 1.00 | 13.83 | 1.01 |
+| Regular update | 2.43 | 1.20 | 79.29 | 1.44 |
+| Random read    | 3.11 | 1.08 | | 1.40 |
+| Random write   | 3.28 | 1.05 | | 1.39 |
+| Random update  | 5.69 | 1.28 | | 1.38 |
+
+All the regular throughputs are at least 80% of the theoretical upper bounds. The
+latencies when accessing local GPUs seem odd, but other latencies look
+reasonable. It's clear that local regular accesses have much higher throughput
+than inter-GPU connections, about 20 to 30 times from this experiment. The ratio of
+random accesses are lower, but still at about 5 times. The implication on the
+scalabilities of graph applications is that, the local memory access to
+communication ratio needs to be around 10 to 1. Because most graph
+implementations are memory bound, the computation cost is counted by the number
+of elements accessed by the kernels; this means the computation to
+communication ratio should be about 2.5 operations to 1 byte to have some
+scalability.
+
+The UVM doesn't work as expected for most cases, only when the accesses are read
+only and the data can be duplicated on each GPU. Otherwise the throughputs are
+significantly lower, caused by memory migration and going over the PCIe
+interfaces. It must be noted that, at the time of testing, the DGX-1 has CUDA
+9.1 and NVIDIA driver 390.30 installed, which are more than one year old. Newer
+CUDA version and NVIDIA driver could improve the UVM performance.
+
 ## DGX-2
 
+The DGX-2 system has very different NVLink topology: the GPUs are connected by
+NVSwitches, and all to all peer accesses are available.
+
+![DGX2-NVLink]( attachments/scaling/NVLink-DGX2.png "DGX2 NVLink Topology").
+
+At the time of report, the DGX-2 is hardly available. What we have are two
+Quadro GV100 GPUs directly connected by 4 NVLink2 lanes. Although the setup is
+much smaller than the DGX-2, it still can provide some ideas on how the
+inter-GPU communication would perform on the DGX-2.
+
+Throughput in GBps
+
+| Operation      | Self | Peer | Host | All |
+|----------------|------:|------:|------:|-----:|
+| Regular read   | 669.68 | 76.74 | 679.52 | 76.72 |
+| Regular write  | 590.01 | 85.00 | 170.113 | 76.28 |
+| Regular update | 397.26 | 39.67 | 80.00 | 37.86 |
+| Random read    | 17.39 | 7.46 | 17.27 | 10.51 |
+| Random write   | 13.25 | 7.96 | 1.23 | 7.24 |
+| Random update  |  6.83 | 3.88 | 0.68 | 3.85 |
+
+Latency in microsecond (us)
+
+| Operation      | Self | Peer | Host | All  |
+|----------------|-----:|-----:|-----:|-----:|
+| Regular read   | 0.37 | 0.47 | 0.37 | 0.41 |
+| Regular write  | 0.08 | 0.08 | 0.08 | 0.15 |
+| Regular update | 0.37 | 0.47 | 0.43 | 0.41 |
+| Random read    | 0.11 | 0.10 | 0.10 | 0.16 |
+| Random write   | 0.13 | 0.08 | 0.08 | 0.15 |
+| Random update  | 0.15 | 0.09 | 0.09 | 0.17 |
+
+The local to peer memory throughput ratios, at about 8 for regular accesses and
+about 2 for random accesses, in this experiment are much lower than the DGX-1.
+The decreases are mainly from using all the 4 lanes for communication, instead
+of 1 in the DGX-1 cases. If using one a single lane, the ratios would become 32
+and 8, even higher than the DGX-1. The actual effect from the NVSwitch is still
+unclear, but DGX-2 is expected to have similar scalabilities as DGX-1 for
+graph applications.
+
 ## GPU clusters
+
+Going from multiple GPUs within the same node, to multiple GPUs across
+different nodes significantly decreases the inter-GPU throughput. While NVLink
+runs at 80 GBps per direction per GPU for the DGX-1, the aggregated InfiniBand
+bandwidth is only 400 Gbps, which is only one twelfth of the aggregated
+inter-GPU bandwidth. This means the local access to communication bandwidth
+ratio drops an order, making scaling graph applications across nodes an order
+harder. Using the same approximation method as the DGX-1, a graph implementation
+needs to have 30 operations / local memory operations for each byte
+going across the nodes. Focus may need to switch to the communication, instead
+of the local computation, to get a scalable implementation on GPU clusters.
 
 # Communication methods / models
 
@@ -40,6 +149,10 @@ thus may have different scaling results.
 ### All reduce
 
 ### Mix all reduce with peers to host GPU or host GPU to peers
+
+## Peer accesses
+
+## Unified virtual memory (UVM)
 
 # Graph partitioning scheme
 
