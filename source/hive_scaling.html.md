@@ -49,9 +49,9 @@ Throughput in GBps
 | Regular read   | 448.59 | 14.01 | 444.74 | 12.17 |
 | Regular write  | 442.98 | 16.21 | 16.18 | 12.17 |
 | Regular update | 248.80 | 11.71 | 0.0028 | 6.00 |
-| Random read    | 6.78 | 1.43 | | 4.04 |
-| Random write   | 6.63 | 1.14 | | 3.82 |
-| Random update  | 3.44 | 0.83 | | 2.08 |
+| Random read    | 6.78 | 1.43 | 2.39 | 4.04 |
+| Random write   | 6.63 | 1.14 | 3.47E-5 | 3.82 |
+| Random update  | 3.44 | 0.83 | 1.92E-5 | 2.08 |
 
 Latency in microsecond (us)
 
@@ -60,9 +60,9 @@ Latency in microsecond (us)
 | Regular read   | 2.12 | 1.18 | 1.30 | 1.49 |
 | Regular write  | 1.74 | 1.00 | 13.83 | 1.01 |
 | Regular update | 2.43 | 1.20 | 79.29 | 1.44 |
-| Random read    | 3.11 | 1.08 | | 1.40 |
-| Random write   | 3.28 | 1.05 | | 1.39 |
-| Random update  | 5.69 | 1.28 | | 1.38 |
+| Random read    | 3.11 | 1.08 | 13.61 | 1.40 |
+| Random write   | 3.28 | 1.05 | 15.88 | 1.39 |
+| Random update  | 5.69 | 1.28 | 21.76 | 1.38 |
 
 All the regular throughputs are at least 80% of the theoretical upper bounds. The
 latencies when accessing local GPUs seem odd, but other latencies look
@@ -140,19 +140,111 @@ of the local computation, to get a scalable implementation on GPU clusters.
 
 # Communication methods / models
 
+There are multiple ways to move data between GPUs: explicit movement, peer
+accesses and unified virtual memory (UVM). They have different performances and
+implications in programming the graph implementations.
+
 ## Explicit data movement
 
-### Peers to host GPU
+The most tradition way is to explicitly move the data: using `cudaMemcpyAsync`
+to copy a block of memory from one GPU to another. The source and destination
+GPUs are not required to be peer accessible. CUDA will automatically select the
+best route: if GPUs are peer-accessible, the traffic will go through the
+inter-GPU connection, be it NVLink or PCIe; if they are not peer-accessible,
+the data will be first copied to CPU memory, and then copied to the destination
+GPU.
 
-### Host GPU to peers
+One of the advantage of explicit data movement is throughput. `cudaMemcpyAsync`
+is highly optimized, and the data for communication are always dense. The
+throughput should be close to the hardware limit, if the size of data is not too
+small, say at least a few tens of MB. Explicit data movement also isolates
+local computation and communication. No need to consider the data layout or
+different accessing latency from local or remote data, the implementation and
+optimization of computation kernels can be much simpler. It also enables
+connection to other communication libraries, such as MPI.
 
-### All reduce
+However, explicit memory copy requires data for communication are packed in
+continuous memory space. For most applications, this means additional
+computation to prepare the data. Since the computing power of GPU is huge, and
+graph applications are mostly memory bound, a little extra computation should
+only have minimal impact on the running time.
 
-### Mix all reduce with peers to host GPU or host GPU to peers
+A lot of graph algorithms are written using the bulk synchronous parallel (BSP)
+model: computations are carried out in iterations, and the results of
+computation will only guarantee to be visible after the iteration boundary. The
+BSP model provides a natural communication point: at the iteration boundary. The
+current Gunrock multi-GPU framework follows the BSP model.
+
+Depending on the algorithm, there are several communication models can be used:
+- *Peers to host GPU*
+This communication model is used when data of a vertex or edge on peer GPUs need to be
+accumulated / aggregated onto the host GPU of the vertex. When the vertex or
+edge is only adjacent to a few GPUs, it may be beneficial to use direct p2p
+communication; when the vertex is adjacent to most GPUs, a `Reduce` from all
+GPUs to the host GPU may be better.
+
+- *Host GPU to peers*
+This is the opposite to the peers to host model. It propagates data of a vertex
+or edge from its host GPU to all GPUs adjacent to the vertex. Similarly, if the number
+of adjacent GPUs are small, point to point communication should do the work;
+otherwise, `broadcast` from the host GPU may be better.
+
+- *All reduce*
+When updates on the same vertex or edge come from many GPUs, and the result are
+needed on many GPUs, `AllReduce` may be the best choice. It can be viewed as an
+`peers to host` followed by an `host to peers` communications. It can also be
+used without partitioning the graph: it works without knowing or assigning a
+host GPU to an vertex or edge.
+
+- *Mix all reduce with peers to host GPU or host GPU to peers*
+This is a mix of `AllReduce` and peer to peer communications: for vertices or
+edges that touch a large number of GPUs, `AllReduce` is used; for other
+vertices or edges, direct peer to peer communications are used. This
+communication model is coupled with the high / low degree partitioning scheme.
+The paper "Scalable Breadth-First Search on a GPU Cluster"
+(https://arxiv.org/abs/1803.03922) has more details on this model.
 
 ## Peer accesses
 
+If a pair of GPU is peer-accessible, they can directly dereference each other's
+memory pointer within CUDA kernels. This provides a more asynchronized way for
+inter-GPU communication: there is no need to wait for the iteration boundary.
+Atomic operations are also supported if the GPUs are connected by NVLink. The
+implementation can also be kept simple, since no data preparing and explicit
+movement is needed. The throughput is also acceptable, although not as good as
+explicit movement.
+
+However, this essentially forces the kernel to work on a NUMA (non-uniform
+memory access) domain formed by local and remote GPU memory. Some kernel
+optimized under the assumption on a flat memory domain may not work well. Peer
+accesses also give up the opportunity to aggregate local updates on the same
+vertex or edge before communication, so the actual communication volume may be
+larger.
+
 ## Unified virtual memory (UVM)
+
+UVM is similar to peer accesses, as it also enables multiple GPUs to access the
+same memory space. However, the target memory space is allocated in the CPU
+memory. When needed on a GPU, a memory page will be moved to the GPU's memory
+via the page fault mechanism. Updates to the data is cached on GPU memory
+first, and will eventually be written to the CPU memory. UVM provides a
+transparent view of the CPU memory on GPU, and significantly reduce the coding
+complexity if running time is not a concern. It also enable the GPU to process
+dataset that can't fit in the combined GPU memory, without explicitly streaming
+the data from CPU to GPU.
+
+But there are some caveats here. The actual placement of a memory page /
+piece of data relies on hints given by `cudaMemAdvise`, otherwise it will need
+to be fetch from CPU to GPU when first used by any GPU, and bounces between
+GPUs when updated by multiple GPUs. The hints essentially come from
+partitioning the data, but sometimes there is no good way to partition, and
+data bouncing is unavoidable. In worst cases, the data can be moved back to
+CPU, and any further access will need to go through the slow PCIe bridge again.
+The performance of UVM is not as good as explicit data movement or peer
+accesses; in worst cases, it can be a few orders slower. When data is larger
+than the GPU memory, UVM's throughput drops significantly; as a result, it's
+easier to code, but it will be slower than streaming the graph for datasets
+larger than GPU memory.
 
 # Graph partitioning scheme
 
