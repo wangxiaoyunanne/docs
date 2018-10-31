@@ -17,7 +17,9 @@ Given a graph where each vertex on the graph has a weight, _sparse fused lasso (
 
 ## Summary of Results
 
-(fill this in)
+The SFL problem is mainly divided into two parts, computing residual graphs from maxflow and renormalizing the weights of the vertices. Maxflow is parallelizable with the push-relabel algorithm, so we adopt this algorithm in Gunrock's implementation. Moreover, each vertex has its own work to compute which communities it belongs to, and normalize the weights with other vertices in the same community.     This renormalization requires global synchronization. SFL iterates by calling maxflow and renormalization several times before it converges. We notice that the time is mostly spent on maxflow, and thus speeding the maxflow implementation will bring substantial speedup in the SFL.         
+
+Because of the current version of the maxflow, we notice 30 times slow down of Gunrock's GPU SFL with respect to our benchmark. Some limitations lead to this slowdown, including extra memory transfer between CPU and GPU because of maxflow's relabeling heuristics and maxflow's preprocessing poor iteration boundary of min-cut on GPU, and serial implementation of renormalization. These problems can be solved in the future version of SFL.
 
 ## Summary of Gunrock Implementation
 
@@ -152,20 +154,20 @@ Sample command line with argument.
 ### Output
 
 The code will output two files in the current directory. One is called `output_pr.txt` (for CPU reference) and the other is called `output_pr_GPU.txt` (for GPU SFL with push-relabel backend).
-Each vertex's index and new weight will be stored in each line of the two files. These outputs could be further processed into the resulting heatmap.
+Each vertex's new weight will be stored in each line of the two files. These outputs could be further processed into the resulting heatmap.
 The printout after running `gtf_main_<CUDA version>_x86_64` includes the timing of the application.
 
 Sample output in the `.txt` is
 ```
-0 0
-1 0
-2 0
-3 0
-4 0
-5 0
-6 -11.375
-7 -0.307292
-8 0
+0
+0
+0
+0
+0
+0
+-11.375
+-0.307292
+0
 ```
 
 Sample important printf on the screen is
@@ -226,7 +228,7 @@ Graphtv is an official implementation of sparse fused lasso algorithm with a par
 
 | DataSet | time starts | time ends | #E | #V | graphtv runtime | Gunrock GPU runtime |
 |-------------- |---------------------|--------------------|----------|----------|------| ---|
-| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 0.11s |  *3.59s |
+| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 0.11s |  *3.23s |
 | NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | 8.71s | |
 | NY Taxi-1M | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211 | 213360 | 103.62s |  |
 
@@ -240,8 +242,16 @@ Graphtv is an official implementation of sparse fused lasso algorithm with a par
 
 ### Performance limitations
 
-e.g., random memory access? talks about MF more?
+We observe the slow down when we compare the Graphtv and Gunrock's current SFL implementation on NY Taxi-small dataset with time from 2011-06-26 12:00:00 to 2011-06-26 14:00:00. Here are few reasons. 
+1) It seems we are only running it on a small graph successfully (~9000 nodes), which is not enough to saturate the GPU at all. This only applies to this dataset.
+2) The bottleneck is still the MF implementation.
+a) a preflow computation on the CPU in the problem.reset(), requiring a for-loop of src.edges and a Move operation (very costly) from GPU to CPU every time MF is called.
+b) it has relabeling heuristics in place also on the CPU, so in every iteration it needs to move the flow and heights back to CPU and do this relabeling for a certain number of iterations.
+c) there are device syncs calls between all of these, also slow, global barriers.
+3) We also have iteration boundaries right now (like BC) to perform MinCut on the GPU.
+4) The SLF renormalization is serial. 
 
+We expect the above problems to be solved in the future implementations of Maxflow. 
 
 ## Next Steps
 
