@@ -319,9 +319,7 @@ Moreover, a unit test framework would be very helpful for development. If we don
 
 ### Notes on multi-GPU parallelization
 
-> What will be the challenges in parallelizing this to multiple GPUs on the same node?
->
-> Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
+To parallelize the push relabel algorithm accross multiple GPUs all arrays related to the graph have to be stored in the GPU number of copies (one per GPU). Moreover, the GPUs have to update the data of the neighborhood in the subgraph that they share. As the algorithm needs to store at least 3 arrays of size O(|E|) and 3 arrays of size O(|V|) per graph then coping and merging data fast between GPUs is the challenge.
 
 The SFL renormalization should be able to parallelized accross different GPU easily, because it is array operations only. However, extra data transfer is needed if the graph is not copied across multiple GPUs.
 
@@ -333,8 +331,6 @@ Push relabel is not directly related to dynamic graphs. But it should be able to
 However, SFL is hard to work on dynamic graphs, which will change the topology of the graph. The residual graph includes a swapping edge value (see pseudocode above) and we need to know the how the new graph will be in order to allocate enough memory space for the new edges and vertices.
 
 ### Notes on larger datasets
-
-> What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
 
 SFL renormalization can be done without having its temporary arrays on the same GPU, but extra communication costs are needed, if these arrays are on different GPU memory. No specific support would Gunrock need to add to fulfill SFL renormalization on larger dataset.  
 
