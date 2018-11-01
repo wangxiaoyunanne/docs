@@ -533,6 +533,20 @@ html, body {
 // This is all the stuff that appears in the right half of the page
 
 .content {
+
+  pre.mid-column-code {
+    background-color: #f6f8fa;
+    color: #24292e;
+    /* margin: 0; */
+    width: 55%;
+    clear: both;
+    margin-left: 50px;
+    margin-bottom: 20px;
+    margin-top: 20px;
+    box-sizing: border-box;
+    float: left;
+  }
+
   pre, blockquote {
     background-color: $code-bg;
     color: #fff;
