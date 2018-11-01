@@ -127,6 +127,7 @@ set correctly to use CUDA. The current Gunrock configuration assumes boost
 (1.58.0 or 1.59.0) and Metis are installed; if not, changes need to be made in
 the Makefiles. DARPA's DGX-1 has both installed when the tests are performed.
 
+
 ```shell
 git clone --recursive https://github.com/gunrock/gunrock/
 cd gunrock
@@ -139,6 +140,7 @@ cmake ..
 cd ../tests/gtf
 make
 ```
+
 At this point, there should be an executable `gtf_main_<CUDA version>_x86_64`
 in `tests/gtf/bin`.
 
