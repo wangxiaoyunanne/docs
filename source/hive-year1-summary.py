@@ -54,8 +54,6 @@ with open('hive_year1_summary.html.md', 'a') as dest:
             summary = re.search(
                 '\n## Summary of Results\n\n([^#]*)\n\n#', contents).group(1)
             dest.write(f'## {title} \n**[{title}](https://gunrock.github.io/docs/{fname})** \n{summary}\n\n')
-    # don't need this, included within slate
-    # dest.write(scaling.read())
 
 files.insert(0, 'hive_year1_summary.html.md')
 

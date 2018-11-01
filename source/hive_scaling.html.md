@@ -339,7 +339,7 @@ makes the scaling analysis simple and easily understandable. If other
 partitioning schemes could work better for a specific application, it
 would be noted.
 
-### How scalings are considered
+### How scaling is considered
 
 The bandwidth of NVLink is much faster than PCIe 3.0: 20x3 and 25x6
 GBps bidirectionally for each Tesla P100 and V100 GPUs respectively in
@@ -410,11 +410,11 @@ Because the modularity optimization runs multiple iterations before each graph
 contraction phase, the computation and communication of modularity optimization
 is dominant.
 
-| Parts                   | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
-|-------------------------|------------------|-----------|-----------------|------|--------------------------|
-| Modularity optimization | 10(E + V) /p     | 20V bytes | E/p : 2V        | Okay | 88E/p + 12V bytes        |
-| Graph contraction       | 5E / p + E'      | 8E' bytes | 5E/p + E' : 8E' | Hard | 16E' bytes               |
-| Louvain                 | 10(E + V) / p    | 20V bytes | E/p : 2V        | Okay | 88E/p + 12V + 16E' bytes |
+| Parts                   | Comp cost | Comm cost    | Comp/comm ratio | Scalability | Memory usage (B) |
+|-------------------------|------------------|-----------|-----------------|------|--------------------|
+| Modularity optim.       | 10(E + V) /p     | 20V bytes | E/p : 2V        | Okay | 88E/p + 12V        |
+| Graph contraction       | 5E / p + E'      | 8E' bytes | 5E/p + E' : 8E' | Hard | 16E'               |
+| Louvain                 | 10(E + V) / p    | 20V bytes | E/p : 2V        | Okay | 88E/p + 12V + 16E' |
 
 Louvain could be hard to implement on multiple GPUs, especially for the graph
 contraction phase, as it forms a new graph and distributes it across the GPUs.
@@ -437,6 +437,7 @@ table.
 
 SAGE can be separated into three parts, depending on whether the computation
 and data access is source-centric or child-centric.
+
 ```
 // Part1: Select the children
 For each source in local batch:
@@ -472,33 +473,70 @@ the number of leaves per child is L, and the feature length per vertex is F.
 Dimensions of 2D matrices are noted as (x, y). The
 computation and communication costs for each part are:
 
-Part 1, computation  : B x C. <br>
-Part 1, communication: B x C x 8 bytes. <br>
-Part 2, computation  : B x C x F + B x C x (F + L x F + F x (Wf1.y + Wa1.y)).<br>
-Part 2, communication: B x C x (F + Wf1.y + Wa1.y) x 4 bytes.<br>
-Part 3, computation  : B x (C x (F + Wf1.y + Wa1.y) + F x (Wf1.y + Wa1.y) + (Wf1.y + Wa1.y) x (Wf2.y + Wa2.y)). <br>
+```
+Part 1, computation  : B x C.
+Part 1, communication: B x C x 8 bytes.
+Part 2, computation  : B x C x F + B x C x (F + L x F + F x (Wf1.y + Wa1.y)).
+Part 2, communication: B x C x (F + Wf1.y + Wa1.y) x 4 bytes.
+Part 3, computation  : B x (C x (F + Wf1.y + Wa1.y) + F x (Wf1.y + Wa1.y) +
+                       (Wf1.y + Wa1.y) x (Wf2.y + Wa2.y)).
 Part 3, communication: 0.
+```
 
 For Part 2's communication, if C is larger than about 2p, using `AllReduce` to
 sum up `child_feature` and `child_temp` for each source will cost less, at B x (F + Wf1.y + Wa1.y) x 2p x 4 bytes.
 
 *Summary of Graph SAGE multi-GPU scaling*
 
-| Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
-|-----------------------|------------|---------------|----------------------|-------------|--------------|
-| *Feature duplication* | | | | | |
-| Children selection    | BC | 8BC bytes | 1 : 8 | Poor | |
-| Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) | 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes | \~ CF : min(C, 2p) x 4 | Good | |
-| Source-centric comp.  | B x (CF + (Wf1.y + Wa1.y) x (C + F + Wf2.y + Wa2.y) | 0 bytes | N.A. | N.A. | |
-| Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes | at least \~ CF : min(C, 2p) x 4 | Good | |
-| | | | | | |
-| *Direct feature access* | | | | | |
-| Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) | 4B x ((F + Wf1.y + Wa1.y) x min(C, 2p) + CLF) bytes | \~ (2 + L + Wf1.y + Wa1.y) : 4L | poor | |
-| Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) + 4BCFL bytes | \~ (2 + L + Wf1.y + Wa1.y) : 4L | poor | |
-| | | | | | |
-| *Feature in UVM*      | | | | | |
-| Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) | 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU + 4BCLF bytes over GPU-CPU | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor | |
-| Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU + 4BCFL bytes over GPU-CPU | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor | |
+| Parts                 | Comp. cost |
+|-----------------------|------------|
+| *Feature duplication* | |
+| Children selection    | BC |
+| Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) |
+| Source-centric comp.  | B x (CF + (Wf1.y + Wa1.y) x (C + F + Wf2.y + Wa2.y) |
+| Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) |
+| | |
+| *Direct feature access* | |
+| Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) |
+| Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) |
+| | |
+| *Feature in UVM*      | |
+| Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) |
+| Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) |
+
+| Parts                 | Comm. cost    |
+|-----------------------|---------------|
+| *Feature duplication* | |
+| Children selection    | 8BC bytes |
+| Child-centric comp.   | 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes |
+| Source-centric comp.  | 0 bytes |
+| Graph SAGE            | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes |
+| | |
+| *Direct feature access* | |
+| Child-centric comp.   | 4B x ((F + Wf1.y + Wa1.y) x min(C, 2p) + CLF) bytes |
+| Graph SAGE            | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) + 4BCFL bytes |
+| | |
+| *Feature in UVM*      | |
+| Child-centric comp.   | 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU|
+|                       | + 4BCLF bytes over GPU-CPU |
+| Graph SAGE            | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU|
+|                       | + 4BCFL bytes over GPU-CPU |
+
+| Parts                 | Comp/comm ratio | Scalability |
+|-----------------------|----------------------|-------------|
+| *Feature duplication* | | |
+| Children selection    | 1 : 8 | Poor |
+| Child-centric comp.   | \~ CF : min(C, 2p) x 4 | Good |
+| Source-centric comp.  | N.A. | N.A. |
+| Graph SAGE            | at least \~ CF : min(C, 2p) x 4 | Good |
+| | | |
+| *Direct feature access* | | |
+| Child-centric comp.   | \~ (2 + L + Wf1.y + Wa1.y) : 4L | poor |
+| Graph SAGE            | \~ (2 + L + Wf1.y + Wa1.y) : 4L | poor |
+| | | |
+| *Feature in UVM*      | | |
+| Child-centric comp.   | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor |
+| Graph SAGE            | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor |
 
 When the number of features is at least several tens, the computation workload
 will be much more than communication, and SAGE should have good scalability.
@@ -537,9 +575,9 @@ Repeat until all steps of walks finished:
 
 Using W as the number of walks, for each step, we have
 
-| Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
-|-----------------------|------------|---------------|----------------------|-------------|--------------|
-| Random walk           | W/p        | W/p x 24 bytes| 1 : 24               | very poor   | |
+| Parts                 | Comp. cost | Comm. cost    | Comp/comm ratio | Scalability |
+|-----------------------|------------|---------------|----------------------|-------------|
+| Random walk           | W/p        | W/p x 24 bytes| 1 : 24               | very poor   |
 
 Graph search is very similar to random walk, except that instead of
 randomly selecting any neighbor, it selects the neighbor with the
@@ -564,11 +602,13 @@ sufficient to select a neighbor, with weighted probabilities.
 The cost analysis, depending on the walk strategy and optimization,
                           results in:
 
-| Strategy | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
-|----------|------------|---------------|----------------------|-------------|--------------|
-| Uniform  | W/p        | W/p x 24 bytes| 1 : 24               | very poor   | |
-| Greedy   | Straight forward: dW/p <br> Pre-visit: W/p | W/p x 24 bytes | d : 24 <br> 1 : 24 | Poor <br> very poor | |
-| Stochastic Greedy | Straight forward: dW/p <br> Pre-visit: log(d)W/p | W/p x 24 bytes | d : 24 <br> log(d) : 24 | Poor <br> very poor | |
+| Strategy | Comp. cost | Comm. cost    | Comp/comm ratio | Scalability |
+|----------|------------|---------------|----------------------|-------------|
+| Uniform  | W/p        | W/p x 24 bytes| 1 : 24               | Very poor   |
+| Greedy   | Straightforward: dW/p | W/p x 24 bytes | d : 24 | Poor |
+| Greedy   | Pre-visit: W/p | W/p x 24 bytes |1 : 24 | Very poor |
+| Stochastic Greedy | Straightforward: dW/p | W/p x 24 bytes | d : 24 | Poor |
+| Stochastic Greedy | Pre-visit: log(d)W/p | W/p x 24 bytes | log(d) : 24 | Very poor |
 
 If the selection of a neighbor is weighted-random, instead of uniformly-random,
 it will increase the computation workload to Wd /p, where d is the average
@@ -604,10 +644,10 @@ each GPU, so instead of broadcast, p2p communication may be used to
 reduce the communication cost, especially when the graph connectivity
 is low.
 
-| Comm. method          | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
-|-----------------------|------------|---------------|----------------------|-------------|--------------|
-| Explicit movement     | 100E/p     | 2V x 8 bytes  | 25E/p : 4V           | Okay        | |
-| UVM or peer access    | 100E/p     | E/p x 8 bytes | 25 : 1               | Good        | |
+| Comm. method          | Comp. cost | Comm. cost    | Comp/comm ratio | Scalability |
+|-----------------------|------------|---------------|----------------------|-------------|
+| Explicit movement     | 100E/p     | 2V x 8 bytes  | 25E/p : 4V           | Okay        |
+| UVM or peer access    | 100E/p     | E/p x 8 bytes | 25 : 1               | Good        |
 
 ### Vertex Nomination
 
@@ -631,9 +671,9 @@ While has new distance updates
 Assuming on average, each vertex has its distance updated `a` times, and the
 average degree of vertices is `d`, the computation and the communication costs are:
 
-| Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
-|-----------------------|------------|---------------|----------------------|-------------|--------------|
-| Vertex nomination     | aE/p       | aV/p x min(d, p) x 8 bytes | E : 8V x min(d, p) | Okay | |
+| Parts                 | Comp. cost | Comm. cost    | Comp/comm ratio | Scalability |
+|-----------------------|------------|---------------|----------------------|-------------|
+| Vertex nomination     | aE/p       | aV/p x min(d, p) x 8 bytes | E : 8V x min(d, p) | Okay |
 
 The min(d, p) part in the communication cost comes from update
 aggregation on each GPU: when a vertex has more than one distance
@@ -711,15 +751,17 @@ Assuming the neighbor lists of every vertex are sorted, the membership checking
 can be done in log(#neighbors). As a result, using `d` as the average outdegree
 of vertices, the cost analysis is:
 
-| Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
-|-----------------------|------------|---------------|----------------------|-------------|--------------|
-| Wedge generation      | dE/p     |                 | | | |
-| Wedge communication   | 0      | aE/p x 12 bytes   | | | |
-| Wedge checking        | aE/p x log(d) |            | | | |
-| AllReduce             | 2V         | 2V x 4 bytes  | | | |
-| Triangle Counting     | (d + a x log(d))E/p + 2V | aE/p x 12 + 8V bytes | \~(d + a x log(d)) : 12a | Okay | |
-| Scan Statistics (wedge checks) | (d + a x log(d))E/p + 2V + V/p | 12aE/p + 8V bytes | \~ (d + a x log(d)) : 12a | Okay | |
-| Scan Statistics (intersection) | Vdd + V/p | 8V bytes | dd : 8 | Perfect | |
+| Parts                 | Comp. cost | Comm. cost (B)   | Comp/comm ratio | Scalability |
+|-----------------------|------------|---------------|----------------------|-------------|
+| Wedge generation      | dE/p     |                 | | |
+| Wedge communication   | 0      | aE/p x 12   | | |
+| Wedge checking        | aE/p x log(d) |            | | |
+| AllReduce             | 2V         | 2V x 4  | | |
+| Triangle Counting     | (d + a x log(d))E/p + 2V | aE/p x 12 + 8V | \~(d + a x log(d)) : 12a | Okay |
+| Scan Statistics | (d + a x log(d))E/p | 12aE/p + 8V | \~(d + a x log(d)) : 12a | Okay |
+| (with wedge checks) | + 2V + V/p |  | | |
+| Scan Statistics | Vdd + V/p | 8V | dd : 8 | Perfect |
+| (with intersection) | | | | |
 
 ### Sparse Fused Lasso (GTF)
 
@@ -770,11 +812,11 @@ The cost analysis will not be on one single iteration, but on a full run of the
 push-relabel algorithm, as the bounds of the push and the relabel operations
 are known.
 
-| Parts | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
-|-------|------------|---------------|----------------------|-------------|--------------|
-| Push  | a(V + 1)VE/p | (V+1)VE/p x 8 bytes | a:8          | Less than okay | |
-| Relabel | VE/p     | V^2 x 8 bytes | d/p : 8              | Okay | |
-| MF (Push-Relabel) | (aV + a + 1)VE/p | V^2((V+1)d/p + 1) x 8 bytes | \~ a:8 | Less than okay | |
+| Parts | Comp. cost | Comm. cost (Bytes)   | Comp/comm ratio | Scalability |
+|-------|------------|---------------|----------------------|-------------|
+| Push  | a(V + 1)VE/p | (V+1)VE/p x 8  | a:8          | Less than okay |
+| Relabel | VE/p     | V^2 x 8 | d/p : 8              | Okay |
+| MF (Push-Relabel) | (aV + a + 1)VE/p | V^2((V+1)d/p + 1) x 8 | \~ a:8 | Less than okay |
 
 The GTF-specific parts are more complicated than MF in terms of
 communication: the implementation must keep some data, such as weights
@@ -792,14 +834,17 @@ Vertex-Community updates;
 Updates source-vertex and vertex-destination capacities;
 ```
 
+with scaling characteristics:
 
-| Parts | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
-|-------|------------|---------------|----------------------|-------------|--------------|
-| MF (Push-Relabel) | (aV + a + 1)VE/p | V^2((V+1)d/p + 1) x 8 bytes | \~ a:8 | Less than okay | |
-| BFS   | E/p        | 2V x 4 bytes  | d/p : 8              | Okay | |
-| V-C updates | E/p | V/p x 8 bytes  | d : 8                | Okay | |
-| Capacity updates | V/p | V/p x 4 bytes | 1 : 4            | Less than okay | |
-| GTF | (aV + a + 1)VE/p + 2E/p + V/p | V^2((V+1)d/p + 1) x 8  + 2V x 4 + V/p x 4 bytes | \~ a:8 | Less than okay | |
+
+| Parts | Comp. cost | Comm. cost (Bytes)    | Comp/comm ratio | Scalability |
+|-------|------------|---------------|----------------------|-------------|
+| MF (Push-Relabel) | (aV + a + 1)VE/p | V^2((V+1)d/p + 1) x 8 | \~ a:8 | Less than okay |
+| BFS   | E/p        | 2V x 4  | d/p : 8              | Okay |
+| V-C updates | E/p | V/p x 8  | d : 8                | Okay |
+| Capacity updates | V/p | V/p x 4 | 1 : 4            | Less than okay |
+| GTF | (aV + a + 1)VE/p | V^2((V+1)d/p + 1) x 8 | \~ a:8 | Less than okay |
+|     | + 2E/p + V/p | + 2V x 4 + V/p x 4 | | |
 
 
 It's unsurprising that GTF may not scale: the compute- and
@@ -853,13 +898,13 @@ Using `E'` to denote the number of edges in the projected graph, and
 `d` to denote the average degree of vertices, the costs are:
 
 
-| Parts | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
-|-------|------------|---------------|----------------------|-------------|--------------|
-| Marking | dE/p     | 0 byte        | | | |
-| Forming edge lists | E' | 0 byte | | | |
-| Counting | dE/p | 0 byte | | | |
-| Merging  | E' | E' x 12 bytes | | | |
-| Graph Projection | 2dE/p + 2E' | 12E' bytes | dE/p + E' : 6E' | Okay | |
+| Parts | Comp. cost | Comm. cost    | Comp/comm ratio | Scalability |
+|-------|------------|---------------|----------------------|-------------|
+| Marking | dE/p     | 0 byte        | | |
+| Forming edge lists | E' | 0 byte | | |
+| Counting | dE/p | 0 byte | | |
+| Merging  | E' | E' x 12 bytes | | |
+| Graph Projection | 2dE/p + 2E' | 12E' bytes | dE/p + E' : 6E' | Okay |
 
 
 If the graph can be duplicated on each GPU, instead of processing
@@ -930,12 +975,12 @@ For each local vertex u with gradient updated:
 
 The cost analysis is:
 
-| Parts | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
-|-------|------------|---------------|----------------------|-------------|--------------|
-| Per-vertex updates  | \~10 V/p | 0 bytes | | | |
-| Ranking propagation | 2E/p | V * 8 bytes | d/p : 4 | | |
-| Gradient updates    | V/p | 0 bytes | | | |
-| Local graph clustering | (12V + 2E)/p | 8V bytes | (6 + d)/p : 4 | good | |
+| Parts | Comp. cost | Comm. cost    | Comp/comm ratio | Scalability |
+|-------|------------|---------------|----------------------|-------------|
+| Per-vertex updates  | \~10 V/p | 0 bytes | | |
+| Ranking propagation | 2E/p | V * 8 bytes | d/p : 4 | |
+| Gradient updates    | V/p | 0 bytes | | |
+| Local graph clustering | (12V + 2E)/p | 8V bytes | (6 + d)/p : 4 | good |
 
 ### Seeded Graph Matching and Application Classification
 
@@ -954,45 +999,52 @@ applications.
 
 ## Summary of Results
 
-| Application | Computation to communication ratio | Scalability | Implementation difficulty |
+| Application | Computation to communication ratio | Scalability | Implementation diff. |
 |-------------|----------------|------|------|
 | Louvain     | E/p : 2V       | Okay | Hard |
 | Graph SAGE  | \~ CF : min(C, 2p)x4 | Good | Easy |
-| Random walk | Duplicated graph: infinity<br> Distributed graph: 1 : 24 | Perfect <br> Very poor | Trivial <br> Easy |
-| Graph search: Uniform  | 1 : 24               | very poor   | Easy |
-| Graph search: Greedy   | Straight forward: d : 24 <br> Pre-visit: 1:24 | Poor <br> very poor | Easy <br> Easy |
-| Graph search: Stochastic greedy | Straight forward: d : 24 <br> Pre-visit: log(d) : 24 | Poor <br> very poor | Easy <br> Easy |
-| Geo location| Explicit movement: 25E/p : 4V<br> UVM or peer access: 25 : 1 | Okay <br> Good | Easy <br> Easy |
+| Random walk | Duplicated graph: infinity | Perfect | Trivial |
+| Random walk | Distrib. graph: 1 : 24 | Very poor | Easy |
+| Graph search: Uniform  | 1 : 24               | Very poor   | Easy |
+| Graph search: Greedy   | Straightforward: d : 24 | Poor | Easy |
+| Graph search: Greedy   | Pre-visit: 1:24 | Very poor | Easy |
+| G.S.: Stochastic greedy | Straightforward: d : 24 | Poor | Easy |
+| G.S.: Stochastic greedy | Pre-visit: log(d) : 24 | Very poor | Easy |
+| Geolocation| Explicit movement: 25E/p : 4V | Okay | Easy |
+| Geolocation| UVM or peer access: 25 : 1 | Good | Easy |
 | Vertex nomination | E : 8V x min(d, p) | Okay | Easy |
-| Scan statistics   | Duplicated graph: infinity<br> Distributed graph: \~ (d + a * log(d)) : 12 | Perfect <br> Okay | Trivial <br> Easy |
+| Scan statistics   | Duplicated graph: infinity | Perfect | Trivial |
+| Scan statistics   | Distrib. graph: \~ (d + a * log(d)) : 12 | Okay | Easy |
 | Sparse fused lasso | \~ a:8 | Less than okay | Hard |
-| Graph projection | Duplicated graph : infinity <br> Distributed graph : dE/p + E' : 6E' | Perfect <br> Okay | Easy <br> Easy |
+| Graph projection | Duplicated graph : infinity | Perfect | Easy |
+| Graph projection |  Distrib. graph : dE/p + E' : 6E' | Okay | Easy |
 | Local graph clustering | (6 + d)/p : 4 | Good | Easy |
-| Seeded graph matching | | | |
-| Application classification | | | |
+
+Seeded graph matching and application classification are matrix-operation-based
+and not covered in this table.
 
 From the scaling analysis, we can see these workflows can be roughly grouped
 into three categories, by their scalabilities:
 
-*Good scalabilities*
-GraphSAGE, geo location using UVM or peer accesses, and local graph clustering
+*Good scalability*
+GraphSAGE, geolocation using UVM or peer accesses, and local graph clustering
 belong to this group. They share some algorithmic signatures: the whole graph
 needs to be visited at least once in every iteration, and visiting each edge
 involves nontrivial computation. The communication costs are roughly at the
-level of V. As a result, the computation vs communication ratio is larger than
+level of V. As a result, the computation vs. communication ratio is larger than
 E : V. PageRank is a standard graph algorithm that falls in this group.
 
-*Moderate scalabilities*
-This group includes Louvain, geo location using explicit movement, vertex
+*Moderate scalability*
+This group includes Louvain, geolocation using explicit movement, vertex
 nomination, scan statistics, and graph projection. They either only visit part
 of the graph in an iteration, have only trivial computation during an edge
 visit, or communicate a little more data than V. The computation vs.
 communication is less than E : V, but still larger than 1 (or 1 operation : 4
 bytes). They are still scalable on the
-DGX-1 system, but not as well as the pervious group. Single source shortest
+DGX-1 system, but not as well as the previous group. Single source shortest
 path (SSSP) is an typical example for this group.
 
-*Poor scalabilities*
+*Poor scalability*
 Random walk, graph search, and sparse fused lasso belong to this group. They
 need to send out some data for each vertex or edge visit. As a result, the
 computation vs communication ratio is less than 1 (or 1 operation : 4 bytes).
