@@ -448,12 +448,12 @@ investigation: it may be better to contract the graph onto a single GPU,
 or even the CPU, when the graph is small; but where is the threshold and how to
 do the multi-GPU to single-GPU or CPU switch?
 
-Label propagation is another algorithm for community detection. It shares similar
+Label propagation is another algorithm for community detection. It has a similar
 structure to Louvain, but has a simpler way to decide how to move the vertices.
 Comparing them side by side for both result quality (the modularity value) and
 computation speed (the running time) will be beneficial.
 
-**Reference**
+**References**
 
 [1] Hao Lu, Mahantesh Halappanavar, Ananth Kalyanaraman. "Parallel Heuristics for Scalable Community Detection", <https://arxiv.org/abs/1410.1237> (2015).
 
