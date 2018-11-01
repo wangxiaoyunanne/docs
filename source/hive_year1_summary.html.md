@@ -16,7 +16,7 @@ This report is located online at the following URL: <https://gunrock.github.io/d
 
 Herein UC Davis produces the following three deliverables that it promised to deliver in Year 1:
 
-1. **7--9 kernels running on a single GPU on DGX-1**. The PM had indicated that the application targets are the graph-specific kernels of larger applications, and that our effort should target these kernels. These kernels run on one GPU of the DGX-1. These kernels are in Gunrock's GitHub repository as standalone kernels. While we committed to delivering 7--9 kernels, we deliver all 11 v0 kernels.
+1. **7--9 kernels running on a single GPU on DGX-1**. The PM had indicated that the application targets are the graph-specific kernels of larger applications, and that our effort should target these kernels. These kernels run on one GPU of the DGX-1. These kernels are in Gunrock's GitHub repository as standalone kernels. While we committed to delivering 7--9 kernels, we deliver 10 v0 kernels. Scan statistics is substantially done but the report is not complete and so we do not deliver it. Sparse graph lasso works on some inputs but requires more optimization in its maxflow component; we do include its report.
 2. **(High-level) performance analysis of these kernels**. In this report we analyze the performance of these kernels.
 3. **Separable communication benchmark predicting latency and throughput for a multi-GPU implementation**. This report (and associated code, also in the Gunrock GitHub repository) analyzes the DGX-1's communication capabilities and projects how single-GPU benchmarks will scale on this machine to 8 GPUs.
 
@@ -94,15 +94,68 @@ The application involves solving a linear assignment problem (LSAP) as a subprob
 
 SGM is an approximate algorithm that minimizes graph adjacency disagreements via the Frank-Wolfe algorithm. Certain uses of the auction algorithm can introduce additional approximation in the gradients of the Frank-Wolfe iterations.  An interesting direction for future work would be a rigorous study of the effects of this kind of approximation on a variety of different graph tolopogies.  Understanding of those dynamics could allow further scaling beyond what our current implementations can handle.
 
+## Sparse Fused Lasso 
+**[Sparse Fused Lasso](https://gunrock.github.io/docs/hive_sparse_graph_trend_filtering.html)** 
+The SFL problem is mainly divided into two parts, computing residual graphs from maxflow and renormalizing the weights of the vertices. Maxflow is parallelizable with the push-relabel algorithm, so we adopt this algorithm in Gunrock's implementation. Moreover, each vertex has its own work to compute which communities it belongs to, and normalize the weights with other vertices in the same community. This renormalization requires global synchronization. SFL iterates by calling maxflow and renormalization several times before it converges. We notice that the overall runtime is mostly spent in maxflow, and thus improving the maxflow implementation will bring substantial speedup in the SFL.
+
+Because of the current state of our maxflow implementation, we notice a 30x slowdown of Gunrock's GPU SFL with respect to the benchmark implementation. This slowdown is mainly caused by the parallel push-relabel implementation taking too many iterations to converge, and making SFL kernel launching overhead-bound. We are looking into algorithmic optimizations to reduce the number of iterations maxflow takes, and also engineering optimizations to reduce the effects of kernel overheads in computation time.
+
 ## Vertex Nomination 
 **[Vertex Nomination](https://gunrock.github.io/docs/hive_vn.html)** 
 The term "vertex nomination" covers a variety of different node ranking schemes that fuse "content" and "context" information.  The HIVE reference code implements a "multiple-source shortest path" context scoring function, but uses a very suboptimal algorithm.  By using a more efficient algorithm, our serial CPU implementation achieves 1-2 orders of magnitude speedup over the HIVE implementation and our GPU implementation achieves another 1-2 orders of magnitude on top of that.  Implementation was straightforward, involving only a small modification to the existing Gunrock SSSP app.
 
 ## Scaling analysis for HIVE applications 
 **[Scaling analysis for HIVE applications](https://gunrock.github.io/docs/hive_scaling.html)** 
-The purpose of this study is to understand how the HIVE v0
-applications would scale out on multiple GPUs, with a focus on the
-DGX-1 platform. Before diving into per-application analysis, we give a
-brief summary of the potential hardware platforms, the communication
-methods and models, and graph partitioning schemes.
+
+| Application | Computation to communication ratio | Scalability | Implementation diff. |
+|-------------|----------------|------|------|
+| Louvain     | E/p : 2V       | Okay | Hard |
+| Graph SAGE  | \~ CF : min(C, 2p)x4 | Good | Easy |
+| Random walk | Duplicated graph: infinity | Perfect | Trivial |
+| Random walk | Distrib. graph: 1 : 24 | Very poor | Easy |
+| Graph search: Uniform  | 1 : 24               | Very poor   | Easy |
+| Graph search: Greedy   | Straightforward: d : 24 | Poor | Easy |
+| Graph search: Greedy   | Pre-visit: 1:24 | Very poor | Easy |
+| G.S.: Stochastic greedy | Straightforward: d : 24 | Poor | Easy |
+| G.S.: Stochastic greedy | Pre-visit: log(d) : 24 | Very poor | Easy |
+| Geolocation| Explicit movement: 25E/p : 4V | Okay | Easy |
+| Geolocation| UVM or peer access: 25 : 1 | Good | Easy |
+| Vertex nomination | E : 8V x min(d, p) | Okay | Easy |
+| Scan statistics   | Duplicated graph: infinity | Perfect | Trivial |
+| Scan statistics   | Distrib. graph: \~ (d + a * log(d)) : 12 | Okay | Easy |
+| Sparse fused lasso | \~ a:8 | Less than okay | Hard |
+| Graph projection | Duplicated graph : infinity | Perfect | Easy |
+| Graph projection |  Distrib. graph : dE/p + E' : 6E' | Okay | Easy |
+| Local graph clustering | (6 + d)/p : 4 | Good | Easy |
+
+Seeded graph matching and application classification are matrix-operation-based
+and not covered in this table.
+
+From the scaling analysis, we can see these workflows can be roughly grouped
+into three categories, by their scalabilities:
+
+*Good scalability*
+GraphSAGE, geolocation using UVM or peer accesses, and local graph clustering
+belong to this group. They share some algorithmic signatures: the whole graph
+needs to be visited at least once in every iteration, and visiting each edge
+involves nontrivial computation. The communication costs are roughly at the
+level of V. As a result, the computation vs. communication ratio is larger than
+E : V. PageRank is a standard graph algorithm that falls in this group.
+
+*Moderate scalability*
+This group includes Louvain, geolocation using explicit movement, vertex
+nomination, scan statistics, and graph projection. They either only visit part
+of the graph in an iteration, have only trivial computation during an edge
+visit, or communicate a little more data than V. The computation vs.
+communication is less than E : V, but still larger than 1 (or 1 operation : 4
+bytes). They are still scalable on the
+DGX-1 system, but not as well as the previous group. Single source shortest
+path (SSSP) is an typical example for this group.
+
+*Poor scalability*
+Random walk, graph search, and sparse fused lasso belong to this group. They
+need to send out some data for each vertex or edge visit. As a result, the
+computation vs communication ratio is less than 1 (or 1 operation : 4 bytes).
+They are very hard to scale across multiple GPUs. Random walk is an typical
+example.
 
