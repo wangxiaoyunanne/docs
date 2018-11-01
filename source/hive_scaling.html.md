@@ -44,7 +44,16 @@ is finally addressed in DGX-2 with the NVSwitch.
 Using a benchmark program to test throughput and latency shows the
 following results. `Self` indicates local GPU accesses, `peer`
 indicates peer accesses, `host` indicates accesses to the CPU memory
-via UVM, and `all` indicates accesses to all peer-accessible GPUs.
+via UVM, and `all` indicates accesses to all peer-accessible GPUs. The
+`regular` operations access the memory in continous places by neighboring
+threads; in CUDA terms, these operations are coalesced memory accesses. The
+`random` operations access the memory space randomly, and neighboring threads
+may be touching memory that are far away from each other; in CUDA terms, these
+operations are non-coalesced memory accesses. The memory access patterns of
+graph workflows are a mix of both, and one main target of kernel optimizations
+is to make the memory accesses as coalesced as possible. But at the end,
+depending on the algorithm, some random accesses may be unavoiable. Random
+accesses across GPUs are particularly slow.
 
 Throughput in GBps:
 
@@ -75,8 +84,8 @@ accesses have much higher throughput than inter-GPU connections, about
 20 to 30 times from this experiment. The ratio of random accesses are
 lower, but still at about 5 times. The implication on the
 scalabilities of graph applications is that for scalable behavior, the
-local-memory-access-to-communication ratio needs to be at least 10 to
-1. Because most graph implementations are memory bound, the
+local-memory-access-to-communication ratio needs to be at least 10 to 1.
+Because most graph implementations are memory bound, the
 computation cost is counted by the number of elements accessed by the
 kernels; this means the computation to communication ratio should be
 at least 2.5 operations to 1 byte to exhibit scalable behavior.
@@ -85,10 +94,14 @@ Unified virtual memory (UVM) doesn't work as expected for most cases,
 instead only when the accesses are read only and the data can be
 duplicated on each GPU. Otherwise the throughputs are significantly
 lower, caused by memory migration and going over the PCIe interfaces.
+The less than 0.5 GBps throughputs from write and update operations via
+UVM could possibily caused by problems in the UVM support or the way how
+UVM is configured in the benchmark code.
 It must be noted that, at the time of testing, the DGX-1 has CUDA 9.1
 and NVIDIA driver 390.30 installed, which are more than one year old.
 A newer CUDA version and NVIDIA driver could potentially improve the
-UVM performance.
+UVM performance. Testing using V100 GPUs with CUDA 10.0 and NVIDIA
+driver 410 shows considerablly better throughputs.
 
 ### DGX-2
 
@@ -402,8 +415,9 @@ is dominant.
 | Graph contraction       | 5E / p + E'      | 8E' bytes | 5E/p + E' : 8E' | Hard | 16E' bytes               |
 | Louvain                 | 10(E + V) / p    | 20V bytes | E/p : 2V        | Okay | 88E/p + 12V + 16E' bytes |
 
-Louvain could be hard to implement on multiple GPUs, but the scalability should
-be okay.
+Louvain could be hard to implement on multiple GPUs, especially for the graph
+contraction phase, as it forms a new graph and distributes it across the GPUs.
+But the scalability should be okay.
 
 ### GraphSAGE
 
@@ -535,7 +549,7 @@ strategy).
 For the `greedy` strategy, a straightforward implementation, when
 reaching a vertex, goes through the whole neighbor list of thatsuch
 vertex and finds the one with maximum score. A more optimized
-implementation could perform a per-visit to find the neighbor with
+implementation could perform a pre-visit to find the neighbor with
 maximum scored neighbor, with a cost of E/p; during the random walk
 process, the maximum scored neighbor will be known without going
 through the neighbor list.
@@ -955,3 +969,31 @@ applications.
 | Local graph clustering | (6 + d)/p : 4 | Good | Easy |
 | Seeded graph matching | | | |
 | Application classification | | | |
+
+From the scaling analysis, we can see these workflows can be roughly grouped
+into three categories, by their scalabilities:
+
+*Good scalabilities*
+GraphSAGE, geo location using UVM or peer accesses, and local graph clustering
+belong to this group. They share some algorithmic signatures: the whole graph
+needs to be visited at least once in every iteration, and visiting each edge
+involves nontrivial computation. The communication costs are roughly at the
+level of V. As a result, the computation vs communication ratio is larger than
+E : V. PageRank is a standard graph algorithm that falls in this group.
+
+*Moderate scalabilities*
+This group includes Louvain, geo location using explicit movement, vertex
+nomination, scan statistics, and graph projection. They either only visit part
+of the graph in an iteration, have only trivial computation during an edge
+visit, or communicate a little more data than V. The computation vs.
+communication is less than E : V, but still larger than 1 (or 1 operation : 4
+bytes). They are still scalable on the
+DGX-1 system, but not as well as the pervious group. Single source shortest
+path (SSSP) is an typical example for this group.
+
+*Poor scalabilities*
+Random walk, graph search, and sparse fused lasso belong to this group. They
+need to send out some data for each vertex or edge visit. As a result, the
+computation vs communication ratio is less than 1 (or 1 operation : 4 bytes).
+They are very hard to scale across multiple GPUs. Random walk is an typical
+example.
