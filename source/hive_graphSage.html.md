@@ -289,8 +289,8 @@ Embedding validation: PASS
  total time: 26634.360075 ms
 ```
 
-There is 1 OMP reference run on the CPU for each combination of <`feature-column`,
-`num-children-per-source`, `num-leafs-per-child`>, with the timing reported after
+There is 1 OMP reference run on the CPU for each combination of {`feature-column`,
+`num-children-per-source`, `num-leafs-per-child`}, with the timing reported after
 `CPU Reference elapsed`. There are 10 GPU runs for each combination of the
 previous three parameters, plus `batch-size`. The computation workload of the
 GPU runs are the same as the reference CPU run, with different batch sizes. The
