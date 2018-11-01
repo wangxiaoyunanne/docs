@@ -11,8 +11,6 @@ full_length: true
 ---
 # Scaling analysis for HIVE applications
 
-## Summary of Results
-
 The purpose of this study is to understand how the HIVE v0
 applications would scale out on multiple GPUs, with a focus on the
 DGX-1 platform. Before diving into per-application analysis, we give a
@@ -999,6 +997,7 @@ applications.
 
 ## Summary of Results
 
+
 | Application | Computation to communication ratio | Scalability | Implementation diff. |
 |-------------|----------------|------|------|
 | Louvain     | E/p : 2V       | Okay | Hard |
@@ -1050,3 +1049,5 @@ need to send out some data for each vertex or edge visit. As a result, the
 computation vs communication ratio is less than 1 (or 1 operation : 4 bytes).
 They are very hard to scale across multiple GPUs. Random walk is an typical
 example.
+
+#
