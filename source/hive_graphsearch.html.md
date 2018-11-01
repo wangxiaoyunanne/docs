@@ -10,9 +10,9 @@ search: true
 full_length: true
 ---
 
-# `GraphSearch`
+# GraphSearch
 
-The graph search (GS) workflow a walk-based method that searches a graph for nodes that score highly on some arbitrary indicator of interest.
+The graph search (GS) workflow is a walk-based method that searches a graph for nodes that score highly on some arbitrary indicator of interest.
 
 The use case given by the HIVE government partner was sampling a graph: given some seed nodes, and some model that can score a node as "interesting", find lots of "interesting" nodes as quickly as possible.  Their algorithm attempts to solve this problem by implementing several different strategies for walking the graph.
 
@@ -24,19 +24,19 @@ Use of these walk-based methods is motivated by the presence of homophily in man
 
 ## Summary of Results
 
-Graph search is relatively minor modification to Gunrock's random walk application, and was straightforward to implement.  Though random walks are a "worst case scenario" for GPU memory bandwidth, we still achieve 3-5x speedup over a modified version of the OpenMP reference implementation.   
+Graph search is a relatively minor modification to Gunrock's random walk application, and was straightforward to implement.  Though random walks are a "worst case scenario" for GPU memory bandwidth, we still achieve 3--5x speedup over a modified version of the OpenMP reference implementation.
 
 The original OpenMP reference implementation actually ran slower with more threads -- we fixed the bugs, but the benchmarking experience highlights the need for performant and hardened CPU baselines.
 
-Until recently, Gunrock did not support parallelism _within_ the lambda functions run by the `advance` operator, so neighbor selection for a given step in the walk is done sequentially.  Methods for exposing more parallism to the programmer are currently being developed via parallel neighbor reduce functions.
+Until recently, Gunrock did not support parallelism _within_ the lambda functions run by the `advance` operator, so neighbor selection for a given step in the walk is done sequentially.  Methods for exposing more parallelism to the programmer are currently being developed via parallel neighbor reduce functions.
 
 In an end-to-end graph search application, we'd need to implement the scoring function as well as the graph walk component.  For performance, we'd likely want to implement the scoring function on the GPU as well, which makes this a good example of a "Gunrock+X" app, where we'd need to integrate the high-performance graph processing component with arbitrary user code.
 
 ## Summary of Gunrock Implementation
 
-The scoring model can be an arbitrary function (eg of node metadata).  For example, if we were running GS on the Twitter friends/followers graph, the scoring model might be the output of a text classifier on each users' messages.  Thus, we do not implement the scoring model in our Gunrock implementation -- instead, we read scores from an input file and access them as necessary.
+The scoring model can be an arbitrary function (e.g., of node metadata).  For example, if we were running GS on the Twitter friends/followers graph, the scoring model might be the output of a text classifier on each users' messages.  Thus, we do not implement the scoring model in our Gunrock implementation -- instead, we read scores from an input file and access them as necessary.
 
-GS is a generalization of a random walk implementation, where there can be more variety in the transition function between nodes.  
+GS is a generalization of a random walk implementation, where there can be more variety in the transition function between nodes.
 
 The GS `uniform` mode is exactly a uniform random walk, so we can use the pre-existing Gunrock application.  Given a node, we compute the node to walk to as:
 
@@ -46,7 +46,7 @@ neighbors = graph.get_neighbors(node)
 next_node = neighbors[floor(r * len(neighbors))]
 ```
 
-Both the `GraphSearch` `greedy` and `stochastic_greedy` consist of small modifications to this transition function.  
+Both the `GraphSearch` `greedy` and `stochastic_greedy` consist of small modifications to this transition function.
 
 For `greedy`, we find the neighbor with maximum score:
 
@@ -61,7 +61,7 @@ for neighbor in neighbors:
         next_node_score = neighbor_score
 ```
 
-For `stochastic_greedy`, we sample neighbors proportional to their score -- eg:
+For `stochastic_greedy`, we sample neighbors proportional to their score -- e.g.:
 
 ```python
 sum_neighbor_scores = 0
@@ -133,12 +133,12 @@ python random-values.py 39 > chesapeake.values
 #### Example Output
 ```
 # ------------------------------------------------
-# uniform random 
+# uniform random
 
 Loading Matrix-market coordinate-formatted graph ...
 Reading from ../../dataset/small/chesapeake.mtx:
   Parsing MARKET COO format
- (39 nodes, 340 directed edges)... 
+ (39 nodes, 340 directed edges)...
 Done parsing (0 s).
   Converting 39 vertices, 340 directed edges ( ordered tuples) to CSR format...
 Done converting (0s).
@@ -181,7 +181,7 @@ Run 0 elapsed: 4.551888, #iterations = 10
 Loading Matrix-market coordinate-formatted graph ...
 Reading from ../../dataset/small/chesapeake.mtx:
   Parsing MARKET COO format
- (39 nodes, 340 directed edges)... 
+ (39 nodes, 340 directed edges)...
 Done parsing (0 s).
   Converting 39 vertices, 340 directed edges ( ordered tuples) to CSR format...
 Done converting (0s).
@@ -224,7 +224,7 @@ Run 0 elapsed: 0.695944, #iterations = 10
 
 #### Expected Output
 
-When run in `--verbose` mode, the app outputs the walks.  When run in `--quiet` mode, it outputs performance statistics (eg, total number of steps taken).  If running `greedy` `GraphSearch`, the app also outputs the results of a correctness check.  Correctness checks for `uniform` and `stochastic_greedy` are omitted because of their inherent stochasticity.
+When run in `--verbose` mode, the app outputs the walks.  When run in `--quiet` mode, it outputs performance statistics (e.g., total number of steps taken).  If running `greedy` `GraphSearch`, the app also outputs the results of a correctness check.  Correctness checks for `uniform` and `stochastic_greedy` are omitted because of their inherent stochasticity.
 
 ### Validation
 
@@ -238,15 +238,15 @@ Performance is measured by the runtime of the app, given
  - set of seed nodes (hardcoded to all nodes in `G`)
  - number of walks per seed
  - number of steps per walk
- - a transition function (eg `uniform|greedy|stochastic_greedy`)
+ - a transition function (e.g., `uniform|greedy|stochastic_greedy`)
 
 ### Implementation limitations
 
-The output of the random walk is a dense array of size `(# seeds) * (steps per walk) * (walks per seed)`.  When we have a large graph _or_ long walks _or_ multiple walks per seed, this array may exceed the size of GPU memory. 
+The output of the random walk is a dense array of size `(# seeds) * (steps per walk) * (walks per seed)`.  When we have a large graph _or_ long walks _or_ multiple walks per seed, this array may exceed the size of GPU memory.
 
 At the moment, we only support walks starting from _all_ of the nodes in `G`.  It would be straightforward to add a parameter that would allow the use to specify a smaller set of seed nodes.
 
-This app can only be used for graphs that have scores associated w/ each node.  In order to run benchmarks, if scores are not available we often assign uniformly random scores to nodes.  The distribution of these scores may effect the runtime of the algorithm by changing data access patterns -- we test on the provided Twitter dataset, but do not have a variety of other node attributed graphs to test on.  
+This app can only be used for graphs that have scores associated w/ each node.  In order to run benchmarks, if scores are not available we often assign uniformly random scores to nodes.  The distribution of these scores may affect the runtime of the algorithm by changing data access patterns -- we test on the provided Twitter dataset, but do not have a variety of other node attributed graphs to test on.
 
 ### Comparison against existing implementations
 
@@ -255,7 +255,7 @@ We measure runtime on the [HIVE graphsearch Twitter dataset](https://hiveprogram
 At a high level, the results show:
 
 | Variant           | OpenMP w/ 64 threads | Gunrock GPU | Gunrock Speedup |
-| ----------------- | -------------------- | ----------- | --------------- | 
+| ----------------- | -------------------- | ----------- | --------------- |
 | Directed greedy   | 236ms                | __64ms__    | 3.7x
 | Directed random   | 158ms                | __34ms__    | 4.6x
 | Undirected random | 3186ms               | __630ms__   | 5.0x
@@ -284,7 +284,7 @@ We run the PNNL OpenMP implementation on the Twitter graph w/ the following sett
  - `greedy` or `uniform` transition function
  - directed or undirected graph
 
-We omit the `greedy` undirected case because the algorithm gets stuck jumping between a local maximum and it's highest scoring neighbor.
+We omit the `greedy` undirected case because the algorithm gets stuck jumping between a local maximum and its highest-scoring neighbor.
 
 
 | threads | method | directed? | nseeds   | elapsed_sec | nsteps   | steps_per_sec |
@@ -304,12 +304,12 @@ We omit the `greedy` undirected case because the algorithm gets stuck jumping be
 | 32      | unif.  | yes       | 7199978  | 32.1057      | 13906144 | 433137     |
 | 64      | unif.  | yes       | 7199978  | 31.2754      | 13876284 | 443680     |
 | 1       | unif.  | no        | 100000   | __12.3982__  | 12700000 | __1.024+06__   |
-| 2       | unif.  | no        | 100000   | 19.7925      | 12700000 | 641658     | 
-| 4       | unif.  | no        | 100000   | 22.5432      | 12700000 | 563362     | 
+| 2       | unif.  | no        | 100000   | 19.7925      | 12700000 | 641658     |
+| 4       | unif.  | no        | 100000   | 22.5432      | 12700000 | 563362     |
 | 8       | unif.  | no        | 100000   | 26.1053      | 12700000 | 486491     |
 | 16      | unif.  | no        | 100000   | 28.275       | 12700000 | 449160     |
 | 32      | unif.  | no        | 100000   | 28.334       | 12700000 | 448224     |
-| 64      | unif.  | no        | 100000   | 28.7419      | 12700000 | 441864     | 
+| 64      | unif.  | no        | 100000   | 28.7419      | 12700000 | 441864     |
 
 <!--
 ```
@@ -351,7 +351,7 @@ threads | method | num_nodes | num_edges | num_seeds | seconds | num_steps | ste
 ```
 -->
 
-Note that we use fewer seesd for the undirected uniform case due to slow runtime.
+Note that we use fewer seeds for the undirected uniform case due to slow runtime.
 
 Observe that the `rand` modes have very bad scaling as a function of cores.  After investigation, this was due to two issues.  First, the neighbors were being sampled incorrectly, which led to chaotic behavior.  Second, the app was using a slow random number generator w/ an excessive number of seed resets.  We created a PR to fix those issues [here](https://gitlab.hiveprogram.com/pnnl/graphsearch/merge_requests/1).
 
@@ -374,12 +374,12 @@ After these fixes, runtimes were as follows:
 | 32      | unif.  | yes       | 7199978  | __0.155722__  | 13906144 | __1.06e+08__    |
 | 64      | unif.  | yes       | 7199978  | 0.158828      | 16537488 | 1.04e+08    |
 | 1       | unif.  | no        | 7199978  | 125.963       | 914397206 | 1.92e+08   |
-| 2       | unif.  | no        | 7199978  | 78.927        | 914397206 | 1.80e+08   | 
-| 4       | unif.  | no        | 7199978  | 39.7097       | 914397206 | 2.96e+08   | 
+| 2       | unif.  | no        | 7199978  | 78.927        | 914397206 | 1.80e+08   |
+| 4       | unif.  | no        | 7199978  | 39.7097       | 914397206 | 2.96e+08   |
 | 8       | unif.  | no        | 7199978  | 22.5195       | 914397206 | 6.35e+08   |
 | 16      | unif.  | no        | 7199978  | 11.0047       | 914397206 | 1.12e+09   |
 | 32      | unif.  | no        | 7199978  | 5.56317       | 914397206 | __1.85e+09__   |
-| 64      | unif.  | no        | 7199978  | __3.18615__   | 914397206 | 1.82e+09   | 
+| 64      | unif.  | no        | 7199978  | __3.18615__   | 914397206 | 1.82e+09   |
 
 <!--
 ```
@@ -409,7 +409,7 @@ After these fixes, runtimes were as follows:
 
 Note the improved runtimes and scaling.  These experiments were run with [this branch](https://gitlab.hiveprogram.com/bjohnson/graphsearch/tree/gunrock_test) at commit 6c25a0687eecebfd4393e86fa4c7308d5594b73d.
 
-All experiments conducted on the HIVE DGX-1.
+All experiments are conducted on the HIVE DGX-1.
 
 #### Gunrock GPU implementation
 
@@ -429,7 +429,7 @@ All experiments conducted on the HIVE DGX-1.
 Loading Matrix-market coordinate-formatted graph ...
 Reading from dir_gs_twitter.mtx:
   Parsing MARKET COO format
- (7199978 nodes, 21741663 directed edges)... 
+ (7199978 nodes, 21741663 directed edges)...
 Done parsing (7 s).
   Converting 7199978 vertices, 21741663 directed edges ( ordered tuples) to CSR format...
 Done converting (0s).
@@ -478,7 +478,7 @@ Validate_Results: total_steps_taken=16325873
 Loading Matrix-market coordinate-formatted graph ...
 Reading from dir_gs_twitter.mtx:
   Parsing MARKET COO format
- (7199978 nodes, 21741663 directed edges)... 
+ (7199978 nodes, 21741663 directed edges)...
 Done parsing (7 s).
   Converting 7199978 vertices, 21741663 directed edges ( ordered tuples) to CSR format...
 Done converting (1s).
@@ -528,7 +528,7 @@ Validate_Results: total_steps_taken=16530404
 Loading Matrix-market coordinate-formatted graph ...
 Reading from undir_gs_twitter.mtx:
   Parsing MARKET COO format
- (7199978 nodes, 43483326 directed edges)... 
+ (7199978 nodes, 43483326 directed edges)...
 Done parsing (7 s).
   Converting 7199978 vertices, 43483326 directed edges ( ordered tuples) to CSR format...
 Done converting (0s).
@@ -562,8 +562,8 @@ Validate_Results: total_steps_taken=914397206
 
 ### Performance limitations
 
-- For the undirected uniform settings, profiling shows that 79% of compute time is spent in the `ForAll` operator and 20% is spent in the `curand` random number generator.  Device memory bandwidth in the `ForAll` kernel is 193GB/s.
-- For the directed greedy settings, profiling shows that 99.5% of compute time is spent in the `ForAll` operator.  Device memory bandwidth in the `ForAll` kernel is 136GB/s.
+- For the undirected uniform settings, profiling shows that 79% of compute time is spent in the `ForAll` operator and 20% is spent in the `curand` random number generator.  Device memory bandwidth in the `ForAll` kernel is 193 GB/s.
+- For the directed greedy settings, profiling shows that 99.5% of compute time is spent in the `ForAll` operator.  Device memory bandwidth in the `ForAll` kernel is 136 GB/s.
 
 When we do a large number of walks and/or the length of each walk is very long, there may not be enough GPU memory to store all of the walks in memory.  For now, we expose the `--store-walks` parameter -- when this is set to zero, the walk is discarded as it is computed and only the length of the walk is stored.  A better solution that could be implemented in the future would be to move walks from GPU to CPU memory as they grow too large.
 
@@ -577,22 +577,22 @@ The size of the output array may become a significant bottleneck for large graph
 
 ### Gunrock implications
 
-For the `greedy` and `stochastic_greedy` transition function, we have to sequentially iterate over all of a node's neighbors.  Simple wrappers for computing eg. the maximum of node scores across all of a nodes neighbors could be helpful, both for ease of programming and performance.  Gunrock has a newly added `NeighborReduce` kernel that supports associative reductions -- it should be straightforward to implement (at least) the `greedy` transition function with this kernel.  The `stochastic_greedy` transition function would require a more complex reduction function along the lines of reservoir sampling.
+For the `greedy` and `stochastic_greedy` transition function, we have to sequentially iterate over all of a node's neighbors.  Simple wrappers for computing, e.g., the maximum of node scores across all of a node's neighbors could be helpful, both for ease of programming and performance.  Gunrock has a newly added `NeighborReduce` kernel that supports associative reductions -- it should be straightforward to implement (at least) the `greedy` transition function with this kernel.  The `stochastic_greedy` transition function would require a more complex reduction function along the lines of reservoir sampling.
 
 ### Notes on multi-GPU parallelization
 
 If the graph is small enough to be duplicated on each GPU, the implementation is trivial: just do a subset of the walks on each GPU.  The scalability will be perfect, as there is no communication involved at all.
 
-When the graph is distributed across multiple GPUs, we expect to have very poor scalability, as the ratio of computation to communication is very low.  A more detailed discussion is available [here](https://github.com/sgpyc/docs/blob/scaling/source/hive_scaling.html.md).
+When the graph is distributed across multiple GPUs, we expect to have very poor scalability, as the ratio of computation to communication is very low.  A more detailed discussion is available [here](hive_scaling.html).
 
 ### Notes on dynamic graphs
 
-This workflow does not have an explicit dynamic component. However, because steps only depend on the current node, the underlying graph could change as the walks.
+This workflow does not have an explicit dynamic component. However, because steps only depend on the current node, the underlying graph could change during the walks.
 
 ### Notes on larger datasets
 
-The random accesses inherent to graph search make it a particularly difficult workflow for larger than GPU memory datasets.  The most straightforward solution would be to let Unified Virtual Memory (UVM) in CUDA automatically handle memory movement, but we should expect to see a substantial reduction in performance.
+The random accesses inherent to graph search make it a particularly difficult workflow for larger-than-GPU memory datasets.  The most straightforward solution would be to let Unified Virtual Memory (UVM) in CUDA automatically handle memory movement, but we should expect to see a substantial reduction in performance.
 
 ### Notes on other pieces of this workload
 
-In real use cases, the scoring function would be computed lazily -- that is, we wouldn't have a precomputed array with scores for each of the nodes, and we would need to run the scoring function as the walk is running.  Thus, it would be critical for us to be able to call the scoring function from within Gunrock quickly and without excessive programmer overhead.  
+In real use cases, the scoring function would be computed lazily -- that is, we wouldn't have a precomputed array with scores for each of the nodes, and we would need to run the scoring function as the walk is running.  Thus, it would be critical for us to be able to call the scoring function from within Gunrock quickly and without excessive programmer overhead.
