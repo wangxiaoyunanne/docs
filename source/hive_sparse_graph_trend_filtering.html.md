@@ -12,20 +12,22 @@ full_length: true
 
 # Sparse Fused Lasso
 
-Given a graph where each vertex on the graph has a weight, _sparse fused lasso (SFL)_, also named _sparse graph trend filter (GTF)_, tries to learn a new weight for each vertex that is (1) sparse (most vertices have weight 0), (2) close to the original weight in the l2 norm, and (3) close to its neighbors' weight(s) in the l1 norm. This algorithm is usually used in main trend filtering (denoising). The loss function is `0.5 * sum((y' - y)^2) + lambda1 * sum(abs(y_i' - y_j')) + lambda2 * sum(abs(yi'))`, where `y` is the input weight (observation) for each vertex and `y'` (fitted weight) is the new weight for each vertex. For example, an image (grid graph) with noisy pixels can be filtered with this algorithm to get a new image without the noisy pixels, which are "smoothed out" by its neighbors.
+Given a graph where each vertex on the graph has a weight, _sparse fused lasso (SFL)_, also named _sparse graph trend filter (GTF)_, tries to learn a new weight for each vertex that is (1) sparse (most vertices have weight 0), (2) close to the original weight in the l2 norm, and (3) close to its neighbors' weight(s) in the l1 norm. This algorithm is usually used in main trend filtering (denoising). For example, an image (grid graph) with noisy pixels can be filtered with this algorithm to get a new image without the noisy pixels, which are "smoothed out" by its neighbors.
 <https://arxiv.org/abs/1410.7690>
 
 ## Summary of Results
 
 The SFL problem is mainly divided into two parts, computing residual graphs from maxflow and renormalizing the weights of the vertices. Maxflow is parallelizable with the push-relabel algorithm, so we adopt this algorithm in Gunrock's implementation. Moreover, each vertex has its own work to compute which communities it belongs to, and normalize the weights with other vertices in the same community. This renormalization requires global synchronization. SFL iterates by calling maxflow and renormalization several times before it converges. We notice that the overall runtime is mostly spent in maxflow, and thus improving the maxflow implementation will bring substantial speedup in the SFL.
 
-Because of the current state of our maxflow implementation, we notice a 30x slowdown of Gunrock's GPU SFL with respect to the benchmark implementation. Some limitations lead to this slowdown, including (1) substantial extra memory transfers between the CPU and GPU because of maxflow's relabeling heuristics (2) maxflow's preprocessing poor iteration boundary of min-cut on GPU, and (3) a serial implementation of renormalization. These problems could be addressed  in a future version of SFL.
+Because of the current state of our maxflow implementation, we notice a 30x slowdown of Gunrock's GPU SFL with respect to the benchmark implementation. Some limitations lead to this slowdown, including (1) substantial extra memory transfers between the CPU and GPU because of maxflow's relabeling heuristics and (2) a currently serial SFL renormalization. These problems could be addressed  in a future version of SFL.
 
 ## Summary of Gunrock Implementation
 
-The input graph is specified in two files. The first file contains the original vertices' weights and the second file contains the directed graph connectivity without weights (edge pairs only). These two files and a edge_regularization_strength (`lambda1`) of the directed graph edge weights are the input to preprocessing. Two extra nodes, source and sink, are added to the original graph as well. They serve as two "labels" of different segments on the graph. This results in a graph where edges that connect to the source or sink have edge-weights as in the `vertices' weights` file, and the other edges are assigned an edge weight of `lambda1`.
+The loss function is `0.5 * sum((y' - y)^2) + lambda1 * sum(abs(y_i' - y_j')) + lambda2 * sum(abs(yi'))`, where `y` is the input weight (observation) for each vertex and `y'` (fitted weight) is the new weight for each vertex. Lambda1 and Lambda2 are required parameters to process the graph in SFL.
 
-The Gunrock implementation of this application has two parts. The first part is the maxflow algorithm. We choose a push-relabel maxflow formulation, which is well-suited for parallelization on a GPU with Gunrock. Computing a valid maxflow also implies a solution to the mincut problem, which is a segmentation of a graph into two pieces where the division is across a set of edges with the minimum possible weights. The output of this maxflow algorithm is (1) a residual graph where each edge weight is computed as `capacity - edge_flow`, and (2) a Boolean array that marks which nodes are reachable from the source after the mincut.
+The input graph is specified in two files. The first file contains the original vertices' weights and the second file contains the directed graph connectivity without weights (edge pairs only). These two files and a edge_regularization_strength (`lambda1`) of the directed graph edge weights are the input to preprocessing. Two extra vertices, source and sink, are added to the original graph as well. They serve as two "labels" of different segments on the graph. This results in a graph where edges that connect to the source or sink have edge-weights as in the `vertices' weights` file, and the other edges are assigned an edge weight of `lambda1`.
+
+The Gunrock implementation of this application has two parts. The first part is the maxflow algorithm. We choose a push-relabel maxflow formulation, which is well-suited for parallelization on a GPU with Gunrock. Computing a valid maxflow also implies a solution to the mincut problem, which is a segmentation of a graph into two pieces where the division is across a set of edges with the minimum possible weights. The output of this maxflow algorithm is (1) a residual graph where each edge weight is computed as `capacity - edge_flow`, and (2) a Boolean array that marks which vertices are reachable from the source after the mincut.
 
 The second part is a renormalization of the residual graph and clustering based on reachability of the vertex. The renormalization is a process where (1) averages of the new weights of vertices that are grouped together as communities are computed, and (2) the new weights then subtract their own community averages. After the renormalization is done, this renormalized residual graph is passed into the maxflow again. Several iterations of maxflow then renormalization are needed before the new weights of different communities converge because vertices can be reassigned to different communities. In each of the SFL iterations, two non-overlapped subgraphs will be generated by maxflow/mincut, and thus the big communities in the last SFL iteration will have split into small communities. The vertices in a specific community will have the same new weights assigned to them.
 
@@ -80,10 +82,14 @@ for iteration till converge:
             if edge[vertex->sink] < 0
                 swap(edge[source->vertex], -edge[vertex->sink])
 
-# Part 3
-Sparsify community_accus by lambda2
+# Part 3 Sparsify community_accus by lambda2
+for i in len(each community_accus)
+    if community_accus < 0:
+        community_accus[i] = min(community_accus[i] + lambda2, 0)
+    else:
+        community_accus[i] = max(community_accus[i] - lambda2, 0)
 
-output: community_accus
+return community_accus
 ```
 
 
@@ -223,7 +229,7 @@ We measure the runtime and loss function `0.5 * sum((y' - y)^2) + lambda1 * sum(
 
 ### Implementation limitations
 
-The time is mostly spent on maxflow computation. Each iteration of the SFL calls a maxflow. For a 8922-vertex, 20349-edge dataset, the time spent on maxflow vs. the rest of the SFL post-processing is around 20:1 per iteration. The maxflow implementation has room for further optimization; we expect to have shorter runtimes on maxflow in the future. We only implement serial SFL renormalization (second part) for correctness purposes. If the graph is larger, we expect the ratio between maxflow (first part) and SFL renormalization (second part) will be lower, because the runtime of the renormalization is serial.
+The time is mostly spent on maxflow computation. Each iteration of the SFL calls a maxflow. For a 8922-vertex, 20349-edge dataset, the time spent on maxflow vs. the rest of the SFL post-processing is around 20:1 per iteration. The maxflow implementation has room for further optimization; we expect to have shorter runtimes on maxflow in the future. We only implement SFL renormalization serially (second part) for correctness purposes. If the graph is larger, we expect the ratio between maxflow (first part) and SFL renormalization (second part) will be lower, because the runtime of the current renormalization is serial.
 
 ### Comparison against existing implementations
 Graphtv is an official implementation of sparse fused lasso algorithm with a parametric maxflow backend. It is a CPU serial implementation <https://www.cs.ucsb.edu/~yuxiangw/codes/gtf_code.zip>. The Gunrock GPU runtime is measured between the application enactor and it is an output of the application.
@@ -246,15 +252,15 @@ Graphtv is an official implementation of sparse fused lasso algorithm with a par
 
 We observe a slowdown when we compare Graphtv and Gunrock's current SFL implementation on the `NY Taxi-small` dataset with time from `2011-06-26 12:00:00` to `2011-06-26 14:00:00` for the following reasons:
 
-1. It seems we are only running it on a small graph successfully (~9000 nodes), which is not enough to saturate the GPU at all. This only applies to this dataset.
+1. It seems we are only running it on a small graph successfully (~9000 vertices), which is not enough to saturate the GPU at all. This only applies to this dataset.
 2. The bottleneck is still the MF implementation.
     1. A preflow computation on the CPU in the problem.reset() requires a for-loop of `src.edges` and a Move operation (very costly) from GPU to CPU every time MF is called.
     2. Its relabeling heuristics are also on the CPU, so in every iteration it needs to move the flow and heights back to CPU and do this relabeling for a certain number of iterations.
     3. There are device syncs calls between all of these operations, as well as slow, global barriers.
 3. We also have iteration boundaries right now (like BC) to perform MinCut on the GPU.
-4. The SLF renormalization is serial.
+4. The current renormalization is serial.
 
-We expect the above problems to be solved with future implementations of Maxflow.
+We expect the above problems to be solved with future implementations of maxflow.
 
 ## Next Steps
 
@@ -264,7 +270,7 @@ For CPU, the parametric maxflow algorithm works well, but it is not parallelizab
 
 ### Gunrock implications
 
-SFL is the first algorithm that stacks previous applications. Some data pre-processing that is common to execute in the CPU requires better designs of the APIs which will facilitate new applications. For example, `gtf_enactor` needs to call `mf_problem.reset()`. Since the current maxflow code does not have any preprocessing of the graph on GPU, SFL has to transfer the data back and forth between CPU and GPU and SRL requires unnecessary arrays to store the Maxflow input arrays. The preferred implementation does maxflow preprocessing on the GPU.
+SFL is the first algorithm that stacks previous applications. Some data pre-processing that is common to execute in the CPU requires better designs of the APIs which will facilitate new applications. For example, `gtf_enactor` needs to call `mf_problem.reset()`. Since the current maxflow code does not have any preprocessing of the graph on GPU, SFL has to transfer the data back and forth between CPU and GPU and SRL requires unnecessary arrays to store the maxflow input arrays. The preferred implementation does maxflow preprocessing on the GPU.
 
 Moreover, a unit test framework would be very helpful for development. If we don't do unit tests on important functions, it is hard to track the problems and discover simple, avoidable but missing test cases, such as comparison between two double values in SFL. A mockito test framework may be appropriate. http://www.vogella.com/tutorials/Mockito/article.html
 
@@ -274,19 +280,24 @@ Moreover, a unit test framework would be very helpful for development. If we don
 >
 > Can the dataset be effectively divided across multiple GPUs, or must it be replicated?
 
+The SFL renormalization should be able to parallelized accross different GPU easily, because it is array operations only. However, extra data transfer is needed if the graph is not copied across multiple GPUs.
+
+
 ### Notes on dynamic graphs
 
 (Only if appropriate)
 
-> Does this workload have a dynamic-graph component? If so, what are the implications of that? How would your implementation change? What support would Gunrock need to add?
+SFL is hard to work on dynamic graphs, which will change the topology of the graph. Maxflow values will be different when vertices are added or removed from the graph.
 
 ### Notes on larger datasets
 
 > What if the dataset was larger than can fit into GPU memory or the aggregate GPU memory of multiple GPUs on a node? What implications would that have on performance? What support would Gunrock need to add?
 
+SFL renormalization can be done without having its temporary arrays on the same GPU, but extra communication costs are needed, if these arrays are on different GPU memory. No specific support would Gunrock need to add to fulfill SFL renormalization on larger dataset.  
+
 ### Notes on other pieces of this workload
 
-> Briefly: What are the important other (non-graph) pieces of this workload? Any thoughts on how we might implement them / what existing approaches/libraries might implement them?
+Currently there is no GPU library that deals with the SFL renormalization.
 
 ### Research opportunities
 
