@@ -35,14 +35,14 @@ The outputs will be the normalized values assigned to each vertex.
 
 Lastly, these values will be passed into a soft-threshold function with `lambda2` to achieve the sparse representation by dropping the small absolute values. More specifically, the new weight will be subtracted by `lambda2` if the new weight is positive and larger than `lambda2`, or added by `lambda2` if the new weight is negative and smaller than `-lambda2`. If the new weight is in between `-lambda2` to `lambda2`, then the new weights will be 0.
 
-Pseudocode for the core SFL algorithm is as follows (simplified version):
+Pseudocode for the core SFL algorithm is as follows:
 
 ```
 Load the graph and normalize edge weights
 
-for iteration till converge:
+Repeat iteration till convergence:
 
-    # First part: Maxflow
+    // First part: Maxflow
     // Push phase
     For each local vertex v:
         If (excess[v] <= 0) continue
@@ -53,70 +53,67 @@ for iteration till converge:
             move := min(capacity[e] - flow[e], excess[v])
             excess[v] -= move
             flow[e] += move
-            Send <reverse[e], move> to host_GPU(u);
-            If (excess[v] <= 0)
-                break for each e loop;For each received <e, move> pair:
-        flow[e] -= move;
-        excess[Dest(e)] += move;// Relabel phase
+            excess[u] += move
+            flow[reverse[e]] -= move
 
+    // Relabel phase
     For each local vertex v:
         If (excess[v] <= 0) continue
         min_height := infinity
         For each e<v, u> of v:
             If (capacity[e] <= flow[e]) continue;
-            If (min_height > height[u])
-           min_height = height[u]
+            If (min_height > height[u]) min_height := height[u]
         If (height[v] <= min_height)
            height[v] := min_height + 1
 
-    Broadcast height[v] for all local vertex
+    // Min-cut
+    Run a BFS to mark the accessibilities of vertices from the source vertex in the residue graph
 
-    return boolean reachability array and residual graph
+    // Second part: renormalization
+    // Reset available community
+    For each community comm:
+        community_weights[comm] := 0
+        community_sizes  [comm] := 0
+        next_communities [comm] := 0
 
-
-    # Second part: Reset available community
-    for comm till num_comms
-        community_weights[comm] = 0
-        community_sizes  [comm] = 0
-        next_communities [comm] = 0
-
-    # Second part (1): Accumulate the weights and count the number of vertices belong to the communities
-    for vertex in the graph
-        if vertex accessible from the source
-            comm = next_communities[curr_communities[vertex]];
-                if comm == 0
-                    update comm
+    // Accumulate the weights and count the number of vertices belong to the communities
+    For each vertex v:
+        If v is accessible from the source
+            comm := next_communities[curr_communities[v]];
+            If (comm == 0) update comm
             community_sizes[comm]++
-            community_weights[comm] += weight between source and this current vertex
-        else
-            community_weights[comm] -= weight between vertex and this sink
+            community_weights[comm] += weight[source -> v]
+        Else
+            community_weights[comm] -= weight[v -> sink]
             community_sizes [comm] ++
 
-    # Second part (2): Normalize community
-    for comm in num_communities
+    // Normalize community
+    For each community comm:
         community_weights[comm] /= community_sizes[comm]
         community_accus [comm] += community_weights[comm]
 
-    # Update the residual graph
-    for vertex in the graph
-        comm = curr_communities[vertex]
-        if vertex is reachable from the source
-            edge[source->vertex] -= community_weights[comm]
-            if edge[source->vertex] < 0
-                swap(-edge[source->vertex], edge[vertex->sink])
-        else
-            edge[vertex->sink] += community_weights[comm]
-            if edge[vertex->sink] < 0
-                swap(edge[source->vertex], -edge[vertex->sink])
+    // Update the residual graph
+    For each vertex v:
+        comm = curr_communities[v]
+        If (v is accessible from the source):
+            weight[source->v] -= community_weights[comm]
+            If (weight[source->v] < 0):
+                Swap(-weight[source->v], weight[v->sink])
+        Else
+            weight[v->sink] += community_weights[comm]
+            If (weight[v->sink] < 0):
+                Swap(weight[source->v], -weight[v->sink])
 
-# Part 3 Sparsify community_accus by lambda2
-for i in len(each community_accus)
-    if community_accus < 0:
-        community_accus[i] = min(community_accus[i] + lambda2, 0)
-    else:
-        community_accus[i] = max(community_accus[i] - lambda2, 0)
+    // End of Repeats
 
-return community_accus
+// Part 3 Sparsify community_accus by lambda2
+For i in len(each community_accus):
+    If (community_accus < 0):
+        community_accus[i] := min(community_accus[i] + lambda2, 0)
+    Else:
+        community_accus[i] := max(community_accus[i] - lambda2, 0)
+
+Return community_accus
 ```
 
 
@@ -126,7 +123,7 @@ return community_accus
 
 CUDA should have been installed; `$PATH` and `$LD_LIBRARY_PATH` should have been
 set correctly to use CUDA. The current Gunrock configuration assumes boost
-(1.58.0 or 1.59.0) and metis are installed; if not, changes need to be made in
+(1.58.0 or 1.59.0) and Metis are installed; if not, changes need to be made in
 the Makefiles. DARPA's DGX-1 has both installed when the tests are performed.
 
 ```shell
@@ -266,8 +263,6 @@ We measure the runtime and loss function `0.5 * sum((y' - y)^2) + lambda1 * sum(
 
 ### Implementation limitations
 
-More specifically, maxflow analysis is as follows:
-
 - **Memory usage** Each edge in the graph needs at least 20 bytes of GPU device memory: 64 bits for the capacity value, 64 bits for the flow value, 16 bits for the index of the reverse edge. Each node in the graph needs at least 16 bytes of GPU device memory: 64 bits for the excess value, 16 bits for the height value and 16 bits for the index of the lowest neighbor.
 
 - **Data type** For edges we have the following arrays: capacity, flow, reverse. For nodes we have the following arrays: height, excess, lowest_neighbor. Capacity, flow and excess arrays and all computation around them are double-precision floating point values (64-bit `double` in C/C++). We use epsilon value equals 1e-6 to comparing floating point number to zero. Reverse, height and lowest_neighbor arrays and all computation around them are 32-bit integer values.
@@ -275,7 +270,7 @@ More specifically, maxflow analysis is as follows:
 ### Comparison against existing implementations
 Graphtv is an official implementation of sparse fused lasso algorithm with a parametric maxflow backend. It is a CPU serial implementation <https://www.cs.ucsb.edu/~yuxiangw/codes/gtf_code.zip>. The Gunrock GPU runtime is measured between the application enactor and it is an output of the application.
 
-| DataSet | time starts | time ends | #E | #V | graphtv runtime | Gunrock GPU runtime |
+| DataSet | time starts | time ends | #E | #V | Graphtv runtime | Gunrock GPU runtime |
 |-------------- |---------------------|--------------------|----------|----------|------| ---|
 | NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 0.11s |  *3.23s |
 | NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | 8.71s | |
@@ -328,20 +323,17 @@ worse than larger graphs.
 
 ### Alternate approaches
 
-For CPU, the parametric maxflow algorithm works well, but it is not parallelizable to GPU. The push-relabel algorithm we have on Gunrock's maxflow should be the best implementation among the parallelizable algorithms on GPU.
+For CPU, the parametric maxflow algorithm works well, but it is not parallelizable to GPU. The push-relabel algorithm is the best candidate for parallel implementation, but some more optimizations are needed to get good running time on GPU.
 
 ### Gunrock implications
 
-SFL is the first algorithm that stacks previous applications. Some data pre-processing that is common to execute in the CPU requires better designs of the APIs which will facilitate new applications. For example, `gtf_enactor` needs to call `mf_problem.reset()`. Since the current maxflow code does not have any preprocessing of the graph on GPU, SFL has to transfer the data back and forth between CPU and GPU and SRL requires unnecessary arrays to store the maxflow input arrays. The preferred implementation does maxflow preprocessing on the GPU.
-
-Moreover, a unit test framework would be very helpful for development. If we don't do unit tests on important functions, it is hard to track the problems and discover simple, avoidable but missing test cases, such as comparison between two double values in SFL. A mockito test framework may be appropriate. http://www.vogella.com/tutorials/Mockito/article.html
+SFL is the first application in Gunrock that calls another application (maxflow). Some common data pre-processing on the CPU requires better designs of the APIs to facilitate this usage. For example, `gtf_enactor` needs to call `mf_problem.reset()`, but because the current maxflow code uses CPU to preprocess the graph, SFL has to transfer the data back and forth between CPU and GPU. Using GPU to preprocess the graph for maxflow would be more preferable.
 
 ### Notes on multi-GPU parallelization
 
-To parallelize the push relabel algorithm accross multiple GPUs all arrays related to the graph have to be stored in the GPU number of copies (one per GPU). Moreover, the GPUs have to update the data of the neighborhood in the subgraph that they share. As the algorithm needs to store at least 3 arrays of size O(|E|) and 3 arrays of size O(|V|) per graph then coping and merging data fast between GPUs is the challenge.
+To parallelize the push-relabel algorithm across multiple GPUs, all arrays related to the graph have to be stored on each GPU. Moreover, the GPUs have to update their adjacent neighbors' data. Because the push-relabel algorithm needs to store at least three arrays of size O(|E|) and three arrays of size O(|V|), communicating so much data efficiently between GPUs is challenging.
 
-The SFL renormalization should be able to parallelized accross different GPU easily, because it is array operations only. However, extra data transfer is needed if the graph is not copied across multiple GPUs.
-
+The SFL renormalization should be able to parallelized across different GPU easily, because it is array operations only. However, extra data transfer is needed if the graph is not copied across multiple GPUs.
 
 ### Notes on dynamic graphs
 
