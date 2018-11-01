@@ -19,7 +19,7 @@ Given a graph where each vertex on the graph has a weight, _sparse fused lasso (
 
 The SFL problem is mainly divided into two parts, computing residual graphs from maxflow and renormalizing the weights of the vertices. Maxflow is parallelizable with the push-relabel algorithm, so we adopt this algorithm in Gunrock's implementation. Moreover, each vertex has its own work to compute which communities it belongs to, and normalize the weights with other vertices in the same community. This renormalization requires global synchronization. SFL iterates by calling maxflow and renormalization several times before it converges. We notice that the overall runtime is mostly spent in maxflow, and thus improving the maxflow implementation will bring substantial speedup in the SFL.
 
-Because of the current state of our maxflow implementation, we notice a 30x slowdown of Gunrock's GPU SFL with respect to the benchmark implementation. This slowdown is mainly caused the parallel push-relabel implementation taking too many iterations to converge, and making SFL kernel launching overhead bound. We are looking into algorithmic optimizations to reduce the number of iterations maxflow takes, and also engineering optimizations to reduce the effects of kernel overheads in computation time.
+Because of the current state of our maxflow implementation, we notice a 30x slowdown of Gunrock's GPU SFL with respect to the benchmark implementation. This slowdown is mainly caused by the parallel push-relabel implementation taking too many iterations to converge, and making SFL kernel launching overhead-bound. We are looking into algorithmic optimizations to reduce the number of iterations maxflow takes, and also engineering optimizations to reduce the effects of kernel overheads in computation time.
 
 ## Summary of Gunrock Implementation
 
@@ -67,7 +67,8 @@ Repeat iteration till convergence:
            height[v] := min_height + 1
 
     // Min-cut
-    Run a BFS to mark the accessibilities of vertices from the source vertex in the residue graph
+    Run a BFS to mark the accessibilities of vertices from the source vertex
+    in the residue graph
 
     // Second part: renormalization
     // Reset available community
@@ -265,20 +266,20 @@ We measure the runtime and loss function `0.5 * sum((y' - y)^2) + lambda1 * sum(
 
 - **Memory usage** Each edge in the graph needs at least 20 bytes of GPU device memory: 64 bits for the capacity value, 64 bits for the flow value, 16 bits for the index of the reverse edge. Each node in the graph needs at least 16 bytes of GPU device memory: 64 bits for the excess value, 16 bits for the height value and 16 bits for the index of the lowest neighbor.
 
-- **Data type** For edges we have the following arrays: capacity, flow, reverse. For nodes we have the following arrays: height, excess, lowest_neighbor. Capacity, flow and excess arrays and all computation around them are double-precision floating point values (64-bit `double` in C/C++). We use epsilon value equals 1e-6 to comparing floating point number to zero. Reverse, height and lowest_neighbor arrays and all computation around them are 32-bit integer values.
+- **Data type** For edges we have the following arrays: capacity, flow, reverse. For nodes we have the following arrays: height, excess, lowest_neighbor. Capacity, flow and excess arrays and all computation around them are double-precision floating point values (64-bit `double` in C/C++). We use an epsilon value of 1e-6 to compare floating-point numbers to zero. Reverse, height, and lowest_neighbor arrays and all computation around them are 32-bit integer values.
 
 ### Comparison against existing implementations
-Graphtv is an official implementation of sparse fused lasso algorithm with a parametric maxflow backend. It is a CPU serial implementation <https://www.cs.ucsb.edu/~yuxiangw/codes/gtf_code.zip>. The Gunrock GPU runtime is measured between the application enactor and it is an output of the application.
+Graphtv is an official implementation of the sparse fused lasso algorithm with a parametric maxflow backend. It is a CPU serial implementation <https://www.cs.ucsb.edu/~yuxiangw/codes/gtf_code.zip>. The Gunrock GPU runtime is measured between the application enactor and it is an output of the application.
 
 | DataSet | time starts | time ends | #E | #V | Graphtv runtime | Gunrock GPU runtime |
-|-------------- |---------------------|--------------------|----------|----------|------| ---|
-| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 0.11s |  *3.23s |
+|--------------|---------------------|--------------------|----------|----------|------|---|
+| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 0.11s |  3.23s* |
 | NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | 8.71s | |
 | NY Taxi-1M | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211 | 213360 | 103.62s |  |
 
 | DataSet | time starts | time ends | #E | #V | Graphtv loss | Gunrock GPU loss |
-|-------------- |---------------------|--------------------|----------|----------|-------------------| -------------------|
-| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 132789.32 | *132789.32 |
+|--------------|---------------------|--------------------|----------|----------|-------------------|-------------------|
+| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 132789.32 | 132789.32* |
 | NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | |                     |
 | NY Taxi-1M | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211 | 213360 | |                     |
 
@@ -298,57 +299,56 @@ seconds on CPU.
 - The large number of iterations is very harmful to the computation speed of our
 GPU implementation, because of the kernel launching overhead. In fact, profiling
 shows the computation kernels only takes about 20% of MF's computation time, and
-the rest 80% is taken by the overheads. Since maxflow takes up about 95% of SFL's
-computation time, this makes SFL kernel launching overhead bound. We are looking
+the rest (80%) is overhead. Since maxflow takes up about 95% of SFL's
+computation time, this makes SFL kernel launching overhead-bound. We are looking
 at optimizations to cut down the number of iterations, such as the one described
 by Bo Hong in "A Lock-free Multi-threaded Algorithm for the Maximum Flow Problem"
 <http://people.cs.ksu.edu/~wls77/weston/projects/cis598/hong.pdf>.
 
-- This dataset with ~9k vertices and ~20k edges are too small to fully utilize
-the computing power of GPU. It makes the kernel launching overhead issue much
-worse than larger graphs.
+- This dataset with ~9k vertices and ~20k edges is too small to fill the GPU. It makes the kernel launching overhead issue much
+worse than it would with larger graphs.
 
 - There are some engineering limitations in our current implementation:
 
-    1. The relabeling heuristics in maxflow is performed on CPU; although it only
-    runs once per 100 iterations, the data movement takes up time.
+    1. The relabeling heuristics in maxflow are performed on the CPU; although they only
+    run once per 100 iterations, the data movement takes up time.
 
     2. The current min-cut finding and renormalization are serial on GPU (i.e.
-    only uses a single thread to perform the computation).
+    only use a single thread to perform the computation).
 
     We will improve on these issues when the number of iterations is reduced,
-    which has much larger impact in the computation speed.
+    which has a much larger impact on computation time.
 
 ## Next Steps
 
 ### Alternate approaches
 
-For CPU, the parametric maxflow algorithm works well, but it is not parallelizable to GPU. The push-relabel algorithm is the best candidate for parallel implementation, but some more optimizations are needed to get good running time on GPU.
+For CPU, the parametric maxflow algorithm works well, but it is not parallelizable to GPU. The push-relabel algorithm is the best candidate for parallel implementation, but more optimizations are needed to get good running times on a GPU.
 
 ### Gunrock implications
 
-SFL is the first application in Gunrock that calls another application (maxflow). Some common data pre-processing on the CPU requires better designs of the APIs to facilitate this usage. For example, `gtf_enactor` needs to call `mf_problem.reset()`, but because the current maxflow code uses CPU to preprocess the graph, SFL has to transfer the data back and forth between CPU and GPU. Using GPU to preprocess the graph for maxflow would be more preferable.
+SFL is the first application in Gunrock that calls another application (maxflow). Some common data pre-processing on the CPU requires better designs of the APIs to facilitate this usage. For example, `gtf_enactor` needs to call `mf_problem.reset()`, but because the current maxflow code uses CPU to preprocess the graph, SFL has to transfer the data back and forth between CPU and GPU. Using GPU to preprocess the graph for maxflow would be preferable.
 
 ### Notes on multi-GPU parallelization
 
 To parallelize the push-relabel algorithm across multiple GPUs, all arrays related to the graph have to be stored on each GPU. Moreover, the GPUs have to update their adjacent neighbors' data. Because the push-relabel algorithm needs to store at least three arrays of size O(|E|) and three arrays of size O(|V|), communicating so much data efficiently between GPUs is challenging.
 
-The SFL renormalization should be able to parallelized across different GPU easily, because it is array operations only. However, extra data transfer is needed if the graph is not copied across multiple GPUs.
+The SFL renormalization should be able to be easily parallelized across different GPUs, because it is array operations only. However, extra data transfer is necessary if the graph is not copied across multiple GPUs.
 
 ### Notes on dynamic graphs
 
-Push relabel is not directly related to dynamic graphs. But it should be able to run on a dynamic graph, provided the source and the sink are given at the beginning of algorithm and the way to access all the nodes and the edges is the same. Capacities of edges from the previous graph can be used as a good starting point, if the edges and the nodes ids are consistent and the graph is not dramatically changed.
+Push relabel is not directly related to dynamic graphs. But it should be able to run on a dynamic graph, provided the source and the sink are given at the beginning of the algorithm and the way to access all the nodes and the edges is the same. Capacities of edges from the previous graph can be used as a good starting point, if the edges and the node ids are consistent and the graph is not dramatically changed.
 
-However, SFL is hard to work on dynamic graphs, which will change the topology of the graph. The residual graph includes a swapping edge value (see pseudocode above) and we need to know the how the new graph will be in order to allocate enough memory space for the new edges and vertices.
+However, SFL would be a significant challenge with dynamic graphs (the topology of the graph would change). The residual graph includes a swapping edge value (see pseudocode above) and we need to know characteristics of the new graph in order to allocate enough memory space for the new edges and vertices.
 
 ### Notes on larger datasets
 
-SFL renormalization can be done without having its temporary arrays on the same GPU, but extra communication costs are needed, if these arrays are on different GPU memory. No specific support would Gunrock need to add to fulfill SFL renormalization on larger dataset.  
+SFL renormalization can be done without having its temporary arrays on the same GPU, but extra communication costs are needed, if these arrays are in different GPU memories. Gunrock needs no specific new support to support SFL renormalization on larger datasets.
 
 ### Notes on other pieces of this workload
 
-Currently there is no GPU library that deals with the SFL renormalization.
+Currently there is no GPU library that addresses SFL renormalization.
 
 ### Research opportunities
 
-Prof. Sharpnack indicates that this implementation could be generalized to multi-graph fused lasso. The idea is to set multiple edge values for the edges connecting to source/sink, while keeping the graph topology and edge values (lambda1) for the edges in the original graph (excluding source and sink) the same.
+Prof. Sharpnack indicates that this implementation could be generalized to multi-graph fused lasso. The idea is to set multiple edge values for the edges connecting to source/sink, while keeping the graph topology and edge values (`lambda1`) for the edges in the original graph (excluding source and sink) the same.
