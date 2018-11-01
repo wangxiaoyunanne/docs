@@ -588,19 +588,19 @@ outside of Gunrock, provided by TensorFlow, PyTorch or other machine learning
 libraries. How to connect the training with the Gunrock GPU implementation is
 the main task for this workload going forward.
 
-### Research potentials
+### Research potential
 
 The GPU implementation of the embedding part runs a lot faster than on the CPU,
-and hits a few GPU hardware limitations. It should compatible running speed
-when comparing to other GPU implementations.
-But it's only useful as a part the whole workload and achieves comparable
+and hits a few GPU hardware limitations. It should have comparable runtime
+to other GPU implementations.
+But it's only useful as a part of the whole workload and achieves comparable
 prediction accuracy as conventional / reference implementations.
 
-An interesting question raised from the GraphSAGE GPU implementation is that,
-whether it is useful to expose the block level parallelism to higher level
-programming, and if yes, how to do that. It's clear that working at block level
-provides benefices, such as the ability to use block level primitives like scan
-and reduce. But it also comes with costs: requiring the programmer to have
-knowledges about the GPU hardware is the most important one. It also reduces the
-portability of the implementation, because the two level parallelism may not
+An interesting question raised from the GraphSAGE GPU implementation is
+whether it is useful to expose block-level parallelism to higher-level
+programming models/APIs, and if so, how to do that. It's clear that working at the block level
+provides benefits, such as the ability to use block-level primitives like scan
+and reduce. But it also comes with costs, most importantly, requiring the programmer to have
+knowledge about the GPU hardware. It also reduces the
+portability of the implementation, because two-level parallelism may not
 exist on other processors.

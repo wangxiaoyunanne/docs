@@ -53,7 +53,7 @@ Until recently, Gunrock did not support parallelism _within_ the lambda function
 
 In an end-to-end graph search application, we'd need to implement the scoring function as well as the graph walk component.  For performance, we'd likely want to implement the scoring function on the GPU as well, which makes this a good example of a "Gunrock+X" app, where we'd need to integrate the high-performance graph processing component with arbitrary user code.
 
-**[Community Detection (Louvain)](https://gunrock.github.io/docs/hive_louvain.html)** The Gunrock uses sort and segmented reduce to implement the
+**[Community Detection (Louvain)](https://gunrock.github.io/docs/hive_louvain.html)** The Gunrock implementation uses sort and segmented reduce to implement the
 Louvain algorithm, different from the commonly used hash table mapping. The GPU
 implementation is about ~1.5X faster than the OpenMP implementation, and also
 faster than previous GPU works. It is still unknown whether the sort and
