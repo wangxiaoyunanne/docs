@@ -231,6 +231,7 @@ requiring the associative arrays.
 
 The outputs are in the `sage` directory; look for the .txt files. An example is
 shown below for the `pokec` dataset:
+
 ```
 Loading Matrix-market coordinate-formatted graph ...
   ... Loading progress ...
@@ -255,9 +256,9 @@ Degree Histogram (1632803 vertices, 44603928 edges):
 ==============================================
  feature-column=64 num-children-per-source=10 num-leafs-per-child=-1
 Computing reference value ...
-__________________________
+==============================================
 rand-seed = 1540498523
---------------------------
+==============================================
 CPU Reference elapsed: 25242.941406 ms.
 Embedding validation: PASS
 ==============================================
@@ -270,12 +271,12 @@ Using randomly generated features
 Using advance mode LB
 Using filter mode CULL
 rand-seed = 1540498553
-__________________________
---------------------------
+==============================================
+==============================================
 Run 0 elapsed: 2047.366858 ms, #iterations = 3190
 ... More runs
-__________________________
---------------------------
+==============================================
+==============================================
 Run 9 elapsed: 2013.216972 ms, #iterations = 3190
 Embedding validation: PASS
 [Sage] finished.

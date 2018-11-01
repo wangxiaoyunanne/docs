@@ -59,6 +59,7 @@ def spatial_center(Vertex v):
             v.location = spatial_median(neighbors_list[v])
 ```
 
+### Comparing Global Gather vs. Repeated Compute
 
 | Approach         | Memory Usage | Memory Reads/Vertex  | Device Barriers | Largest Dataset (P100) |
 |------------------|--------------|----------------------|-----------------|------------------------|
