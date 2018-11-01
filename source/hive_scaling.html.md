@@ -1050,4 +1050,4 @@ computation vs communication ratio is less than 1 (or 1 operation : 4 bytes).
 They are very hard to scale across multiple GPUs. Random walk is an typical
 example.
 
-#
+###### End of report
