@@ -15,7 +15,9 @@ files = sorted([f for f in os.listdir('.')
                      f != 'hive_year1_summary.html.md' and
                      f != 'hive_template.html.md' and
                      f != 'hive_scaling.html.md'))])
-# files += 'hive_scaling.html.md'
+
+# files+='hive_scaling.html.md'
+scaling=open('hive_scaling.html.md', 'r')
 
 # for f in files:
 #     with open(f) as in_md:
@@ -56,7 +58,8 @@ with open('hive_year1_summary.html.md', 'a') as dest:
             title = re.search('\n# (.*)\n', contents).group(1)
             summary = re.search(
                 '\n## Summary of Results\n\n([^#]*)\n\n#', contents).group(1)
-            dest.write(f'**[{title}](https://gunrock.github.io/docs/{fname})** {summary}\n\n')
+            dest.write(f'## {title} \n**[{title}](https://gunrock.github.io/docs/{fname})** \n{summary}\n\n')
+    dest.write(scaling.read())
 
 files.insert(0, 'hive_year1_summary.html.md')
 
