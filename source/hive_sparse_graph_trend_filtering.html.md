@@ -43,8 +43,35 @@ Load the graph and normalize edge weights
 for iteration till converge:
 
     # First part: Maxflow
-    Call maxflow data preprocessing
-    Call maxflow and return boolean reachability array and residual graph
+    // Push phase
+    For each local vertex v:
+        If (excess[v] <= 0) continue
+        If (v == source || v == sink) continue
+        For each edge e<v, u> of v:
+            If (capacity[e] <= flow[e]) continue
+            If (height[v] <= height[u]) continue
+            move := min(capacity[e] - flow[e], excess[v])
+            excess[v] -= move
+            flow[e] += move
+            Send <reverse[e], move> to host_GPU(u);
+            If (excess[v] <= 0)
+                break for each e loop;For each received <e, move> pair:
+        flow[e] -= move;
+        excess[Dest(e)] += move;// Relabel phase
+
+    For each local vertex v:
+        If (excess[v] <= 0) continue
+        min_height := infinity
+        For each e<v, u> of v:
+            If (capacity[e] <= flow[e]) continue;
+            If (min_height > height[u])
+           min_height = height[u]
+        If (height[v] <= min_height)
+           height[v] := min_height + 1
+
+    Broadcast height[v] for all local vertex
+
+    return boolean reachability array and residual graph
 
 
     # Second part: Reset available community
@@ -241,6 +268,12 @@ We measure the runtime and loss function `0.5 * sum((y' - y)^2) + lambda1 * sum(
 
 The time is mostly spent on maxflow computation. Each iteration of the SFL calls a maxflow. For a 8922-vertex, 20349-edge dataset, the time spent on maxflow vs. the rest of the SFL post-processing is around 20:1 per iteration. The maxflow implementation has room for further optimization; we expect to have shorter runtimes on maxflow in the future. We only implement SFL renormalization serially (second part) for correctness purposes. If the graph is larger, we expect the ratio between maxflow (first part) and SFL renormalization (second part) will be lower, because the runtime of the current renormalization is serial.
 
+More specifically, maxflow analysis is as follows:
+
+- **Memory usage** Each edge in the graph needs at least 20 bytes of GPU device memory: 64 bits for the capacity value, 64 bits for the flow value, 16 bits for the index of the reverse edge. Each node in the graph needs at least 16 bytes of GPU device memory: 64 bits for the excess value, 16 bits for the height value and 16 bits for the index of the lowest neighbor.
+
+- **Data type** For edges we have the following arrays: capacity, flow, reverse. For nodes we have the following arrays: height, excess, lowest_neighbor. Capacity, flow and excess arrays and all computation around them are double-precision floating point values (64-bit `double` in C/C++). We use epsilon value equals 1e-6 to comparing floating point number to zero. Reverse, height and lowest_neighbor arrays and all computation around them are 32-bit integer values.
+
 ### Comparison against existing implementations
 Graphtv is an official implementation of sparse fused lasso algorithm with a parametric maxflow backend. It is a CPU serial implementation <https://www.cs.ucsb.edu/~yuxiangw/codes/gtf_code.zip>. The Gunrock GPU runtime is measured between the application enactor and it is an output of the application.
 
@@ -295,7 +328,9 @@ The SFL renormalization should be able to parallelized accross different GPU eas
 
 ### Notes on dynamic graphs
 
-SFL is hard to work on dynamic graphs, which will change the topology of the graph. Maxflow values will be different when vertices are added or removed from the graph.
+Push relabel is not directly related to dynamic graphs. But it should be able to run on a dynamic graph, provided the source and the sink are given at the beginning of algorithm and the way to access all the nodes and the edges is the same. Capacities of edges from the previous graph can be used as a good starting point, if the edges and the nodes ids are consistent and the graph is not dramatically changed.
+
+However, SFL is hard to work on dynamic graphs, which will change the topology of the graph. The residual graph includes a swapping edge value (see pseudocode above) and we need to know the how the new graph will be in order to allocate enough memory space for the new edges and vertices.
 
 ### Notes on larger datasets
 
