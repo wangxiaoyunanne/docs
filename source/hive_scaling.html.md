@@ -1,15 +1,3 @@
----
-title: Scaling analysis for HIVE applications
-
-toc_footers:
-  - <a href='https://github.com/gunrock/gunrock'>Gunrock&colon; GPU Graph Analytics</a>
-  - Gunrock &copy; 2018 The Regents of the University of California.
-
-search: true
-
-full_length: true
----
-
 # Scaling analysis for HIVE applications
 
 The purpose of this document is to understand how the HIVE v0
