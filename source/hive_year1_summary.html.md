@@ -7,13 +7,10 @@ toc_footers:
 
 search: true
 
-includes:
-  - hive_scaling
-
 full_length: true
 ---
 
-# Executive Summary
+# HIVE Year 1 Report&colon; Executive Summary
 
 This report is located online at the following URL: <https://gunrock.github.io/docs/hive_year1_summary.html>.
 
@@ -100,4 +97,12 @@ SGM is an approximate algorithm that minimizes graph adjacency disagreements via
 ## Vertex Nomination 
 **[Vertex Nomination](https://gunrock.github.io/docs/hive_vn.html)** 
 The term "vertex nomination" covers a variety of different node ranking schemes that fuse "content" and "context" information.  The HIVE reference code implements a "multiple-source shortest path" context scoring function, but uses a very suboptimal algorithm.  By using a more efficient algorithm, our serial CPU implementation achieves 1-2 orders of magnitude speedup over the HIVE implementation and our GPU implementation achieves another 1-2 orders of magnitude on top of that.  Implementation was straightforward, involving only a small modification to the existing Gunrock SSSP app.
+
+## Scaling analysis for HIVE applications 
+**[Scaling analysis for HIVE applications](https://gunrock.github.io/docs/hive_scaling.html)** 
+The purpose of this study is to understand how the HIVE v0
+applications would scale out on multiple GPUs, with a focus on the
+DGX-1 platform. Before diving into per-application analysis, we give a
+brief summary of the potential hardware platforms, the communication
+methods and models, and graph partitioning schemes.
 

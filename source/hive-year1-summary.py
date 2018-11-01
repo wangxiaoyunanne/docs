@@ -7,7 +7,6 @@ import os
 import tempfile
 import subprocess
 import re
-from pandocfilters import toJSONFilter, Str
 
 files = sorted([f for f in os.listdir('.')
                 if ((f.startswith('hive_') and
@@ -16,12 +15,8 @@ files = sorted([f for f in os.listdir('.')
                      f != 'hive_template.html.md' and
                      f != 'hive_scaling.html.md'))])
 
-# don't need this, included using slate:
-# files+='hive_scaling.html.md'
-
-# for f in files:
-#     with open(f) as in_md:
-#         print(in_md.read())
+# I put this back since it doesn't get included in the PDF otherwise
+files.append('hive_scaling.html.md')
 
 print("""---
 title: HIVE Year 1 Report&colon; Executive Summary
@@ -32,13 +27,10 @@ toc_footers:
 
 search: true
 
-includes:
-  - hive_scaling
-
 full_length: true
 ---
 
-# Executive Summary
+# HIVE Year 1 Report&colon; Executive Summary
 
 This report is located online at the following URL: <https://gunrock.github.io/docs/hive_year1_summary.html>.
 
