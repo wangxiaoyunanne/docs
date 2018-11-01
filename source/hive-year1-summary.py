@@ -16,8 +16,8 @@ files = sorted([f for f in os.listdir('.')
                      f != 'hive_template.html.md' and
                      f != 'hive_scaling.html.md'))])
 
+# don't need this, included using slate:
 # files+='hive_scaling.html.md'
-scaling=open('hive_scaling.html.md', 'r')
 
 # for f in files:
 #     with open(f) as in_md:
@@ -31,6 +31,9 @@ toc_footers:
   - Gunrock &copy; 2018 The Regents of the University of California.
 
 search: true
+
+includes:
+  - hive_scaling
 
 full_length: true
 ---
@@ -59,7 +62,8 @@ with open('hive_year1_summary.html.md', 'a') as dest:
             summary = re.search(
                 '\n## Summary of Results\n\n([^#]*)\n\n#', contents).group(1)
             dest.write(f'## {title} \n**[{title}](https://gunrock.github.io/docs/{fname})** \n{summary}\n\n')
-    dest.write(scaling.read())
+    # don't need this, included within slate
+    # dest.write(scaling.read())
 
 files.insert(0, 'hive_year1_summary.html.md')
 
