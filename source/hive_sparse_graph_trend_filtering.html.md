@@ -19,7 +19,7 @@ Given a graph where each vertex on the graph has a weight, _sparse fused lasso (
 
 The SFL problem is mainly divided into two parts, computing residual graphs from maxflow and renormalizing the weights of the vertices. Maxflow is parallelizable with the push-relabel algorithm, so we adopt this algorithm in Gunrock's implementation. Moreover, each vertex has its own work to compute which communities it belongs to, and normalize the weights with other vertices in the same community. This renormalization requires global synchronization. SFL iterates by calling maxflow and renormalization several times before it converges. We notice that the overall runtime is mostly spent in maxflow, and thus improving the maxflow implementation will bring substantial speedup in the SFL.
 
-Because of the current state of our maxflow implementation, we notice a 30x slowdown of Gunrock's GPU SFL with respect to the benchmark implementation. Some limitations lead to this slowdown, including (1) substantial extra memory transfers between the CPU and GPU because of maxflow's relabeling heuristics and (2) a currently serial SFL renormalization. These problems could be addressed  in a future version of SFL.
+Because of the current state of our maxflow implementation, we notice a 30x slowdown of Gunrock's GPU SFL with respect to the benchmark implementation. This slowdown is mainly caused the parallel push-relabel implementation taking too many iterations to converge, and making SFL kernel launching overhead bound. We are looking into algorithmic optimizations to reduce the number of iterations maxflow takes, and also engineering optimizations to reduce the effects of kernel overheads in computation time.
 
 ## Summary of Gunrock Implementation
 
