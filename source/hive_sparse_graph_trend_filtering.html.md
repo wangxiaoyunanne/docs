@@ -144,8 +144,8 @@ make
 At this point, there should be an executable `gtf_main_<CUDA version>_x86_64`
 in `tests/gtf/bin`.
 
-The testing is done with Gunrock using `dev-refactor` branch at commit `2699252`
-(Oct. 18, 2018), using CUDA 9.1 with NVIDIA driver 390.30.
+The testing is done with <https://github.com/wetliu/gunrock/tree/master> using `dev-refactor` branch at commit `8f51a6369127204a87893b74a7b920ad3d3fdd58`
+(Oct. 31, 2018), using CUDA 9.1 with NVIDIA driver 390.30.
 
 ### HIVE Data Preparation
 
