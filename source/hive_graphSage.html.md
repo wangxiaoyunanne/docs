@@ -12,19 +12,19 @@ full_length: true
 
 # GraphSAGE
 
-GraphSAGE is a way to fit graphs into a neural networks: instead of getting the
+GraphSAGE is a way to fit graphs into a neural network: instead of getting the
 embedding of a vertex from all its neighbors' features as in conventional
-implementations, GraphSAGE select some 1-hop neighbors, some 2-hop neighbors
-connected to those 1-hop neighbors, and compute the embedding based on the
+implementations, GraphSAGE selects some 1-hop neighbors, some 2-hop neighbors
+connected to those 1-hop neighbors, and computes the embedding based on the
 features of the 1-hop and 2-hop neighbors. The embedding can be considered as
 a vector containing hash values describing the interesting properties of a
 vertex.
 
-During the training process, the adjacency matrix and features of nodes are fed into a neural network, the
-parameters (the W arrays in the algorithm) are updated after each batch by the
+During the training process, the adjacency matrix and features of the nodes in the graph are fed into a neural network. The
+parameters (the `W` arrays in the algorithm) are updated after each batch by the
 difference between the predicted labels and the real labels. The per-vertex
 features won't change, but the parameters will, so the GraphSAGE computation needs
-to be perform for each batch. Ultimately it should connect to the training
+to be performed for each batch. Ultimately it should connect to the training
 process to complete a workflow. However, the training part is pure matrix
 operations, and the year 1 deliverable only focuses on the graph related
 portion, which is the GraphSAGE implementation.
@@ -32,46 +32,46 @@ portion, which is the GraphSAGE implementation.
 ## Summary of Results
 
 The vertex embedding part of the GraphSAGE algorithm is implemented in the
-Gunrock framework using custom CUDA kernels to utilize the block level
-parallelism for shorter running time. For the embedding part alone, the GPU
+Gunrock framework using custom CUDA kernels to utilize block-level
+parallelism that allows a shorter running time. For the embedding part alone, the GPU
 implementation is 7.5X to 15X on P100, and 20X to 30X on V100,
 faster than an OpenMP implementation using 32 threads. The GPU hardware, especially
-the memory system, has high utilizations by these custom kernels. It's still
-unclear how to expose the block level parallelism for more general usage in
+the memory system, has high utilizations from these custom kernels. It is still
+unclear how to expose block-level parallelism for more general usage in
 other applications in Gunrock.
 
 Connecting the vertex embedding with the neural network training part, and
-making the GraphSAGE workflow complete would be an interesting task for year 2.
+making the GraphSAGE workflow complete, would be an interesting task for year 2.
 Testing on the complete workflow for prediction accuracy and running speed will
 be more meaningful.
 
 ## Summary of Gunrock Implementation
 
 Gunrock's implementation for the 1st year is only the embedding / inferencing
-phase, without the training phase. It is based on Algorithm 2 with K=2 of GraphSage
+phase, without the training phase. It is based on Algorithm 2 with K=2 of the GraphSage
 paper ("Inductive Representation Learning on Large Graphs",
-https://arxiv.org/abs/1706.02216).  
+<https://arxiv.org/abs/1706.02216>).
 
 Given a graph G, the inputs are per-vertex features, weight matrices W^k, and a
 non-linear activation function (ReLu); the output from GraphSAGE is the embedding vector
 of each vertex. The current Gunrock implementation randomly selects neighbors
 from the neighborhood, and simple changes to the code can enable other
 selection methods, such as weighted uniform, importance sampling (used by
-FaseGCN) and random walk probability like DeepWalk or Node2Vec (used by
+FaseGCN), or a random walk probability like DeepWalk or Node2Vec (used by
 PinSage). An aggregator is a function to accumulate data from the
 selected neighbors; the current implementation uses the Mean aggregator,
 and it can be changed to other accumulation functions easily.
 
-The pseudocode of Gunrock's implementation is as following. The current
-implementation uses custom CUDA kernels, because block level parallelism is critical for
+The pseudocode of Gunrock's implementation follows. The current
+implementation uses custom CUDA kernels, because block-level parallelism is critical for
 faster running speed; all other functions, such as memory management,
 load and store routines, block level parallel reduction, and graph accesses
 (get degree, get neighbors, etc.) are provided by the framework or the utility
 functions of Gunrock. The GraphSAGE  algorithm uses B2, B1 and B0 for the
 sources, the 1-hop neighbors and the 2-hop neighbors; for
 easier understanding of the code, we use `sources`, `children` and `leafs` for
-these three groups of vertices instead. To manage the memory usage by the
-intermedia data, batches of source vertices are processed one by one, with each
+these three groups of vertices instead. To manage the memory usage of
+intermediate data, batches of source vertices are processed one by one, with each
 of size B.
 
 ```
@@ -144,14 +144,14 @@ At this point, there should be an executable `test_sage_<CUDA version>_x86_64`
 in `tests/sage/bin`.
 
 The datasets are assumed to have been placed in `/raid/data/hive`, and converted
-to proper matrix market format (.mtx). At the time of testing, `pokec`, `amazon`,
+to proper matrix market format (`.mtx`). At the time of testing, `pokec`, `amazon`,
 `flickr`, `twitter` and `cit-Patents` are available in that directory.
 
 Note that GraphSage is an inductive representation learning algorithm,
 so it reasonable to assume that there is no dangling vertices in the graph.
 **Before running GraphSAGE, please remove the dangling vertices from the graph.**
 In the case when dangling vertices are present, the dangling vertices themselves
-will be treated as their neighbors.  
+will be treated as their neighbors.
 
 The testing is done with Gunrock using `dev-refactor` branch at commit `0ed72d5`
 (Oct. 25, 2018), using CUDA 9.2 with NVIDIA driver 390.30 on a Tesla P100 GPU in
@@ -164,52 +164,52 @@ GPU in Bowser (an machine used by the Gunrock team in UC Davis).
 
 The W arrays used by GraphSAGE should be produced by the training process; without
 the training part at the moment, we use some given datasets or randomly generate
-them if not available. The array input files are floating point values in plain
-text format; examples can be found in `gunrock/app/sage` directory of the
+them if not available. The array input files are floating-point values in plain
+text format; examples can be found in the `gunrock/app/sage` directory of the
 gunrock repo.
 
 ```
 --Wa1 : std::string, default =
-	<weight matrix for W^1 matrix in algorithm 2, aggregation part>
-	 dimension 64 by 128 for pokec;
-	 It should be leaf feature length by a value you want for W2 layer
+        <weight matrix for W^1 matrix in algorithm 2, aggregation part>
+         dimension 64 by 128 for pokec;
+         It should be leaf feature length by a value you want for W2 layer
 --Wa1-dim1 : int, default = 128
-	Wa1 matrix column dimension
+        Wa1 matrix column dimension
 --Wa2 : std::string, default =
-	<weight matrix for W^2 matrix in algorithm 2, aggregation part>
-	 dimension 256 by 128 for pokec;
-	 It should be child_temp length by output length
+        <weight matrix for W^2 matrix in algorithm 2, aggregation part>
+         dimension 256 by 128 for pokec;
+         It should be child_temp length by output length
 --Wa2-dim1 : int, default = 128
-	Wa2 matrix column dimension
+        Wa2 matrix column dimension
 --Wf1 : std::string, default =
-	<weight matrix for W^1 matrix in algorithm 2, feature part>
-	 dimension 64 by 128 for pokec;
-	 It should be child feature length by a value you want for W2 layer
+        <weight matrix for W^1 matrix in algorithm 2, feature part>
+         dimension 64 by 128 for pokec;
+         It should be child feature length by a value you want for W2 layer
 --Wf1-dim1 : int, default = 128
-	Wf1 matrix column dimension
+        Wf1 matrix column dimension
 --Wf2 : std::string, default =
-	<weight matrix for W^2 matrix in algorithm 2, feature part>
-	 dimension 256 by 128 for pokec;
-	 It should be source_temp length by output length
+        <weight matrix for W^2 matrix in algorithm 2, feature part>
+         dimension 256 by 128 for pokec;
+         It should be source_temp length by output length
 --Wf2-dim1 : int, default = 128
-	Wf2 matrix column dimension
+        Wf2 matrix column dimension
 --feature-column : std::vector<int>, default = 64
-	feature column dimension
+        feature column dimension
 --features : std::string, default =
-	<features matrix>
+        <features matrix>
     dimension |V| by 64 for pokec;
 --omp-threads : int, default = 32
     number of threads to run CPU reference
 --num-children-per-source : std::vector<int>, default = 10
-	number of sampled children per source
+        number of sampled children per source
 --num-leafs-per-child : std::vector<int>, default = -1
-	number of sampled leafs per child; default is the same as num-children-per-source
+        number of sampled leafs per child; default is the same as num-children-per-source
 --batch-size : std::vector<int>, default = 65536
-	number of source vertex to process in one iteration
+        number of source vertex to process in one iteration
 ```
 
 #### Example Command
-<code>
+```bash
 ./bin/test_sage_9.2_x86_64 \
  market /raid/data/hive/pokec/pokec.mtx  --undirected \
  --Wf1 ../../gunrock/app/sage/wf1.txt \
@@ -219,17 +219,17 @@ gunrock repo.
  --features ../../gunrock/app/sage/features.txt \
  --num-runs=10 \
  --batch-size=16384
-</code>
+```
 
-When `Wf1`, `Wa1`, `Wf2`, `Wa2` or `features` are not available, random values
+When `Wf1`, `Wa1`, `Wf2`, `Wa2`, or `features` are not available, random values
 are used. The embeddings may be not useful at all, but the memory access patterns
 and the computation workload are the same, regardless of whether the random
-inputs are used. Using the random inputs enable us testing on any graph, without
+inputs are used. Using the random inputs enable us to test on any graph without
 requiring the associative arrays.
 
 ### Output
 
-The outputs are in the `sage` directory, look for the .txt files. An example is
+The outputs are in the `sage` directory; look for the .txt files. An example is
 shown below for the `pokec` dataset:
 ```
 Loading Matrix-market coordinate-formatted graph ...
@@ -292,7 +292,7 @@ Embedding validation: PASS
 There is 1 OMP reference run on the CPU for each combination of <`feature-column`,
 `num-children-per-source`, `num-leafs-per-child`>, with the timing reported after
 `CPU Reference elapsed`. There are 10 GPU runs for each combination of the
-pervious three parameters, plus `batch-size`. The computation workload of the
+previous three parameters, plus `batch-size`. The computation workload of the
 GPU runs are the same as the reference CPU run, with different batch sizes. The
 GPU timing is reported after `Run x elapsed:`, and the average running time of
 the 10 GPUs is reported after `avg. elapsed`.
@@ -302,16 +302,15 @@ itself three times in the form of `Normalize(C x Wf + Mean(D) x Wa)`. Because of
 this simplicity, it is still possible to verify the implementation by visually
 inspecting the code. The resulted embeddings are also checked for the L2 norm,
 which should be close to 1 for every vertex. Because the neighbor selection
-process is inherently random, it would be very difficult to do a number by
-number checking with other implementations, including the reference. A more
-meaningful regression test will be looking at the training or validation
-accuracy when the full workflow is completed, which is expected for year 2.
+process is inherently random, it would be very difficult to do a number-by-number checking with other implementations, including the reference. A more
+meaningful regression test will look at the training or validation
+accuracy when the full workflow is completed, which is a possibility for
+future work in year 2.
 
 ## Performance and Analysis
 
-The OpenMP and GPU implementations are tested for running time. It would be very
-useful to validate the successful rate of the whole pipeline with the training
-process in place; but this may be the task for year 2.
+The OpenMP and GPU implementations are measured for runtime. It would be
+additionally useful to validate the successful rate of the whole pipeline with the training process in place (perhaps in year 2).
 
 The datasets used for experiments are:
 
@@ -411,67 +410,67 @@ The running time on Bowser with a Tesla V100 GPU
 - **Memory usage** Gunrock's GPU implementation uses `B x (C x (Wf2.x + F + 1) +
 2Wf2.x + 2R.x) x 4` bytes in additional to the features that takes up `VF x 4`
 bytes and the graph itself. Because the batch size B can be adjusted, the main
-memory consumption is from the feature array. For P100 with 16 GB memory, if
+memory consumption is from the feature array. For a P100 with 16 GB memory, if
 the feature length is 64, the maximum number of vertices it can handle before
 hitting OOM is about 60 million. The largest dataset tested so far is the
 `europe_osm` dataset with 50.9M vertices and 108M edges.
 
-- **Data types** The vertex Ids and edge Ids are both presented as 32bit unsigned
+- **Data types** The vertex Ids and edge Ids are both presented as 32-bit unsigned
 integers. Input features, weights, output embeddings and intermedia results are
-represented as 32bit floating point numbers. A not so recent trend in machine
+represented as 32-bit floating-point numbers. A not so recent trend in machine
 learning research is to use less precision in neural networks. Half precision /
 16-bit floating points are quite common, and supported by recent GPUs. Using
 half precision cuts the computation time to about half, as compared to single
-precision, and also cuts the memory usage to store the features half. It would
+precision, and also cuts the memory usage to store the features in half. It would
 be interesting to see what would happen if the data type is changed to half
 precision.
 
 - **Graph types** The training process requires the graph to be undirected
-(enforced by `--undirected` in Gunrock's command line parameters). Behavior of
+(enforced by `--undirected` in Gunrock's command line parameters). The behavior of
 sampling a zero-length neighbor list is undefined, and currently it will return
 the source vertex itself.
 
 ### Comparison against existing implementations
 
-Because computation on each vertex is independent on each other, GraphSAGE is an
-embarrassingly parallel problem when parallel across vertices. Running a simple
+Because computation on each vertex is independent from other vertices, GraphSAGE is an
+embarrassingly parallel problem when parallelized across vertices. Running a simple
 test with the `pokec` dataset, feature length as 64, num_children_per_source and
-num_leafs_per_child both at 10, the serial run (when omp-threads forced to 1)
+num_leafs_per_child both at 10, the serial run (iwith omp-threads forced to 1)
 on the DGX-1 takes 366390.250 ms, as compared to 25242.941 ms using 32 threads;
 using 32 threads is about 14.5X faster than a single thread, which shows GraphSAGE
 scales pretty well on the CPU.
 
-Comparing the running time of 32 thread OpenMP and Gunrock's GPU implementation,
+Comparing the running time of a 32-thread OpenMP and Gunrock's GPU implementation,
 the P100 is about 7.5X to 15X faster. Increasing the feature length from 64 to
 128 roughly doubles the computation workload, and the speedup does not change
 very much for datasets with more than about 1M vertices. However, increasing the
 number of children per source and the number of leafs per child decreases the
 speedup. The OMP's running time increases slower than the number of neighbors
-selected, while GPU's running time increases faster than the number of neighbors
-selected. This may attribute to the cache effect: the parallelism on CPU is
+selected, while the GPU's running time increases faster than the number of neighbors
+selected. This may be attributed to the cache effect: the parallelism on CPU is
 limited, so data reuse rate is high, even when the number of neighbors increases;
 however, the number of source or children processed on the GPU at the same time
 is much larger, with a much bigger working set, and this decreases the cache hit
-rate, so as longer running time.
+rate, so results in longer running time.
 
-It's more interesting when comparing the running time on V100 and P100: V100 is
+Also interesting is comparing the runtime on V100 and P100: V100 is
 about 3X faster than P100 when running GraphSAGE. This large performance difference
 is caused by the different limiting factors when running GraphSAGE on these two GPUs;
-details are in the the Performance limitations section. Compared to OpenMP, V100
+details are in the the Performance limitations section. Compared to OpenMP, the V100
 is about 20X to 30X faster.
 
 ### Performance limitations
 
-Profiling GraphSAGE with the `pokec` dataset on a Titan Xp GPU (profiling on P100
+We profiled GraphSAGE with the `pokec` dataset on a Titan Xp GPU (profiling on P100
 caused internal error in the profiler itself; Titan Xp has roughly the same SM
 design as P100, but has only 30 SMs vs. 56 on the P100; P100 also has 16 GB
-HMB2 memory, and Titan Xp only has 12 GB GDDR5X; running time on Titan Xp and
-P100 is similar), kernel2 takes up about 60% of
-the computation of an batch, 10.64 ms out of 17.76 ms for pocket with 64 feature
-length, 10 neighbors and batch size at 16384. Kernel1 takes 1.56 ms, or 8.8%,
+HMB2 memory, and Titan Xp only has 12 GB GDDR5X; runtime on Titan Xp and
+P100 is similar). kernel2 takes up about 60% of
+the computation of an batch, 10.64 ms out of 17.76 ms for `pokec` with 64 feature
+length, 10 neighbors, and batch size at 16384. Kernel1 takes 1.56 ms, or 8.8%,
 and Kernel3 takes 5.52 ms, or 31.1%.
 
-Further detail profiling of Kernel2, on Titan Xp shows the
+Further detail on the profile of Kernel2 on the Titan Xp shows the
 utilization of the memory system:
 
 | Type        | Transactions | Bandwidth     | Utilization |
@@ -494,11 +493,11 @@ utilization of the memory system:
 
 ![Sage_Pokec_TianXp]( attachments/sage/pokec_TitanXp.png "Memory statics")
 
-It's clearly that the unified cache is almost fully utilized, at 4 TBps out of
-the 5 TBps theoretical upper bound, and being the bottleneck.
-This is because the W arrays and the intermedia arrays are highly reusable.
+It's clear that the unified cache is almost fully utilized, at 4 TBps out of
+the 5 TBps theoretical upper bound, and is the bottleneck.
+This is because the W arrays and the intermediate arrays are highly reusable.
 
-Running the same experiment on V100 shows a different picture on the memory
+Running the same experiment on the V100 shows a different picture within the memory
 system:
 
 | Type        | Transactions | Bandwidth     | Utilization |
@@ -521,50 +520,48 @@ system:
 
 ![Sage_Pokec_V100]( attachments/sage/pokec_V100.png "Memory statics")
 
-On V100, kernel2 only takes 3.982 ms (about 60% of 6.67ms per batch), and the
-unify cache throughput increases to 9.8 TBps, more than double than on the
+On the V100, kernel2 only takes 3.982 ms (about 60% of 6.67 ms per batch), and the
+unified-cache throughput increases to 9.8 TBps, more than double than on the
 Titan Xp. In fact, the theoretical upper bound of V100's L1 throughput is 28
 TBps, resulted from doubling each SM's load throughput from 128 bytes per
-cycle to 256 bytes to cycle, and increasing the SM count to 80. This is the
-reason why V100 can outperform P100 and Titan Xp about 3X. The performance
+cycle to 256 bytes per cycle, and increasing the SM count to 80. This is the
+reason why the V100 can outperform P100 and Titan Xp by about 3X. The performance
 bottleneck is no longer the memory system, and switches to integer
 computations, which comes mainly from array index calculation. This particular
 kernel also takes up 32 registers per thread, which is the limit for full GPU
-occupancy. Storing intermedia index calculation results would help if the
-register usage is not so hight.
+occupancy. Storing intermediate index calculation results would help if the
+register usage is not so high.
 
 ## Next Steps
 
 ### Alternate approaches
 
-**Things tried but not really work**
+**Things we tried that didn't really work**
 
-An simple implementation that use a thread to process the per-source or per-child
+An simple implementation that uses a thread to process the per-source or per-child
 computation is coded, but it runs about 10X slower than the current
 implementation that uses a block to process such units. One reason is the use
-of block level parallel primitives, such as block reduce. Another reason is that
+of block-level parallel primitives, such as block reduce. Another reason is that
 by using a whole block, instead of a thread, to process the same computation,
 the working set is greatly reduced together with the parallelism, and the whole
 working set can fit into the cache system. When using higher parallelism, the
-working set is larger, and forced to be evict into the global memory, and
-creates a bottleneck. Actually during the experiment for the thread level
+working set is larger, and forced to be evicted into the global memory, and
+creates a bottleneck. Actually during the experiment, for the thread-level
 parallelism implementation, reducing the number of blocks of the kernel improves
 its running time, the opposite to normally what would be expected from running
 other kernels.
 
 ### Gunrock implications
 
-One thing that Gunrock does not provide, or intensionally hides, is the block
-level parallelism. However, it comes as handy when implementing the custom
-kernels for GraphSAGE: each block can process a one dimension vector, with each
-thread holds one element, then use block level reduce to get the sum of those
-elements; this way is highly efficient, and actually reduces the parallelism,
-thus eventually the working set of data.
+One thing that Gunrock does not provide, or intentionally hides, is block-level parallelism. However, it comes in handy when implementing the custom
+kernels for GraphSAGE: each block can process a one-dimension vector, with each
+thread holding one element, then use a block-level reduce to get the sum of those
+elements; this way is highly efficient, and actually reduces the parallelism and with it the size of the working set of data.
 
 ### Notes on multi-GPU parallelization
 
-The main memory usage is caused by the feature data, so it is critical to not
-duplicate the features. The side effect is the computation need to be divided
+The main memory usage is due to feature data, so it is critical to not
+duplicate features. The side effect is the computation needs to be divided
 into child-centric and source-centric parts, and exchange data in between. It
 should be scalable, and easy to implement.
 
@@ -572,16 +569,16 @@ should be scalable, and easy to implement.
 
 GraphSAGE does not have a dynamic graph component, but it should able to work on a
 dynamic graph. Some of the data may be reusable if the graph has not been
-significantly changed; but the resulted memory requirement to store the intermedia
-data may make the data reuse impossible.
+significantly changed, but the resulting memory requirement to store the intermediate
+data may make data reuse impossible.
 
 ### Notes on larger datasets
 
-If the dataset is so large, that the graph and the per-vertex feature data are
+If the dataset is so large that the graph and the per-vertex feature data are
 larger than the combined GPU memory, it's possible to accumulate the features
 of leafs and children on CPU, transfer the data on to GPU, and perform the
-computation. Running time will increase significantly as compared to the cases when
-the full data can fit in the GPU memory; but whether that will increase above
+computation. Because of the cost of the transfer, runtime will increase significantly as compared to the cases when
+the full data can fit in the GPU memory, but whether that will cause an increase above
 the OpenMP implementation is still unknown.
 
 ### Notes on other pieces of this workload
@@ -589,4 +586,4 @@ the OpenMP implementation is still unknown.
 The main part of GraphSAGE workflow is actually the training process, which will be
 outside of Gunrock, provided by TensorFlow, PyTorch or other machine learning
 libraries. How to connect the training with the Gunrock GPU implementation is
-the main task going forward.
+the main task for this workload going forward.
