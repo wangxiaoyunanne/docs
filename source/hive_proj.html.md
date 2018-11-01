@@ -362,7 +362,7 @@ Multiple GPU support for GraphBLAS is on the roadmap. Unlike the Seeded Graph Ma
 
 Even though extending matrix multiplication to multiple GPUs can be straightforward, doing so in a backend-agnostic fashion that abstracts away the placement (i.e. which part of matrix A goes on which GPU) may still be quite challenging.
 
-Further discussion can be found [here](https://github.com/sgpyc/docs/blob/scaling/source/hive_scaling.html.md).
+Further discussion can be found [here](https://gunrock.github.io/docs/hive_year1_summary.html#scaling-analysis-for-hive-applications).
 
 ### Notes on dynamic graphs
 

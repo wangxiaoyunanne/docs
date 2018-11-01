@@ -588,7 +588,7 @@ For the `greedy` and `stochastic_greedy` transition function, we have to sequent
 
 If the graph is small enough to be duplicated on each GPU, the implementation is trivial: just do a subset of the walks on each GPU.  The scalability will be perfect, as there is no communication involved at all.
 
-When the graph is distributed across multiple GPUs, we expect to have very poor scalability, as the ratio of computation to communication is very low.  A more detailed discussion is available [here](hive_scaling.html).
+When the graph is distributed across multiple GPUs, we expect to have very poor scalability, as the ratio of computation to communication is very low.  A more detailed discussion is available [here](https://gunrock.github.io/docs/hive_year1_summary.html#scaling-analysis-for-hive-applications).
 
 ### Notes on dynamic graphs
 

@@ -366,7 +366,7 @@ This was a straightforward adapatation of an existing Gunrock app.  SSSP is also
 
 ### Notes on multi-GPU parallelization
 
-Discussion of multi-GPU scalability of VN can be found [here](https://github.com/sgpyc/docs/blob/scaling/source/hive_scaling.html.md).
+Discussion of multi-GPU scalability of VN can be found [here](https://gunrock.github.io/docs/hive_year1_summary.html#scaling-analysis-for-hive-applications).
 
 ### Notes on dynamic graphs
 
