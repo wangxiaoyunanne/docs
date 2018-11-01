@@ -32,8 +32,8 @@ portion, which is the GraphSAGE implementation.
 ## Summary of Results
 
 The vertex embedding part of the GraphSAGE algorithm is implemented in the
-Gunrock framework using custom CUDA kernels to utilize block-level
-parallelism that allows a shorter running time. For the embedding part alone, the GPU
+Gunrock framework using custom CUDA kernels, utilizing block-level
+parallelism, that allow a shorter running time. For the embedding part alone, the GPU
 implementation is 7.5X to 15X on P100, and 20X to 30X on V100,
 faster than an OpenMP implementation using 32 threads. The GPU hardware, especially
 the memory system, has high utilizations from these custom kernels. It is still
@@ -48,7 +48,7 @@ be more meaningful.
 ## Summary of Gunrock Implementation
 
 Gunrock's implementation for the 1st year is only the embedding / inferencing
-phase, without the training phase. It is based on Algorithm 2 with K=2 of the GraphSage
+phase, without the training phase. It is based on Algorithm 2 with K=2 of the GraphSAGE
 paper ("Inductive Representation Learning on Large Graphs",
 <https://arxiv.org/abs/1706.02216>).
 
@@ -323,7 +323,7 @@ The datasets used for experiments are:
 | twitter | 7199978 | 43483326 |
 | europe-osm | 50912018 | 108109320 |
 
-The running times in milliseconds are list below, for both machines. F stands
+The running times in milliseconds are listed below, for both machines. F stands
 for the length of features, C stands for the number of children per source,
 the same as the number of leafs per child, and B notes the batch size that
 produces the shortest running time on GPU among {512, 1024, 2048, 4096, 8192,
@@ -435,7 +435,7 @@ the source vertex itself.
 Because computation on each vertex is independent from other vertices, GraphSAGE is an
 embarrassingly parallel problem when parallelized across vertices. Running a simple
 test with the `pokec` dataset, feature length as 64, num_children_per_source and
-num_leafs_per_child both at 10, the serial run (iwith omp-threads forced to 1)
+num_leafs_per_child both at 10, the serial run (with omp-threads forced to 1)
 on the DGX-1 takes 366390.250 ms, as compared to 25242.941 ms using 32 threads;
 using 32 threads is about 14.5X faster than a single thread, which shows GraphSAGE
 scales pretty well on the CPU.
@@ -462,7 +462,7 @@ is about 20X to 30X faster.
 ### Performance limitations
 
 We profiled GraphSAGE with the `pokec` dataset on a Titan Xp GPU (profiling on P100
-caused internal error in the profiler itself; Titan Xp has roughly the same SM
+caused an internal error in the profiler itself; Titan Xp has roughly the same SM
 design as P100, but has only 30 SMs vs. 56 on the P100; P100 also has 16 GB
 HMB2 memory, and Titan Xp only has 12 GB GDDR5X; runtime on Titan Xp and
 P100 is similar). kernel2 takes up about 60% of
@@ -495,7 +495,7 @@ utilization of the memory system:
 
 It's clear that the unified cache is almost fully utilized, at 4 TBps out of
 the 5 TBps theoretical upper bound, and is the bottleneck.
-This is because the W arrays and the intermediate arrays are highly reusable.
+This is because the `W` arrays and the intermediate arrays are highly reusable.
 
 Running the same experiment on the V100 shows a different picture within the memory
 system:

@@ -31,6 +31,20 @@ However, there are two neighbor reduce operations that may benefit from the kind
 
 However, the challenge within the application is load balancing this simple compute, such that each processor has roughly the same amount of work. Currently, in gunrock, we map Geolocation using the `ForAll()` compute operator with optimizations to exit early (performing less work and fewer reads). Even without addressing load balancing issue with a complicated balancing scheme, on the HIVE datasets we achieve a 100x speedup with respect to the CPU reference code, implemented using C++ and OpenMP, and ~533x speedup  with respect to the GTUSC implementation. We improve upon the algorithm by avoiding a global gather and a global synchronize, and using 3x less memory than the GTUSC reference implementation.
 
+**[GraphSAGE](https://gunrock.github.io/docs/hive_graphSage.html)** The vertex embedding part of the GraphSAGE algorithm is implemented in the
+Gunrock framework using custom CUDA kernels, utilizing block-level
+parallelism, that allow a shorter running time. For the embedding part alone, the GPU
+implementation is 7.5X to 15X on P100, and 20X to 30X on V100,
+faster than an OpenMP implementation using 32 threads. The GPU hardware, especially
+the memory system, has high utilizations from these custom kernels. It is still
+unclear how to expose block-level parallelism for more general usage in
+other applications in Gunrock.
+
+Connecting the vertex embedding with the neural network training part, and
+making the GraphSAGE workflow complete, would be an interesting task for year 2.
+Testing on the complete workflow for prediction accuracy and running speed will
+be more meaningful.
+
 **[GraphSearch](https://gunrock.github.io/docs/hive_graphsearch.html)** Graph search is a relatively minor modification to Gunrock's random walk application, and was straightforward to implement.  Though random walks are a "worst case scenario" for GPU memory bandwidth, we still achieve 3--5x speedup over a modified version of the OpenMP reference implementation.
 
 The original OpenMP reference implementation actually ran slower with more threads -- we fixed the bugs, but the benchmarking experience highlights the need for performant and hardened CPU baselines.
@@ -39,10 +53,16 @@ Until recently, Gunrock did not support parallelism _within_ the lambda function
 
 In an end-to-end graph search application, we'd need to implement the scoring function as well as the graph walk component.  For performance, we'd likely want to implement the scoring function on the GPU as well, which makes this a good example of a "Gunrock+X" app, where we'd need to integrate the high-performance graph processing component with arbitrary user code.
 
-**[Community Detection (Louvain)](https://gunrock.github.io/docs/hive_louvain.html)** One or two sentences that summarize "if you had one or two sentences to sum up
-your whole effort, what would you say". I will copy this directly to the high-level
-executive summary in the first page of the report. Talk to JDO about this.
-Write it last, probably.
+**[Community Detection (Louvain)](https://gunrock.github.io/docs/hive_louvain.html)** The Gunrock uses sort and segmented reduce to implement the
+Louvain algorithm, different from the commonly used hash table mapping. The GPU
+implementation is about ~1.5X faster than the OpenMP implementation, and also
+faster than previous GPU works. It is still unknown whether the sort and
+segmented reduce formulation map the problem better than hash table on the GPU. The
+modularities resulting from the GPU implementation are within small differences
+as the serial implementation, and are better when the graph is larger. A custom
+hash table can potentially improve the running time. The GPU Louvain
+implementation should have moderate scalability across multiple GPUs in an
+DGX-1.
 
 **[Local Graph Clustering (LGC)](https://gunrock.github.io/docs/hive_pr_nibble.html)** This variant of local graph clustering (L1 regularized PageRank via FISTA) is a natural fit for Gunrock's frontier-based programming paradigm.  We observe speedups of 2-3 orders of magnitude over the HIVE reference implementation.
 
@@ -54,9 +74,9 @@ Overall, we found that Gunrock was more flexible and more performant than GraphB
 
 **[Seeded Graph Matching (SGM)](https://gunrock.github.io/docs/hive_sgm.html)** SGM is a fruitful workflow to optimize, because the existing implementations were not written with performance in mind.  By making minor modifications to the algorithm that allow use of sparse data structures, we enable scaling to larger datasets than previously possible.
 
-The application involves solving a linear assignment problem (LSAP) as a subproblem.  Solving these problems on the GPU is an active area of research -- though papers have been written describing high-performance parallel LSAP solvers, reference implementations are not available.  We implement a GPU LSAP solver via Bertsekas' auction algorithm, and make it available as as [standalone library](https://github.com/bkj/cbert).
+The application involves solving a linear assignment problem (LSAP) as a subproblem.  Solving these problems on the GPU is an active area of research -- though papers have been written describing high-performance parallel LSAP solvers, reference implementations are not available.  We implement a GPU LSAP solver via Bertsekas' auction algorithm, and make it available as a [standalone library](https://github.com/bkj/cbert).
 
-SGM is an approximate algorithm that minimizes graph adjacency disagreements via the Frank-Wolfe algorithm. Certain uses of the auction algorithm can introduce additional approximation in the gradients of the Frank-Wolfe iterations.  An interesting direction for future work would be   a rigorous study of the effects of this kind of approximation on a variety of different graph tolopogies.  Understanding of those dynamics could allow further scaling beyond what our current implementations can handle.
+SGM is an approximate algorithm that minimizes graph adjacency disagreements via the Frank-Wolfe algorithm. Certain uses of the auction algorithm can introduce additional approximation in the gradients of the Frank-Wolfe iterations.  An interesting direction for future work would be a rigorous study of the effects of this kind of approximation on a variety of different graph tolopogies.  Understanding of those dynamics could allow further scaling beyond what our current implementations can handle.
 
 **[Vertex Nomination](https://gunrock.github.io/docs/hive_vn.html)** The term "vertex nomination" covers a variety of different node ranking schemes that fuse "content" and "context" information.  The HIVE reference code implements a "multiple-source shortest path" context scoring function, but uses a very suboptimal algorithm.  By using a more efficient algorithm, our serial CPU implementation achieves 1-2 orders of magnitude speedup over the HIVE implementation and our GPU implementation achieves another 1-2 orders of magnitude on top of that.  Implementation was straightforward, involving only a small modification to the existing Gunrock SSSP app.
 

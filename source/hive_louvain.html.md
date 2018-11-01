@@ -12,19 +12,19 @@ full_length: true
 
 # Community Detection (Louvain)
 
-Community detection in graphs is to group vertices together, such that those
+Community detection in graphs means grouping vertices together, so that those vertices
 that are closer (have more connections) to each other are placed in the same cluster.
 A commonly used algorithm for community detection is Louvain
 (<https://arxiv.org/pdf/0803.0476.pdf>).
 
 ## Summary of Results
 
-The Gunrock uses sort and segmented reduce to implement the
+The Gunrock implementation uses sort and segmented reduce to implement the
 Louvain algorithm, different from the commonly used hash table mapping. The GPU
 implementation is about ~1.5X faster than the OpenMP implementation, and also
-faster than pervious GPU works. It is still unknown whether the sort and
-segmented reduce formulation maps the problem batter than hash table on the GPU. The
-modularities resulted from the GPU implementation are within small differences
+faster than previous GPU works. It is still unknown whether the sort and
+segmented reduce formulation map the problem better than hash table on the GPU. The
+modularities resulting from the GPU implementation are within small differences
 as the serial implementation, and are better when the graph is larger. A custom
 hash table can potentially improve the running time. The GPU Louvain
 implementation should have moderate scalability across multiple GPUs in an
@@ -330,15 +330,15 @@ in the output section, that variation could be caused by concurrent movement of 
 - **Running time** Overall, the Gunrock implementation is 2x to 5x faster than
 previous work on GPU (Naim 2017, Cheong 2013). Our OMP implementation is a bit
 faster than PNNL's, and much faster than previous work using multiple CPU
-threads (Lu 2015, Naim 2016). The sequential CPU is an order faster than previous
+threads (Lu 2015, Naim 2016). The sequential CPU is an order of magnitude faster than previous
 sequential CPU work (Naim 2017, Naim 2016, Blondel 2008, Cheong 2013, Lu 2015).
 Comparing across different Gunrock implementations, the GPU is not always the
 fastest: on small graphs, GPU could actually be slower, caused by GPU kernel
 overheads and hardware underutilization; so for small graphs, the OpenMP
-implementation may be a better choice. Gunrock's GPU implementation particaully
+implementation may be a better choice. Gunrock's GPU implementation in practice
 runs slower than OpenMP for mesh-like graphs, in which every vertex only has a
 very small neighbor list; the parallel formulation Gunrock uses does not work
-well on this kind of graphs.
+well on this kind of graph.
 
 Published results (timing and modularity) from previous work are summarized in
 the [louvain_results.xlsx]( attachments/louvain/louvain_results.xlsx "Louvain
@@ -398,22 +398,22 @@ Louvain not only needs to store the key-value pairs, but also to accumulate  val
 - In the next phase, query the _positions_ of the keys, and use atomics to accumulate the values belonging to the same key, in a separate array.
 - There must be a barrier between the two phases; all insertions of the first phase need to be visible to the second phase.
 
-This kind of hash table removes the strong restriction that the key-value pair needs to be able to support an atomic compare-and-exchange operation, which is imposed by vanilla hash table implementations. The custom hash table is also more value-accumulation-friendly. It replaces the sort-segmented reduce part, and can reduce the workload from about O(6|E|) to O(2|E|), and the memory requirement from 48|E| bytes to 24|E|. However, the memory access pattern now become irregular and uncoalesced, so it is still unknown whether it can actually yield a performance gain.
+This kind of hash table removes the strong restriction that the key-value pair needs to be able to support an atomic compare-and-exchange operation, which is imposed by vanilla hash table implementations. The custom hash table is also more value-accumulation-friendly. It replaces the sort-segmented reduce part, and can reduce the workload from about O(6|E|) to O(2|E|), and the memory requirement from 48|E| bytes to 24|E|. However, the memory access pattern now becomes irregular and uncoalesced, so it is still unknown whether it can actually yield a performance gain.
 
 #### Iteration and pass stop conditions
 
 The concurrent nature of the GPU implementation makes modularity gain
 calculation inaccurate. Community migrations are also observed. Because of
 these, the optimization iterations and the passes may run more than needed,
-and resulted in longer running time, especially in the first pass. Preliminary
+and resulted in longer running times, especially in the first pass. Preliminary
 experiments to cap the number of iterations for the first pass can reduce the
 running time by about 40%, with the modularity value roughly unchanged. The
-actual cap is dataset dependent, and more study is needed to get a better
-understand how to set the cap.
+actual cap is dataset-dependent, and more investigation is needed to get a
+better understanding of how to set the cap.
 
 ### Gunrock implications
 
-The core of Louvain implementation mainly uses all-edges advance, sort, segmented reduce, and for loops. The sort-segmented reduce operation is actually a segmented keyed reduce; if that's a common operation that appears  in more algorithms, it could be made into a new operator. The all-edges advance is used quite often in several applications, so wrapping it with a simpler operator interface could be helpful.
+The core of the Louvain implementation mainly uses all-edges advance, sort, segmented reduce, and for loops. The sort-segmented reduce operation is actually a segmented keyed reduce; if that's a common operation that appears  in more algorithms, it could be made into a new operator. The all-edges advance is used quite often in several applications, so wrapping it with a simpler operator interface could be helpful.
 
 ### Notes on multi-GPU parallelization
 
@@ -435,14 +435,14 @@ Louvain needs to go over the whole graph once in each modularity optimization it
 
 All parts of Louvain are graph related, and fully implemented in Gunrock.
 
-**Reference**
+**References**
 
-[1] Hao Lu, Mahantesh Halappanavar, Ananth Kalyanaraman. "Parallel Heuristics for Scalable Community Detection", https://arxiv.org/abs/1410.1237 (2015);
+[1] Hao Lu, Mahantesh Halappanavar, Ananth Kalyanaraman. "Parallel Heuristics for Scalable Community Detection", <https://arxiv.org/abs/1410.1237> (2015).
 
-[2] Cheong C.Y., Huynh H.P., Lo D., Goh R.S.M. "Hierarchical Parallel Algorithm for Modularity-Based Community Detection Using GPUs". Euro-Par 2013;
+[2] Cheong C.Y., Huynh H.P., Lo D., Goh R.S.M. "Hierarchical Parallel Algorithm for Modularity-Based Community Detection Using GPUs". Euro-Par 2013.
 
-[3] Md. Naim, Fredrik Manne, Mahantesh Halappanavar, and Antonio Tumeo. "Highly Scalable Community Detection Using a GPU", https://www.eecs.wsu.edu/~assefaw/CSC16/abstracts/naim-CSC16_paper_14.pdf (2016);
+[3] Md. Naim, Fredrik Manne, Mahantesh Halappanavar, and Antonio Tumeo. "Highly Scalable Community Detection Using a GPU", <https://www.eecs.wsu.edu/~assefaw/CSC16/abstracts/naim-CSC16_paper_14.pdf> (2016).
 
-[4] M. Naim, F. Manne, M. Halappanavar and A. Tumeo, "Community Detection on the GPU," IPDPS `17;
+[4] M. Naim, F. Manne, M. Halappanavar and A. Tumeo, "Community Detection on the GPU," IPDPS `17.
 
-[5] Vincent D. Blondel, Jean-Loup Guillaume, Renaud Lambiotte, Etienne Lefebvre, "Fast unfolding of communities in large networks". https://arxiv.org/abs/0803.0476 (2008);
+[5] Vincent D. Blondel, Jean-Loup Guillaume, Renaud Lambiotte, Etienne Lefebvre, "Fast unfolding of communities in large networks". <https://arxiv.org/abs/0803.0476> (2008).
