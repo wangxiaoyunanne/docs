@@ -121,13 +121,18 @@ make
 python random-values.py 39 > chesapeake.values
 
 # uniform random
-./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --walk-mode 0 --seed 123
+./bin/test_rw_9.1_x86_64 --graph-type market --graph-file \
+  ../../dataset/small/chesapeake.mtx --walk-mode 0 --seed 123
 
 # greedy
-./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values --walk-mode 1
+./bin/test_rw_9.1_x86_64 --graph-type market --graph-file \
+  ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values \
+  --walk-mode 1
 
 # stochastic greedy
-./bin/test_rw_9.1_x86_64 --graph-type market --graph-file ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values --walk-mode 2 --seed 123
+./bin/test_rw_9.1_x86_64 --graph-type market --graph-file \
+  ../../dataset/small/chesapeake.mtx --node-value-path chesapeake.values \
+  --walk-mode 2 --seed 123
 ```
 
 #### Example Output
