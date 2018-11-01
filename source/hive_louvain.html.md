@@ -435,7 +435,25 @@ Louvain needs to go over the whole graph once in each modularity optimization it
 
 All parts of Louvain are graph related, and fully implemented in Gunrock.
 
-**References**
+### Research potential
+
+Community detection on graphs is generally an interesting research topic,
+and people have tried to come out with good GPU implementations for it.
+It's the first time Louvain is mapped to sort and segmented reduce, so more
+comparisons are needed to know whether it's better than the hash table mapping.
+The custom hash table implementation is worth trying out, and compared with the
+current sort and segmented reduce implementation. Multi-GPU implementations,
+particularly the graph contraction part, can be a place for research
+investigation: it may be better to contract the graph onto a single GPU,
+or even the CPU, when the graph is small; but where is the threshold and how to
+do the multi-GPU to single-GPU or CPU switch?
+
+Label propagation is another algorithm for community detection, shares similar
+structure as Louvain, but has simpler way to decide how to move the vertices.
+Comparing them side by side, for both result quality (the modularity value) and
+computation speed (the running time) will be beneficial.
+
+**Reference**
 
 [1] Hao Lu, Mahantesh Halappanavar, Ananth Kalyanaraman. "Parallel Heuristics for Scalable Community Detection", <https://arxiv.org/abs/1410.1237> (2015).
 
