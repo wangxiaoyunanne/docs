@@ -62,8 +62,8 @@ def spatial_center(Vertex v):
 
 | Approach         | Memory Usage | Memory Reads/Vertex  | Device Barriers | Largest Dataset (P100) |
 |------------------|--------------|----------------------|-----------------|------------------------|
-| Global Gather    | O(3x\|E\|)   | # of valid locations | 1               | ~160M Edges            |
-| Repeated Compute | O(\|E\|)     | degree of vertex     | 0               | ~500M Edges            |
+| Global Gather    | O(3x[E])     | # of valid locations | 1               | ~160M Edges            |
+| Repeated Compute | O([E])       | degree of vertex     | 0               | ~500M Edges            |
 
 
 **Note:** `spatial_median()` is defined as center of points on earth's surface -- given a set of points `Q`, the function computes the point `p` such that: `sum([haversine_distance(p, q) for q in Q])` is minimized. See `gunrock/app/geo/geo_spatial.cuh` for details on the spatial median implementation.
@@ -236,11 +236,11 @@ One way to implement this will use the `ForAll()` operator for the parallel comp
 
 ### Comparison against existing implementations
 
-| GPU  | Dataset            | \|V\|    | \|E\|     | Iterations | Spatial Iters | GTUSC (16 threads) | Gunrock (CPU)  | Gunrock (GPU) |
+| GPU  | Dataset            | [V]      | [E]       | Iterations | Spatial Iters | GTUSC (16 threads) | Gunrock (CPU)  | Gunrock (GPU) |
 |------|--------------------|----------|-----------|------------|---------------|--------------------|----------------|---------------|
-| P100 | sample             | 39       | 170       | 10         | 1000          | N/A                | 0.144005 ms    | 0.022888 ms   |
-| P100 | instagram          | 23731995 | 82711740  | 10         | 1000          | 8009.491 ms        | 1589.884033 ms | 15.113831 ms  |
-| V100 | twitter            | 50190344 | 488078602 | 10         | 1000          | N/A                | 9216.666016 ms | 46.108007 ms  |
+| P100 | sample             | 39       | 170       | 10         | 1000          | N/A                | 0.144005       | 0.022888      |
+| P100 | instagram          | 23731995 | 82711740  | 10         | 1000          | 8009.491 ms        | 1589.884033    | 15.113831     |
+| V100 | twitter            | 50190344 | 488078602 | 10         | 1000          | N/A                | 9216.666016    | 46.108007     |
 
 On a workload that fills the GPU, gunrock outperforms GT's OpenMP C++ implementation by ~533x. Comparing gunrock's GPU vs. CPU performance, we see that gunrock's GPU version outperforms the CPU implementation by 100x. There is a lack of available datasets against which we can compare performance, so we use only the provided instagram and twitter datasets, and a toy sample for a sanity check on NVIDIA's P100 with 16GB of global memory and V100 with 32GB of global memory. All tested implementations meet the criteria of accuracy, which is validated against the output of the original python implementation.
 

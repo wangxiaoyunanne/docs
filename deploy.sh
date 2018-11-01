@@ -33,6 +33,10 @@ run_build() {
   sed -i -- 's/&#39;/'"'"'/g' ./build/*.html
   sed -i -- 's/&lt;/</g' ./build/*.html
   sed -i -- 's/&gt;/>/g' ./build/*.html
+
+  # hive-docs
+  sed -i 's/\b=\"highlight\b/& mid-column-code/' ./build/hive_*.html
+  sed -i 's/<table>/<table style=\"font-size: 12px;\">/g' ./build/hive_*.html
 }
 
 parse_args() {
