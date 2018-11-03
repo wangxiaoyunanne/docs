@@ -30,6 +30,14 @@ Pretty wide table
 | Graph contraction       | 5E / p + E'      | 8E' bytes | 5E/p + E' : 8E' | Hard | 16E' bytes               |
 | Louvain                 | 10(E + V) / p    | 20V bytes | E/p : 2V        | Okay | 88E/p + 12V + 16E' bytes |
 
+Pretty wide table, with math
+
+| Parts                   | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-------------------------|------------------|-----------|-----------------|------|--------------------------|
+| Modularity optimization | $10(E + V) /p$     | $20V$ bytes | $E/p : 2V$        | Okay | $88E/p + 12V$ bytes        |
+| Graph contraction       | $5E / p + E'$      | $8E'$ bytes | $5E/p + E' : 8E'$ | Hard | $16E'$ bytes               |
+| Louvain                 | $10(E + V) / p$    | $20V$ bytes | E/p : 2V        | Okay | $88E/p + 12V + 16E'$ bytes |
+
 JDO hacked version of above
 
 | Parts                   | Comp cost | Comm cost    | Comp/comm ratio | Scalability | Memory usage (B) |
@@ -57,6 +65,18 @@ Even wider table
 | Triangle Counting     | (d + a x log(d))E/p + 2V | aE/p x 12 + 8V bytes | \~(d + a x log(d)) : 12a | Okay | |
 | Scan Statistics (wedge checks) | (d + a x log(d))E/p + 2V + V/p | 12aE/p + 8V bytes | \~ (d + a x log(d)) : 12a | Okay | |
 | Scan Statistics (intersection) | Vdd + V/p | 8V bytes | dd : 8 | Perfect | |
+
+Even wider table, with math!
+
+| Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-----------------------|------------|---------------|----------------------|-------------|--------------|
+| Wedge generation      | $dE/p$     |                 | | | |
+| Wedge communication   | 0      | $aE/p \times 12$ bytes   | | | |
+| Wedge checking        | $aE/p x \log(d)$ |            | | | |
+| AllReduce             | $2V$         | $2V \times 4$ bytes  | | | |
+| Triangle Counting     | $(d + a x \log(d))E/p + 2V$ | $aE/p x 12 + 8V$ bytes | $~(d + a \cdot \log(d))$ : $12a$ | Okay | |
+| Scan Statistics (wedge checks) | $(d + a x \log(d))E/p + 2V + V/p$ | $12aE/p + 8V$ bytes | $~(d + a \cdot \log(d)) : 12a$ | Okay | |
+| Scan Statistics (intersection) | $Vdd + V/p$ | $8V$ bytes | $dd : 8$ | Perfect | |
 
 JDO hacked version of above
 
@@ -93,6 +113,48 @@ Table with line breaks
 | Local graph clustering | (6 + d)/p : 4 | Good | Easy |
 | Seeded graph matching | | | |
 | Application classification | | | |
+
+Table with line breaks, laid out as a grid table
+
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Application                     | Computation to communication ratio              | Scalability    | Implementation difficulty |
++=================================+=================================================+================+===========================+
+| Louvain                         | $E/p : 2V$                                      | Okay           | Hard                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Graph SAGE                      | $\sim CF : \min(C, 2p) \cdot 4$                 | Good           | Easy                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Random walk                     | Duplicated graph: infinity\                     | Perfect\       | Trivial\                  |
+|                                 | Distributed graph: 1 : 24                       | Very poor      | Easy                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Graph search: Uniform           | 1 : 24                                          | Very poor      | Easy                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Graph search: Greedy            | Straightforward: d : 24\                        | Poor\          | Easy\                     |
+|                                 | Pre-visit: 1:24                                 | Very poor      | Easy                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Graph search: Stochastic greedy | Straightforward: d : 24\                        | Poor\          | Easy\                     |
+|                                 | Pre-visit: $\log(d) : 24$                       | Very poor      | Easy                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Geolocation                     | Explicit movement: $25E/p : 4V$\                | Okay\          | Easy\                     |
+|                                 | UVM or peer access: 25 : 1                      | Good           | Easy                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Vertex nomination               | $E : 8V \cdot \min(d, p)$                       | Okay           | Easy                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Scan statistics                 | Duplicated graph: infinity\                     | Perfect\       | Trivial\                  |
+|                                 | Distributed graph: $\sim(d+a \cdot \log(d)):12$ | Okay           | Easy                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Sparse fused lasso              | $\sim a:8$                                      | Less than okay | Hard                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Graph projection                | Duplicated graph : infinity\                    | Perfect\       | Easy\                     |
+|                                 | Distributed graph : $dE/p + E' : 6E'$           | Okay           | Easy                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Local graph clustering          | $(6 + d)/p : 4$                                 | Good           | Easy                      |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Seeded graph matching           |                                                 |                |                           |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+| Application classification      |                                                 |                |                           |
++---------------------------------+-------------------------------------------------+----------------+---------------------------+
+
+
 
 JDO hacked version of above
 
@@ -136,6 +198,42 @@ Really wide table
 | *Feature in UVM*      | | | | | |
 | Child-centric comp.   | BCF x (2 + L + Wf1.y + Wa1.y) | 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU + 4BCLF bytes over GPU-CPU | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor | |
 | Graph SAGE            | B x (C + 3CF + 3LCF + (Wf1.y + Wa1.y) x (CF + C + F + Wf2.y + Wa2.y)) | 8BC + 4B x (F + Wf1.y + Wa1.y) x min(C, 2p) bytes over GPU-GPU + 4BCFL bytes over GPU-CPU | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor | |
+
+Really wide table, with math
+
+| Parts                 | Comp. cost | Comm. cost    | Comp. to comm. ratio | Scalability | Memory usage |
+|-----------------------|------------|---------------|----------------------|-------------|--------------|
+| *Feature duplication* | | | | | |
+| Children selection    | $BC$ | $8BC$ bytes | 1 : 8 | Poor | |
+| Child-centric comp.   | $BCF \cdot (2 + L + \textit{Wf1}.y + Wa1.y)$ | $4B \cdot (F + Wf1.y + Wa1.y) \cdot \min(C, 2p)$ bytes | $~ CF : \min(C, 2p) \cdot 4$ | Good | |
+| Source-centric comp.  | $B \cdot (CF + (Wf1.y + Wa1.y) \cdot (C + F + Wf2.y + Wa2.y)$ | 0 bytes | N.A. | N.A. | |
+| Graph SAGE            | $B \cdot (C + 3CF + 3LCF + (Wf1.y + Wa1.y) \cdot (CF + C + F + Wf2.y + Wa2.y))$ | $8BC + 4B \cdot (F + Wf1.y + Wa1.y) \cdot \min(C, 2p)$ bytes | at least $~ CF : \min(C, 2p) \cdot 4$ | Good | |
+| | | | | | |
+| *Direct feature access* | | | | | |
+| Child-centric comp.   | $BCF \cdot (2 + L + Wf1.y + Wa1.y)$ | $4B \cdot ((F + Wf1.y + Wa1.y) \cdot \min(C, 2p) + CLF)$ bytes | $~ (2 + L + Wf1.y + Wa1.y) : 4L$ | poor | |
+| Graph SAGE            | $B \cdot (C + 3CF + 3LCF + (Wf1.y + Wa1.y) \cdot (CF + C + F + Wf2.y + Wa2.y))$ | $8BC + 4B \cdot (F + Wf1.y + Wa1.y) \cdot \min(C, 2p) + 4BCFL$ bytes | $~ (2 + L + Wf1.y + Wa1.y) : 4L$ | poor | |
+| | | | | | |
+| *Feature in UVM*      | | | | | |
+| Child-centric comp.   | $BCF \cdot (2 + L + Wf1.y + Wa1.y)$ | $4B \cdot (F + Wf1.y + Wa1.y) \cdot min(C, 2p)$ bytes over GPU-GPU + $4BCLF$ bytes over GPU-CPU | $~ (2 + L + Wf1.y + Wa1.y) : 4L$ over GPU-CPU | very poor | |
+| Graph SAGE            | $B \cdot (C + 3CF + 3LCF + (Wf1.y + Wa1.y) \cdot (CF + C + F + Wf2.y + Wa2.y))$ | $8BC + 4B \cdot (F + Wf1.y + Wa1.y) \cdot \min(C, 2p)$ bytes over GPU-GPU + $4BCFL$ bytes over GPU-CPU | $~ (2 + L + Wf1.y + Wa1.y) : 4L$ over GPU-CPU | very poor | |
+
+Really wide table, with math, nicely laid out
+
+| Parts                 | Computation cost | Communication cost (Bytes)    | Comp. to comm. ratio | Scalability |
+|--------------|--------------|-----------------|-----------------|---------|
+| *Feature duplication* | | | | | |
+| Children selection    | $BC$ | $8BC$ | 1 : 8 | Poor | |
+| Child-centric comp.   | $BCF \cdot (2 + L + \textrm{Wf1}.y + \textrm{Wa1}.y)$ | $4B \cdot (F + \textrm{Wf1}.y + \textrm{Wa1}.y) \cdot \min(C, 2p)$ | $~ CF : \min(C, 2p) \cdot 4$ | Good |
+| Source-centric comp.  | $B \cdot (CF + (\textrm{Wf1}.y + \textrm{Wa1}.y) \cdot (C + F + \textrm{Wf2}.y + \textrm{Wa2}.y)$ | 0 | N.A. | N.A. |
+| Graph SAGE            | $B \cdot (C + 3CF + 3LCF + (\textrm{Wf1}.y + \textrm{Wa1}.y) \cdot (CF + C + F + \textrm{Wf2}.y + \textrm{Wa2}.y))$ | $8BC + 4B \cdot (F + \textrm{Wf1}.y + \textrm{Wa1}.y) \cdot \min(C, 2p)$ | at least $~ CF : \min(C, 2p) \cdot 4$ | Good |
+| | | | | |
+| *Direct feature access* | | | | |
+| Child-centric comp.   | $BCF \cdot (2 + L + \textrm{Wf1}.y + \textrm{Wa1}.y)$ | $4B \cdot ((F + \textrm{Wf1}.y + \textrm{Wa1}.y) \cdot \min(C, 2p) + CLF)$ | $~ (2 + L + \textrm{Wf1}.y + \textrm{Wa1}.y) : 4L$ | poor |
+| Graph SAGE            | $B \cdot (C + 3CF + 3LCF + (\textrm{Wf1}.y + \textrm{Wa1}.y) \cdot (CF + C + F + \textrm{Wf2}.y + \textrm{Wa2}.y))$ | $8BC + 4B \cdot (F + \textrm{Wf1}.y + \textrm{Wa1}.y) \cdot \min(C, 2p) + 4BCFL$ | $~ (2 + L + \textrm{Wf1}.y + \textrm{Wa1}.y) : 4L$ | poor |
+| | | | | |
+| *Feature in UVM*      | | | | |
+| Child-centric comp.   | $BCF \cdot (2 + L + \textrm{Wf1}.y + \textrm{Wa1}.y)$ | $4B \cdot (F + \textrm{Wf1}.y + \textrm{Wa1}.y) \cdot \min(C, 2p)$ bytes over GPU-GPU + $4BCLF$ bytes over GPU-CPU | $~ (2 + L + \textrm{Wf1}.y + \textrm{Wa1}.y) : 4L$ over GPU-CPU | very poor |
+| Graph SAGE            | $B \cdot (C + 3CF + 3LCF + (\textrm{Wf1}.y + \textrm{Wa1}.y) \cdot (CF + C + F + \textrm{Wf2}.y + \textrm{Wa2}.y))$ | $8BC + 4B \cdot (F + \textrm{Wf1}.y + \textrm{Wa1}.y) \cdot \min(C, 2p)$ bytes over GPU-GPU + $4BCFL$ bytes over GPU-CPU | $~ (2 + L + \textrm{Wf1}.y + \textrm{Wa1}.y) : 4L$ over GPU-CPU | very poor |
 
 JDO hacked version of above
 
@@ -188,3 +286,15 @@ JDO hacked version of above
 | *Feature in UVM*      | | |
 | Child-centric comp.   | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor |
 | Graph SAGE            | \~ (2 + L + Wf1.y + Wa1.y) : 4L over GPU-CPU | very poor |
+
+Let's try a grid table with backslashes.
+
++---------------+---------------+--------------------+
+| Fruit         | Price         | Advantages         |
++===============+===============+====================+
+| Bananas       | first line\   | first line\        |
+|               | next line     | next line          |
++---------------+---------------+--------------------+
+| Bananas       | first line\   | first line\        |
+|               | next line     | next line          |
++---------------+---------------+--------------------+
