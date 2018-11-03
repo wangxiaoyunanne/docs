@@ -22,7 +22,7 @@ pandoc_cmd = ['pandoc',
               '--variable', 'toc-depth=0',
               '--toc',
               '-o', 'sandbox.pdf',
-              # '-o', 'darpa.tex',
+              # '-o', 'sandbox.tex',
               ]
 pandoc_cmd.extend(files)
 
