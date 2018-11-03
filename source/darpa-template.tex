@@ -110,6 +110,9 @@ $if(verbatim-in-note)$
 $endif$
 $if(tables)$
 \usepackage{longtable,booktabs}
+\usepackage{etoolbox}
+\BeforeBeginEnvironment{longtable}{\begin{center}\small}
+\AfterEndEnvironment{longtable}{\end{center}}
 $endif$
 $if(graphics)$
 \usepackage{graphicx,grffile}
