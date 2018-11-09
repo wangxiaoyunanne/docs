@@ -966,21 +966,15 @@ applications.
 |---------------------------------|-------------------------------------------------|----------------|---------------------------|
 | Louvain                         | $E/p : 2V$                                      | Okay           | Hard                      |
 | Graph SAGE                      | $\sim CF : \min(C, 2p) \cdot 4$                 | Good           | Easy                      |
-| Random walk                     | Duplicated graph: infinity                      | Perfect        | Trivial                   |
-|                                 | Distributed graph: $1 : 24$                     | Very poor      | Easy                      |
+| Random walk                     | Duplicated graph: infinity \linebreak Distributed graph: $1 : 24$ | Perfect \linebreak Very poor | Trivial \linebreak Easy |
 | Graph search: Uniform           | $1 : 24$                                        | Very poor      | Easy                      |
-| Graph search: Greedy            | Straightforward: $d : 24$                       | Poor           | Easy                      |
-|                                 | Pre-visit: $1:24$                               | Very poor      | Easy                      |
-| Graph search: Stochastic greedy | Straightforward: $d : 24$                       | Poor           | Easy                      |
-|                                 | Pre-visit: $\log(d) : 24$                       | Very poor      | Easy                      |
-| Geolocation                     | Explicit movement: $25E/p : 4V$                 | Okay           | Easy                      |
-|                                 | UVM or peer access: $25 : 1$                    | Good           | Easy                      |
+| Graph search: Greedy            | Straightforward: $d : 24$ \linebreak Pre-visit: $1:24$  | Poor \linebreak Very poor | Easy \linebreak Easy           |
+| Graph search: Stochastic greedy | Straightforward: $d : 24$ \linebreak Pre-visit: $\log(d) : 24$ | Poor \linebreak Very Poor | Easy \linebreak Easy    |
+| Geolocation                     | Explicit movement: $25E/p : 4V$ \linebreak UVM or peer access: $25 : 1$ | Okay \linebreak Good | Easy \linebreak Easy |
 | Vertex nomination               | $E : 8V \cdot \min(d, p)$                       | Okay           | Easy                      |
-| Scan statistics                 | Duplicated graph: infinity                      | Perfect        | Trivial                   |
-|                                 | Distributed graph: $\sim(d+a \cdot \log(d)):12$ | Okay           | Easy                      |
+| Scan statistics                 | Duplicated graph: infinity \linebreak Distributed graph: $\sim(d+a \cdot \log(d)):12$ | Perfect \linebreak Okay | Trivial \linebreak Easy |
 | Sparse fused lasso              | $\sim a:8$                                      | Less than okay | Hard                      |
-| Graph projection                | Duplicated graph : infinity                     | Perfect        | Easy                      |
-|                                 | Distributed graph : $dE/p + E' : 6E'$           | Okay           | Easy                      |
+| Graph projection                | Duplicated graph : infinity \linebreak Distributed graph : $dE/p + E' : 6E'$ | Perfect \linebreak Okay | Easy \linebreak Easy |
 | Local graph clustering          | $(6 + d)/p : 4$                                 | Good           | Easy                      |
 | Seeded graph matching           |                                                 |                |                           |
 | Application classification      |                                                 |                |                           |

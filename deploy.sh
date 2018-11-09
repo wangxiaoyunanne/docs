@@ -26,6 +26,7 @@ run_build() {
   wget -O ./source/includes/README.md https://raw.githubusercontent.com/gunrock/gunrock/master/README.md
   # pandoc --from markdown-tex_math_dollars --to html source/sandbox.html.md > source/hive_sandbox.html.md
   pandoc --from markdown-tex_math_dollars --to markdown_github source/sandbox.html.md > source/hive_sandbox.html.md
+  sed -i 's/\\linebreak/<br>/g' ./source/hive_scaling.html.md
 
   # build documentation
   bundle exec middleman build --clean
