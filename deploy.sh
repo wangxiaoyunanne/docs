@@ -26,7 +26,6 @@ run_build() {
   wget -O ./source/includes/README.md https://raw.githubusercontent.com/gunrock/gunrock/master/README.md
   # pandoc --from markdown-tex_math_dollars --to html source/sandbox.html.md > source/hive_sandbox.html.md
   pandoc --from markdown-tex_math_dollars --to markdown_github source/sandbox.html.md > source/hive_sandbox.html.md
-  sed -i 's/\\linebreak/<br>/g' ./source/hive_scaling.html.md
 
   # build documentation
   bundle exec middleman build --clean
@@ -42,6 +41,7 @@ run_build() {
   sed -i 's/\b=\"highlight\b/& mid-column-code/' ./build/hive_*.html
   sed -i 's/<table>/<table style=\"font-size: 12px;\">/g' ./build/hive_*.html
   sed -i 's/<table style=\"/<table style=\"font-size: 12px;/g' ./build/hive_*.html
+  sed -i 's/\\linebreak/<br><br>/g' ./build/hive_scaling.html
 }
 
 parse_args() {
