@@ -41,7 +41,7 @@ run_build() {
   sed -i 's/\b=\"highlight\b/& mid-column-code/' ./build/hive_*.html
   sed -i 's/<table>/<table style=\"font-size: 12px;\">/g' ./build/hive_*.html
   sed -i 's/<table style=\"/<table style=\"font-size: 12px;/g' ./build/hive_*.html
-  sed -i 's/\\linebreak/<br><br>/g' ./build/hive_scaling.html
+  sed -i 's/\\linebreak/<br>/g' ./build/hive_scaling.html
 }
 
 parse_args() {

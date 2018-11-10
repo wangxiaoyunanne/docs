@@ -110,15 +110,15 @@ The term "vertex nomination" covers a variety of different node ranking schemes 
 |---------------------------------|-------------------------------------------------|----------------|---------------------------|
 | Louvain                         | $E/p : 2V$                                      | Okay           | Hard                      |
 | Graph SAGE                      | $\sim CF : \min(C, 2p) \cdot 4$                 | Good           | Easy                      |
-| Random walk                     | Duplicated graph: infinity <br> Distributed graph: $1 : 24$ | Perfect <br> Very poor | Trivial <br> Easy |
+| Random walk                     | Duplicated graph: infinity \linebreak Distributed graph: $1 : 24$ | Perfect \linebreak Very poor | Trivial \linebreak Easy |
 | Graph search: Uniform           | $1 : 24$                                        | Very poor      | Easy                      |
-| Graph search: Greedy            | Straightforward: $d : 24$ <br> Pre-visit: $1:24$  | Poor <br> Very poor | Easy <br> Easy           |
-| Graph search: Stochastic greedy | Straightforward: $d : 24$ <br> Pre-visit: $\log(d) : 24$ | Poor <br> Very Poor | Easy <br> Easy    |
-| Geolocation                     | Explicit movement: $25E/p : 4V$ <br> UVM or peer access: $25 : 1$ | Okay <br> Good | Easy <br> Easy |
+| Graph search: Greedy            | Straightforward: $d : 24$ \linebreak Pre-visit: $1:24$  | Poor \linebreak Very poor | Easy \linebreak Easy           |
+| Graph search: Stochastic greedy | Straightforward: $d : 24$ \linebreak Pre-visit: $\log(d) : 24$ | Poor \linebreak Very Poor | Easy \linebreak Easy    |
+| Geolocation                     | Explicit movement: $25E/p : 4V$ \linebreak UVM or peer access: $25 : 1$ | Okay \linebreak Good | Easy \linebreak Easy |
 | Vertex nomination               | $E : 8V \cdot \min(d, p)$                       | Okay           | Easy                      |
-| Scan statistics                 | Duplicated graph: infinity <br> Distributed graph: $\sim (d+a \cdot \log(d)):12$ | Perfect <br> Okay | Trivial <br> Easy |
+| Scan statistics                 | Duplicated graph: infinity \linebreak Distributed graph: $\sim (d+a \cdot \log(d)):12$ | Perfect \linebreak Okay | Trivial \linebreak Easy |
 | Sparse fused lasso              | $\sim a:8$                                      | Less than okay | Hard                      |
-| Graph projection                | Duplicated graph : infinity <br> Distributed graph : $dE/p + E' : 6E'$ | Perfect <br> Okay | Easy <br> Easy |
+| Graph projection                | Duplicated graph : infinity \linebreak Distributed graph : $dE/p + E' : 6E'$ | Perfect \linebreak Okay | Easy \linebreak Easy |
 | Local graph clustering          | $(6 + d)/p : 4$                                 | Good           | Easy                      |
 | Seeded graph matching           |                                                 |                |                           |
 | Application classification      |                                                 |                |                           |
