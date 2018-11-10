@@ -106,6 +106,8 @@ The term "vertex nomination" covers a variety of different node ranking schemes 
 
 ## Scaling analysis for HIVE applications 
 **[Scaling analysis for HIVE applications](https://gunrock.github.io/docs/hive_scaling.html)** 
+Summary of all hive applications (computation/communication, scalability and implementation difficulty):
+
 | Application                     | Computation to communication ratio              | Scalability    | Implementation difficulty |
 |---------------------------------|-------------------------------------------------|----------------|---------------------------|
 | Louvain                         | $E/p : 2V$                                      | Okay           | Hard                      |
