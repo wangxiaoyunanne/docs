@@ -106,27 +106,22 @@ The term "vertex nomination" covers a variety of different node ranking schemes 
 
 ## Scaling analysis for HIVE applications 
 **[Scaling analysis for HIVE applications](https://gunrock.github.io/docs/hive_scaling.html)** 
-
-| Application | Computation to communication ratio | Scalability | Implementation diff. |
-|-------------|----------------|------|------|
-| Louvain     | E/p : 2V       | Okay | Hard |
-| Graph SAGE  | \~ CF : min(C, 2p)x4 | Good | Easy |
-| Random walk | Duplicated graph: infinity | Perfect | Trivial |
-| Random walk | Distrib. graph: 1 : 24 | Very poor | Easy |
-| Graph search: Uniform  | 1 : 24               | Very poor   | Easy |
-| Graph search: Greedy   | Straightforward: d : 24 | Poor | Easy |
-| Graph search: Greedy   | Pre-visit: 1:24 | Very poor | Easy |
-| G.S.: Stochastic greedy | Straightforward: d : 24 | Poor | Easy |
-| G.S.: Stochastic greedy | Pre-visit: log(d) : 24 | Very poor | Easy |
-| Geolocation| Explicit movement: 25E/p : 4V | Okay | Easy |
-| Geolocation| UVM or peer access: 25 : 1 | Good | Easy |
-| Vertex nomination | E : 8V x min(d, p) | Okay | Easy |
-| Scan statistics   | Duplicated graph: infinity | Perfect | Trivial |
-| Scan statistics   | Distrib. graph: \~ (d + a * log(d)) : 12 | Okay | Easy |
-| Sparse fused lasso | \~ a:8 | Less than okay | Hard |
-| Graph projection | Duplicated graph : infinity | Perfect | Easy |
-| Graph projection |  Distrib. graph : dE/p + E' : 6E' | Okay | Easy |
-| Local graph clustering | (6 + d)/p : 4 | Good | Easy |
+| Application                     | Computation to communication ratio              | Scalability    | Implementation difficulty |
+|---------------------------------|-------------------------------------------------|----------------|---------------------------|
+| Louvain                         | $E/p : 2V$                                      | Okay           | Hard                      |
+| Graph SAGE                      | $\sim CF : \min(C, 2p) \cdot 4$                 | Good           | Easy                      |
+| Random walk                     | Duplicated graph: infinity <br> Distributed graph: $1 : 24$ | Perfect <br> Very poor | Trivial <br> Easy |
+| Graph search: Uniform           | $1 : 24$                                        | Very poor      | Easy                      |
+| Graph search: Greedy            | Straightforward: $d : 24$ <br> Pre-visit: $1:24$  | Poor <br> Very poor | Easy <br> Easy           |
+| Graph search: Stochastic greedy | Straightforward: $d : 24$ <br> Pre-visit: $\log(d) : 24$ | Poor <br> Very Poor | Easy <br> Easy    |
+| Geolocation                     | Explicit movement: $25E/p : 4V$ <br> UVM or peer access: $25 : 1$ | Okay <br> Good | Easy <br> Easy |
+| Vertex nomination               | $E : 8V \cdot \min(d, p)$                       | Okay           | Easy                      |
+| Scan statistics                 | Duplicated graph: infinity <br> Distributed graph: $\sim (d+a \cdot \log(d)):12$ | Perfect <br> Okay | Trivial <br> Easy |
+| Sparse fused lasso              | $\sim a:8$                                      | Less than okay | Hard                      |
+| Graph projection                | Duplicated graph : infinity <br> Distributed graph : $dE/p + E' : 6E'$ | Perfect <br> Okay | Easy <br> Easy |
+| Local graph clustering          | $(6 + d)/p : 4$                                 | Good           | Easy                      |
+| Seeded graph matching           |                                                 |                |                           |
+| Application classification      |                                                 |                |                           |
 
 Seeded graph matching and application classification are matrix-operation-based
 and not covered in this table.

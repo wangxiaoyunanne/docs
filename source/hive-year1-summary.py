@@ -13,7 +13,8 @@ files = sorted([f for f in os.listdir('.')
                      f.endswith('.html.md') and
                      f != 'hive_year1_summary.html.md' and
                      f != 'hive_template.html.md' and
-                     f != 'hive_scaling.html.md'))])
+                     f != 'hive_scaling.html.md' and
+		     f != 'hive_sandbox.html.md'))])
 
 # I put this back since it doesn't get included in the PDF otherwise
 files.append('hive_scaling.html.md')
