@@ -63,8 +63,8 @@ def spatial_center(Vertex v):
 
 | Approach         | Memory Usage | Memory Reads/Vertex  | Device Barriers | Largest Dataset (P100) |
 |------------------|--------------|----------------------|-----------------|------------------------|
-| Global Gather    | $O(3 \cdot |E|)$     | # of valid locations | 1               | ~160M Edges            |
-| Repeated Compute | $O(|E|)$       | degree of vertex     | 0               | ~500M Edges            |
+| Global Gather    | $O(3 \cdot \cardinality{E}$     | # of valid locations | 1               | ~160M Edges            |
+| Repeated Compute | $O(\cardinality{E})$       | degree of vertex     | 0               | ~500M Edges            |
 
 
 **Note:** `spatial_median()` is defined as center of points on earth's surface -- given a set of points `Q`, the function computes the point `p` such that: `sum([haversine_distance(p, q) for q in Q])` is minimized. See `gunrock/app/geo/geo_spatial.cuh` for details on the spatial median implementation.
