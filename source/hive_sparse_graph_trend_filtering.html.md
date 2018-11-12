@@ -43,28 +43,40 @@ Load the graph and normalize edge weights
 Repeat iteration till convergence:
 
     // First part: Maxflow
-    // Push phase
-    For each local vertex v:
-        If (excess[v] <= 0) continue
-        If (v == source || v == sink) continue
-        For each edge e<v, u> of v:
-            If (capacity[e] <= flow[e]) continue
-            If (height[v] <= height[u]) continue
-            move := min(capacity[e] - flow[e], excess[v])
-            excess[v] -= move
-            flow[e] += move
-            excess[u] += move
-            flow[reverse[e]] -= move
+    Do
+        lockfree_op (num-repeats, V)
+    While no more updates
 
-    // Relabel phase
-    For each local vertex v:
-        If (excess[v] <= 0) continue
+    // Lock-free Push-Relabel operator
+    Def lockfree_op (num-repeats, V):
+        For i from 1 to num-repeats do:
+            For each vertex v in V:
+                If v.excess > 0:
+                    u := lowest_neighbor_in_residual_network (v)
+                    If u.height < v.height:
+                        Push (v, u)
+                    Else:
+                        Relabel (v, u)
+
+    // Finding lowest neighbor in residual network phase
+    Def lowest_neighbor_in_residual_network (v):
         min_height := infinity
         For each e<v, u> of v:
             If (capacity[e] <= flow[e]) continue;
             If (min_height > height[u]) min_height := height[u]
-        If (height[v] <= min_height)
-           height[v] := min_height + 1
+    
+    // Push phase
+    def Push (e<v, u>):
+        residual_capacity[e] := capacity[e] - flow[e]
+        move := min(residual_capacity[e], excess[v])
+        excess[v] -= move
+        flow[e] += move
+        excess[u] += move
+        flow[reverse[e]] -= move
+
+    // Relabel phase
+    Def Relabel (e<v, u>):
+        height[v] := height[u] + 1
 
     // Min-cut
     Run a BFS to mark the accessibilities of vertices from the source vertex
