@@ -42,6 +42,7 @@ run_build() {
   sed -i 's/<table>/<table style=\"font-size: 12px;\">/g' ./build/hive_*.html
   sed -i 's/<table style=\"/<table style=\"font-size: 12px;/g' ./build/hive_*.html
   sed -i 's/\\linebreak/<br>/g' ./build/hive_*.html
+  sed -i -E 's/\\cardinality[^\{\}]*\{([^\}]+)\}/\&vert;\1\&vert;/g' ./build/hive_*.html
 }
 
 parse_args() {
