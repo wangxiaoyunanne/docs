@@ -63,8 +63,8 @@ def spatial_center(Vertex v):
 
 | Approach         | Memory Usage | Memory Reads/Vertex  | Device Barriers | Largest Dataset (P100) |
 |------------------|--------------|----------------------|-----------------|------------------------|
-| Global Gather    | $O(3x &vert; E &vert;)$     | # of valid locations | 1               | ~160M Edges            |
-| Repeated Compute | $O( &vert; E &vert;)$       | degree of vertex     | 0               | ~500M Edges            |
+| Global Gather    | $O(3 \cdot |E|)$     | # of valid locations | 1               | ~160M Edges            |
+| Repeated Compute | $O(|E|)$       | degree of vertex     | 0               | ~500M Edges            |
 
 
 **Note:** `spatial_median()` is defined as center of points on earth's surface -- given a set of points `Q`, the function computes the point `p` such that: `sum([haversine_distance(p, q) for q in Q])` is minimized. See `gunrock/app/geo/geo_spatial.cuh` for details on the spatial median implementation.
@@ -237,7 +237,7 @@ One way to implement this will use the `ForAll()` operator for the parallel comp
 
 ### Comparison against existing implementations
 
-| GPU  | Dataset            | $&vert; V &vert;$    | $&vert; E &vert;$     | Iters | Spatial Iters | GTUSC (16 threads) | Gunrock (CPU)  | Gunrock (GPU) |
+| GPU  | Dataset            | $\cardinality{V}$    | $\cardinality{E}$     | Iters | Spatial Iters | GTUSC (16 threads) | Gunrock (CPU)  | Gunrock (GPU) |
 |------|-----------------|-------------|--------------|----------|------------|----------------|-------------------|---------------|
 | P100 | sample             | 39       | 170       | 10         | 1000          | N/A                | 0.144005       | 0.022888      |
 | P100 | instagram          | 23731995 | 82711740  | 10         | 1000          | 8009.491 ms        | 1589.884033    | 15.113831     |
