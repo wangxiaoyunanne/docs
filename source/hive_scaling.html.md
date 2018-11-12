@@ -203,7 +203,7 @@ framework follows the BSP model.
 Depending on the algorithm, there are several communication models
 that can be used:
 
-- *Peer to host GPU*
+- **Peer to host GPU**
 This communication model is used when data of a vertex or edge on peer
 GPUs need to be accumulated / aggregated onto the host GPU of the
 vertex. When the vertex or edge is only adjacent to a few GPUs, it may
@@ -211,27 +211,27 @@ be beneficial to use direct p2p communication; when the vertex is
 adjacent to most GPUs, a `Reduce` from all GPUs to the host GPU may be
 better.
 
-- *Host GPU to peers*
+- **Host GPU to peers**
 This is the opposite to the peer-to-host model. It propagates data of
 a vertex or edge from its host GPU to all GPUs adjacent to the vertex.
 Similarly, if the number of adjacent GPUs are small, point-to-point
 communication should do the work; otherwise, `broadcast` from the host
 GPU may be better.
 
-- *All reduce*
+- **All reduce**
 When updates on the same vertex or edge come from many GPUs, and the
 results are needed on many GPUs, `AllReduce` may be the best choice. It
 can be viewed as an `peers to host` followed by an `host to peers`
 communication. It can also be used without partitioning the graph: it
 works without knowing or assigning a host GPU to an vertex or edge.
 
-- *Mix all reduce with peers to host GPU or host GPU to peers*
+- **Mix all reduce with peers to host GPU or host GPU to peers**
 This is a mix of `AllReduce` and peer-to-peer communications: for vertices or
 edges that touch a large number of GPUs, `AllReduce` is used; for other
 vertices or edges, direct peer-to-peer communications are used. This
 communication model is coupled with the high / low degree partitioning scheme.
 The paper "Scalable Breadth-First Search on a GPU Cluster"
-<https://arxiv.org/abs/1803.03922> has more details on this model.
+<https://escholarship.org/uc/item/9bd842z6> has more details on this model.
 
 ### Peer accesses
 
@@ -378,14 +378,15 @@ Do
 While iterations stop condition not met
 ```
 
-The local computation cost is on the order of O(|E| + |V|)/p, but with a large
-constant hidden by the O() notation. From experiments, the constant factor is
-about 10, considering the cost of sort or the random memory access penalty of
-hash table. The community assignment broadcast has a cost of |V| x 4 bytes, and
-the 'AllReduce' costs 2|V| x 8 bytes. These communication costs are the upper
-bound, assuming there are |V| communities, and all vertices update their
-community assignments. In practice, the communication cost can be much lower,
-depending on the dataset.
+The local computation cost is on the order of $O(|E| + |V|)/p$, but
+with a large constant hidden by the $O()$ notation. From experiments,
+the constant factor is about 10, considering the cost of sort or the
+random memory access penalty of hash table. The community assignment
+broadcast has a cost of |V| x 4 bytes, and the 'AllReduce' costs $2|V|
+\times 8$ bytes. These communication costs are the upper bound,
+assuming there are $|V|$ communities, and all vertices update their
+community assignments. In practice, the communication cost can be much
+lower, depending on the dataset.
 
   The graph contraction can be done as below on multiple GPUs:
 
@@ -395,11 +396,12 @@ Send edges <v, u, w> in temp_graph to host_GPU(v);
 Merge received edges and form the new local sub-graph;
 ```
 
-In the worst case, assuming the number of edges in the contracted graph is
-|E'|, the communication cost could be |E'| x 8 bytes, with the computation cost
-at about 5|E|/p + |E'|. For most datasets, the size reduction of graph from the
-contraction step is significant, so the memory needed to receive edges from the
-peer GPUs is manageable; however, if |E'| is large, it can be significant and
+In the worst case, assuming the number of edges in the contracted
+graph is $|E'|$, the communication cost could be $|E'| \times 8$
+bytes, with the computation cost at about $5|E|/p + |E'|$. For most
+datasets, the size reduction of graph from the contraction step is
+significant, so the memory needed to receive edges from the peer GPUs
+is manageable; however, if $|E'|$ is large, it can be significant and
 may run out of GPU memory.
 
 *Summary of Louvain multi-GPU scaling*
@@ -420,18 +422,19 @@ But the scalability should be okay.
 
 ### GraphSAGE
 
-The main memory usage and computation of SAGE are related to the features of
-vertices. While directly accessing the feature data of neighbors via peer
-access is possible and memory-efficient, it will create a huge amount of
-inter-GPU traffic that makes SAGE unscalable in terms of running time. Using
-UVM to store the feature data is also possible, but that will move the traffic
-from inter-GPU to the GPU-CPU connection, which is even less desirable. Although
-there is a risk of using up the GPU memory, especially on graphs that have high
-connectivity, a more scalable way is to duplicate the feature data of neighboring
-vertices. Depending on the graph size and the size of features, not all of the
-above data distribution schemes are applicable. The following analysis focuses
-on the feature duplication scheme, with other schemes' results in the summary
-table.
+The main memory usage and computation of SAGE are related to the
+features of vertices. While directly accessing the feature data of
+neighbors via peer access is possible and memory-efficient, it will
+create a huge amount of inter-GPU traffic that makes SAGE unscalable
+in terms of running time. Using UVM to store the feature data is also
+possible, but that will move the traffic from inter-GPU to the GPU-CPU
+connection, which is even less desirable. Although there is a risk of
+using up the GPU memory, especially on graphs that have high
+connectivity, a more scalable way is to duplicate the feature data of
+neighboring vertices. Depending on the graph size and the size of
+features, not all of the above data distribution schemes are
+applicable. The following analysis focuses on the feature duplication
+scheme, with other schemes' results in the summary table.
 
 SAGE can be separated into three parts, depending on whether the computation
 and data access is source-centric or child-centric.
@@ -482,7 +485,7 @@ Part 3, communication: 0.
 ```
 
 For Part 2's communication, if C is larger than about 2p, using `AllReduce` to
-sum up `child_feature` and `child_temp` for each source will cost less, at B x (F + Wf1.y + Wa1.y) x 2p x 4 bytes.
+sum up `child_feature` and `child_temp` for each source will cost less, at $B \times (F + \textrm{Wf1}.y + \textrm{Wa1}.y) \times 2p \times 4$ bytes.
 
 *Summary of Graph SAGE multi-GPU scaling*
 
@@ -540,10 +543,10 @@ Repeat until all steps of walks finished:
 ```
 
 Using W as the number of walks, for each step, we have
- 
+
 | Parts                 | Comp. cost   | Comm. cost      | Comp/comm ratio  | Scalability |
 |-----------------------|--------------|-----------------|------------------|-------------|
-| Random walk           | $W/p$        | $W/p * 24$ bytes| $1 : 24$         | very poor   |
+| Random walk           | $W/p$        | $W/p \cdot 24$ bytes| $1 : 24$         | very poor   |
 
 Graph search is very similar to random walk, except that instead of
 randomly selecting any neighbor, it selects the neighbor with the
@@ -551,28 +554,28 @@ highest score (when using the `greedy` strategy), or with probabilities
 proportional to the neighbors' scores (when using the `stochastic_greedy`
 strategy). For the `greedy` strategy, a straightforward implementation, when
 reaching a vertex, goes through the whole neighbor list of thatsuch
-vertex and finds the one with maximum score. A more optimized implementation 
+vertex and finds the one with maximum score. A more optimized implementation
 could perform a pre-visit to find the neighbor with
-maximum scored neighbor, with a cost of E/p; during the random walk
+maximum scored neighbor, with a cost of $E/p$; during the random walk
 process, the maximum scored neighbor will be known without going
 through the neighbor list.
 
 For the `stochastic_greedy` strategy, the straightforward implementation would
 also go through all the neighbors, selecting one based on their scores and a
 random number. Preprocessing can also help: perform a scan on the scores of
-each vertex's neighbor list, with a cost of E/p; during the random walk, a binary search would be
+each vertex's neighbor list, with a cost of $E/p$; during the random walk, a binary search would be
 sufficient to select a neighbor, with weighted probabilities.
 
 The cost analysis, depending on the walk strategy and optimization,
                           results in:
 
-| Strategy          | Comp. cost              | Comm. cost       | Comp/comm ratio | Scalability | 
+| Strategy          | Comp. cost              | Comm. cost       | Comp/comm ratio | Scalability |
 |-------------------|-------------------------|------------------|-----------------|-------------|
-| Uniform           | $W/p$                   | $W/p * 24$ bytes | $1 : 24$        | Very poor   |
-| Greedy            | Straightforward: $dW/p$ | $W/p * 24$ bytes | $d : 24$        | Poor        | 
-| Greedy            | Pre-visit: $W/p$        | $W/p * 24$ bytes | $1 : 24$        | Very poor   |
-| Stochastic Greedy | Straightforward: $dW/p$ | $W/p * 24$ bytes | $d : 24$        | Poor        |
-| Stochastic Greedy | Pre-visit: $log(d)W/p$  | $W/p * 24$ bytes | $log(d) : 24$   | Very poor   |
+| Uniform           | $W/p$                   | $W/p \cdot 24$ bytes | $1 : 24$        | Very poor   |
+| Greedy            | Straightforward: $dW/p$ | $W/p \cdot 24$ bytes | $d : 24$        | Poor        |
+| Greedy            | Pre-visit: $W/p$        | $W/p \cdot 24$ bytes | $1 : 24$        | Very poor   |
+| Stochastic Greedy | Straightforward: $dW/p$ | $W/p \cdot 24$ bytes | $d : 24$        | Poor        |
+| Stochastic Greedy | Pre-visit: $log(d)W/p$  | $W/p \cdot 24$ bytes | $log(d) : 24$   | Very poor   |
 
 If the selection of a neighbor is weighted-random, instead of uniformly-random,
 it will increase the computation workload to Wd /p, where d is the average
@@ -580,11 +583,11 @@ degree of vertices in the graph. As a result, the computation-to-communication
 ratio will increase to d:24; for most graphs, this is still not high enough to
 have good scalability.
 
-### Geolocation 
-In each iteration, Geolocation updates a vertex's location based on 
-its neighbors. For multiple GPUs, neighboring vertices's location 
+### Geolocation
+In each iteration, Geolocation updates a vertex's location based on
+its neighbors. For multiple GPUs, neighboring vertices's location
 information needs to be available, either by direct access, UVM, or
-explicit data movement. The following shows how explicit data movement 
+explicit data movement. The following shows how explicit data movement
 can be implemented.
 
 ```
@@ -594,11 +597,11 @@ Do
 While no more update
 ```
 
-The computation cost is on the order of O(|E|/p), if in each iteration 
-all vertices are looking for possible location updates from neighbors. 
-Because the spatial median function has a lot of mathematical 
-computation inside, particularly a haversine() for each edge, the 
-constant factor hidden by O() is large; for simplicity, 100 is used as 
+The computation cost is on the order of O(|E|/p), if in each iteration
+all vertices are looking for possible location updates from neighbors.
+Because the spatial median function has a lot of mathematical
+computation inside, particularly a haversine() for each edge, the
+constant factor hidden by O() is large; for simplicity, 100 is used as
 the constant factor here. Assuming that we broadcast every vertex's
 location gives the upper bound of communication, but in reality, the
 communication should be much less, because 1) not every vertex updates
@@ -609,8 +612,8 @@ is low.
 
 | Comm. method          | Comp. cost   | Comm. cost      | Comp/comm ratio | Scalability |
 |-----------------------|--------------|-----------------|-----------------|-------------|
-| Explicit movement     | $100E/p$     | $2V * 8$ bytes  | $25E/p : 4V$    | Okay        |
-| UVM or peer access    | $100E/p$     | $E/p * 8$ bytes | $25 : 1$        | Good        |
+| Explicit movement     | $100E/p$     | $2V \cdot 8$ bytes  | $25E/p : 4V$    | Okay        |
+| UVM or peer access    | $100E/p$     | $E/p \cdot 8$ bytes | $25 : 1$        | Good        |
 
 ### Vertex Nomination
 
@@ -634,15 +637,15 @@ While has new distance updates
 Assuming on average, each vertex has its distance updated `a` times, and the
 average degree of vertices is `d`, the computation and the communication costs are:
 
-| Parts                 | Comp. cost | Comm. cost                   | Comp/comm ratio      | Scalability |
-|-----------------------|------------|------------------------------|----------------------|-------------|
-| Vertex nomination     | $aE/p$     | $aV/p * min(d, p) * 8$ bytes | $E : 8V * min(d, p)$ | Okay        |
+| Parts         | Comp. cost | Comm. cost                   | Comp/comm ratio      | Scalability |
+|---------------|------------|------------------------------|----------------------|-------------|
+| Vertex nomination | $aE/p$     | $aV/p \cdot \min(d, p) \cdot 8$ bytes | $E : 8V \cdot \min(d, p)$ | Okay        |
 
-The min(d, p) part in the communication cost comes from update
+The $\min(d, p)$ part in the communication cost comes from update
 aggregation on each GPU: when a vertex has more than one distance
 update, only the smallest is sent out; a vertex that has a lot of
 neighbors and is connected to all GPUs has its communication cost
-capped by p x 8 bytes.
+capped by $p \times 8$ bytes.
 
 ### Scan Statistics
 
@@ -702,29 +705,27 @@ For each vertex v in the graph:
 ```
 
 Using T as the number of triangles in the graph, the number of wedge
-checks is normally a few times `T`, noted as `aT`. For the three
+checks is normally a few times $T$, noted as $aT$. For the three
 graphs tested by the LLNL paper---Twitter, WDC 2012, and Rmat-Scale
-34---`a` ranges from 1.5 to 5. The large number of wedges can use up
+34---$a$ ranges from 1.5 to 5. The large number of wedges can use up
 the GPU memory, if they are stored and communicated all at once. The
 solution is to generate a batch of wedges and check them, then
 generate another batch and check them, loop until all wedges are
 checked.
 
 Assuming the neighbor lists of every vertex are sorted, the membership checking
-can be done in log(#neighbors). As a result, using `d` as the average outdegree
+can be done in log(#neighbors). As a result, using $d$ as the average outdegree
 of vertices, the cost analysis is:
 
 | Parts                 | Comp. cost | Comm. cost (B)   | Comp/comm ratio | Scalability |
 |-----------------------|------------|---------------|----------------------|-------------|
 | Wedge generation      | $dE/p$     |                 | | |
-| Wedge communication   | $0$        | $aE/p * 12$   | | |
-| Wedge checking        | $aE/p * log(d)$ |            | | |
-| AllReduce             | $2V$         | $2V * 4$  | | |
-| Triangle Counting     | $(d * a * log(d))E/p + 2V$ | $aE/p * 12 + 8V$ | $\sim (d + a * log(d)) : 12a$ | Okay |
-| Scan Statistics       | $(d * a * log(d))E/p$ | $12aE/p + 8V$ | $\sim (d + a * log(d)) : 12a$ | Okay |
-| (with wedge checks)   | $+ 2V + V/p$ |  | | |
-| Scan Statistics       | $Vdd + V/p$ | $8V$ | $dd : 8$ | Perfect |
-| (with intersection)   | | | | |
+| Wedge communication   | $0$        | $aE/p \cdot 12$   | | |
+| Wedge checking        | $aE/p \cdot \log(d)$ |            | | |
+| AllReduce             | $2V$         | $2V \cdot 4$  | | |
+| Triangle Counting     | $(d \cdot a \cdot \log(d))E/p + 2V$ | $aE/p \cdot 12 + 8V$ | $\sim (d + a \cdot \log(d)) : 12a$ | Okay |
+| Scan Statistics (with wedge checks)| $(d \cdot a \cdot \log(d))E/p + 2V + V/p$ | $12aE/p + 8V$ | $\sim (d + a \cdot \log(d)) : 12a$ | Okay |
+| Scan Statistics (with intersection) | $Vdd + V/p$ | $8V$ | $dd : 8$ | Perfect |
 
 ### Sparse Fused Lasso (GTF)
 
@@ -776,10 +777,10 @@ push-relabel algorithm, as the bounds of the push and the relabel operations
 are known.
 
 | Parts | Comp. cost | Comm. cost (Bytes) | Comp/comm ratio | Scalability |
-|-------|------------|---------------|----------------------|-------------|
-| Push  | $a(V + 1)VE/p$ | $(V+1)VE/p * 8$ | $a:8$ | Less than okay |
-| Relabel | $VE/p$ | $V^2 * 8$ | $d/p : 8$ | Okay |
-| MF (Push-Relabel) | $(aV + a + 1)VE/p$ | $V^2((V+1)d/p + 1) * 8$ | $\sim a:8$ | Less than okay |
+|-------|------------|---------------|----------|-------------|
+| Push  | $a(V + 1)VE/p$ | $(V+1)VE/p \cdot 8$ | $a:8$ | Less than okay |
+| Relabel | $VE/p$ | $V^2 \cdot 8$ | $d/p : 8$ | Okay |
+| MF (Push-Relabel) | $(aV + a + 1)VE/p$ | $V^2((V+1)d/p + 1) \cdot 8$ | $\sim a:8$ | Less than okay |
 
 The GTF-specific parts are more complicated than MF in terms of
 communication: the implementation must keep some data, such as weights
@@ -801,13 +802,13 @@ with scaling characteristics:
 
 
 | Parts | Comp. cost | Comm. cost (Bytes)    | Comp/comm ratio | Scalability |
-|-------|------------|---------------|----------------------|-------------|
-| MF (Push-Relabel) | $(aV + a + 1)VE/p$ | $V^2((V+1)d/p + 1) * 8$ | $\sim a:8$ | Less than okay |
-| BFS   | $E/p$        | $2V * 4$  | $d/p : 8$              | Okay |
-| V-C updates | $E/p$ | $V/p * 8$  | $d : 8$                | Okay |
-| Capacity updates | $V/p$ | $V/p * 4$ | $1 : 4$            | Less than okay |
-| GTF | $(aV + a + 1)VE/p$ | $V^2((V+1)d/p + 1) * 8$ | $\sim a:8$ | Less than okay |
-|| $+ 2E/p + V/p$ | $+ 2V x 4 + V/p * 4$ | | |
+|-------|------------|---------------|---------|-------------|
+| MF (Push-Relabel) | $(aV + a + 1)VE/p$ | $V^2((V+1)d/p + 1) \cdot 8$ | $\sim a:8$ | Less than okay |
+| BFS   | $E/p$        | $2V \cdot 4$  | $d/p : 8$              | Okay |
+| V-C updates | $E/p$ | $V/p \cdot 8$  | $d : 8$                | Okay |
+| Capacity updates | $V/p$ | $V/p \cdot 4$ | $1 : 4$            | Less than okay |
+| GTF | $(aV + a + 1)VE/p$ | $V^2((V+1)d/p + 1) \cdot 8$ | $\sim a:8$ | Less than okay |
+|| $+ 2E/p + V/p$ | $+ 2V x 4 + V/p \cdot 4$ | | |
 
 
 It's unsurprising that GTF may not scale: the compute- and
@@ -857,16 +858,16 @@ While (vertex_start < num_vertices)
     vertex_start += batch_size;
 ```
 
-Using `E'` to denote the number of edges in the projected graph, and
-`d` to denote the average degree of vertices, the costs are:
+Using $E'$ to denote the number of edges in the projected graph, and
+$d$ to denote the average degree of vertices, the costs are:
 
 
 | Parts | Comp. cost | Comm. cost    | Comp/comm ratio | Scalability |
 |-------|------------|---------------|----------------------|-------------|
-| Marking | $dE/p$     | $0$ byte        | | |
-| Forming edge lists | $E'$ | $0$ byte | | |
-| Counting | $dE/p$ | $0$ byte | | |
-| Merging  | $E'$ | $E' * 12$ bytes | | |
+| Marking | $dE/p$     | $0$ bytes       | | |
+| Forming edge lists | $E'$ | $0$ bytes| | |
+| Counting | $dE/p$ | $0$ bytes| | |
+| Merging  | $E'$ | $E' \cdot 12$ bytes | | |
 | Graph Projection | $2dE/p + 2E'$ | $12E'$ bytes | $dE/p + E' : 6E'$ | Okay |
 
 
@@ -906,7 +907,8 @@ For each active local vertex v:
     If (iteration == 0)
         y[v] := q[v];
     Else
-        y[v] := q[v] + (1 - sqrt(alpha)) / (1 + sqrt(alpha)) * (q[v] - old_q);
+        y[v] := q[v] + ((1 - sqrt(alpha)) / (1 + sqrt(alpha))
+                        * (q[v] - old_q));
 
     gradient[v] := y[v] * (1 + alpha) / 2;
 
@@ -941,7 +943,7 @@ The cost analysis is:
 | Parts | Comp. cost | Comm. cost    | Comp/comm ratio | Scalability |
 |-------|------------|---------------|----------------------|-------------|
 | Per-vertex updates  | $\sim 10 V/p$ | $0$ bytes | | |
-| Ranking propagation | $2E/p$ | $V * 8$ bytes | $d/p : 4$ | |
+| Ranking propagation | $2E/p$ | $V \cdot 8$ bytes | $d/p : 4$ | |
 | Gradient updates    | $V/p$ | $0$ bytes | | |
 | Local graph clustering | $(12V + 2E)/p$ | $8V$ bytes | $(6 + d)/p : 4$ | good |
 
@@ -962,14 +964,16 @@ applications.
 
 ## Summary of Results
 
-| Application                     | Computation to communication ratio              | Scalability    | Implementation difficulty |
-|---------------------------------|-------------------------------------------------|----------------|---------------------------|
+Scaling summary:
+
+| Application                     | Computation to communication ratio              | Scalability    | Impl. difficulty |
+|---------------------------------|-------------------------------------------------|----------------|------------------|
 | Louvain                         | $E/p : 2V$                                      | Okay           | Hard                      |
 | Graph SAGE                      | $\sim CF : \min(C, 2p) \cdot 4$                 | Good           | Easy                      |
 | Random walk                     | Duplicated graph: infinity \linebreak Distributed graph: $1 : 24$ | Perfect \linebreak Very poor | Trivial \linebreak Easy |
 | Graph search: Uniform           | $1 : 24$                                        | Very poor      | Easy                      |
 | Graph search: Greedy            | Straightforward: $d : 24$ \linebreak Pre-visit: $1:24$  | Poor \linebreak Very poor | Easy \linebreak Easy           |
-| Graph search: Stochastic greedy | Straightforward: $d : 24$ \linebreak Pre-visit: $\log(d) : 24$ | Poor \linebreak Very Poor | Easy \linebreak Easy    |
+| Graph search: Stochastic greedy | Straightforward: $d : 24$ \linebreak Pre-visit: $\log(d) : 24$ | Poor \linebreak Very poor | Easy \linebreak Easy    |
 | Geolocation                     | Explicit movement: $25E/p : 4V$ \linebreak UVM or peer access: $25 : 1$ | Okay \linebreak Good | Easy \linebreak Easy |
 | Vertex nomination               | $E : 8V \cdot \min(d, p)$                       | Okay           | Easy                      |
 | Scan statistics                 | Duplicated graph: infinity \linebreak Distributed graph: $\sim (d+a \cdot \log(d)):12$ | Perfect \linebreak Okay | Trivial \linebreak Easy |
@@ -979,35 +983,35 @@ applications.
 | Seeded graph matching           |                                                 |                |                           |
 | Application classification      |                                                 |                |                           |
 
-Seeded graph matching and application classification are matrix-operation-based
-and not covered in this table.
+Seeded graph matching and application classification are
+matrix-operation-based and not covered in this table.
 
-From the scaling analysis, we can see these workflows can be roughly grouped
-into three categories, by their scalabilities:
+From the scaling analysis, we can see these workflows can be roughly
+grouped into three categories, by their scalabilities:
 
-*Good scalability*
-GraphSAGE, geolocation using UVM or peer accesses, and local graph clustering
-belong to this group. They share some algorithmic signatures: the whole graph
-needs to be visited at least once in every iteration, and visiting each edge
-involves nontrivial computation. The communication costs are roughly at the
-level of V. As a result, the computation vs. communication ratio is larger than
-E : V. PageRank is a standard graph algorithm that falls in this group.
+**Good scalability** GraphSAGE, geolocation using UVM or peer
+accesses, and local graph clustering belong to this group. They share
+some algorithmic signatures: the whole graph needs to be visited at
+least once in every iteration, and visiting each edge involves
+nontrivial computation. The communication costs are roughly at the
+level of $V$. As a result, the computation vs. communication ratio is
+larger than $E : V$. PageRank is a standard graph algorithm that falls
+in this group.
 
-*Moderate scalability*
-This group includes Louvain, geolocation using explicit movement, vertex
-nomination, scan statistics, and graph projection. They either only visit part
-of the graph in an iteration, have only trivial computation during an edge
-visit, or communicate a little more data than V. The computation vs.
-communication is less than E : V, but still larger than 1 (or 1 operation : 4
-bytes). They are still scalable on the
-DGX-1 system, but not as well as the previous group. Single source shortest
-path (SSSP) is an typical example for this group.
+**Moderate scalability** This group includes Louvain, geolocation
+using explicit movement, vertex nomination, scan statistics, and graph
+projection. They either only visit part of the graph in an iteration,
+have only trivial computation during an edge visit, or communicate a
+little more data than $V$. The computation vs. communication is less
+than $E : V$, but still larger than 1 (or 1 operation : 4 bytes). They
+are still scalable on the DGX-1 system, but not as well as the
+previous group. Single source shortest path (SSSP) is an typical
+example for this group.
 
-*Poor scalability*
-Random walk, graph search, and sparse fused lasso belong to this group. They
-need to send out some data for each vertex or edge visit. As a result, the
-computation vs communication ratio is less than 1 (or 1 operation : 4 bytes).
-They are very hard to scale across multiple GPUs. Random walk is an typical
-example.
+**Poor scalability** Random walk, graph search, and sparse fused lasso
+belong to this group. They need to send out some data for each vertex
+or edge visit. As a result, the computation vs communication ratio is
+less than 1 (or 1 operation : 4 bytes). They are very hard to scale
+across multiple GPUs. Random walk is an typical example.
 
 ###### End of report

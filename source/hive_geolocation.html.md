@@ -16,7 +16,7 @@ Infers user locations using the location (latitude, longitude) of friends throug
 
 ## Summary of Results
 
-Geolocation or geotagging is an interesting parallel problem, because it is among the few that exhibits the dynamic parallism pattern within the compute. The pattern is as follows; there is parallel compute across nodes, each node has some serial work and within the serial work there are sveral parallel math operations. Even without leveraging dynamic parallelism within CUDA (kernel launches within a kernel), Geolocation performs well on the GPU environment because it mainly requires simple math operations, instead of complicated memory movement schemes. 
+Geolocation or geotagging is an interesting parallel problem, because it is among the few that exhibits the dynamic parallism pattern within the compute. The pattern is as follows; there is parallel compute across nodes, each node has some serial work and within the serial work there are sveral parallel math operations. Even without leveraging dynamic parallelism within CUDA (kernel launches within a kernel), Geolocation performs well on the GPU environment because it mainly requires simple math operations, instead of complicated memory movement schemes.
 
 However, the challenge within the application is load balancing this simple compute, such that each processor has roughly the same amount of work. Currently, in gunrock, we map Geolocation using the `ForAll()` compute operator with optimizations to exit early (performing less work and fewer reads). Even without addressing load balancing issue with a complicated balancing scheme, on the HIVE datasets we achieve a 100x speedup with respect to the CPU reference code, implemented using C++ and OpenMP, and ~533x speedup  with respect to the GTUSC implementation. We improve upon the algorithm by avoiding a global gather and a global synchronize, and using 3x less memory than the GTUSC reference implementation.
 
@@ -237,8 +237,8 @@ One way to implement this will use the `ForAll()` operator for the parallel comp
 
 ### Comparison against existing implementations
 
-| GPU  | Dataset            | [V]      | [E]       | Iterations | Spatial Iters | GTUSC (16 threads) | Gunrock (CPU)  | Gunrock (GPU) |
-|------|--------------------|----------|-----------|------------|---------------|--------------------|----------------|---------------|
+| GPU  | Dataset            | $|V|$    | $|E|$     | Iters | Spatial Iters | GTUSC (16 threads) | Gunrock (CPU)  | Gunrock (GPU) |
+|------|-----------------|-------------|--------------|----------|------------|----------------|-------------------|---------------|
 | P100 | sample             | 39       | 170       | 10         | 1000          | N/A                | 0.144005       | 0.022888      |
 | P100 | instagram          | 23731995 | 82711740  | 10         | 1000          | 8009.491 ms        | 1589.884033    | 15.113831     |
 | V100 | twitter            | 50190344 | 488078602 | 10         | 1000          | N/A                | 9216.666016    | 46.108007     |
@@ -293,4 +293,4 @@ Geolocation calls a lot of CUDA math functions (`sin`, `cos`, `atan`, `atan2`, `
 
 ### Research Potential
 
-Further research is required to study Geolocation's dynamic parallelism pattern, it's memory access behavior, compute resource utilization, implementation details (API and core) and load balancing startegies for dynamic parallelism on the GPUs. Studying and understanding this pattern can allow us to create a more generalized approach for load balancing `parallel -> serial -> parallel` type of problems. It further invokes the question of studying when dynamic parallelism is better than mapping an alogirthm to a more conventional static approach (if possible). 
+Further research is required to study Geolocation's dynamic parallelism pattern, it's memory access behavior, compute resource utilization, implementation details (API and core) and load balancing startegies for dynamic parallelism on the GPUs. Studying and understanding this pattern can allow us to create a more generalized approach for load balancing `parallel -> serial -> parallel` type of problems. It further invokes the question of studying when dynamic parallelism is better than mapping an alogirthm to a more conventional static approach (if possible).
