@@ -16,13 +16,13 @@ Infers user locations using the location (latitude, longitude) of friends throug
 
 ## Summary of Results
 
-Geolocation or geotagging is an interesting parallel problem, because it is among the few that exhibits the dynamic parallism pattern within the compute. The pattern is as follows; there is parallel compute across nodes, each node has some serial work and within the serial work there are sveral parallel math operations. Even without leveraging dynamic parallelism within CUDA (kernel launches within a kernel), Geolocation performs well on the GPU environment because it mainly requires simple math operations, instead of complicated memory movement schemes.
+Geolocation or geotagging is an interesting parallel problem, because it is among the few that exhibits the dynamic parallelism pattern within the compute. The pattern is as follows; there is parallel compute across nodes, each node has some serial work and within the serial work there are several parallel math operations. Even without leveraging dynamic parallelism within CUDA (kernel launches within a kernel), Geolocation performs well on the GPU environment because it mainly requires simple math operations, instead of complicated memory movement schemes.
 
-However, the challenge within the application is load balancing this simple compute, such that each processor has roughly the same amount of work. Currently, in gunrock, we map Geolocation using the `ForAll()` compute operator with optimizations to exit early (performing less work and fewer reads). Even without addressing load balancing issue with a complicated balancing scheme, on the HIVE datasets we achieve a 100x speedup with respect to the CPU reference code, implemented using C++ and OpenMP, and ~533x speedup  with respect to the GTUSC implementation. We improve upon the algorithm by avoiding a global gather and a global synchronize, and using 3x less memory than the GTUSC reference implementation.
+However, the challenge within the application is load balancing this simple compute, such that each processor has roughly the same amount of work. Currently, in Gunrock, we map Geolocation using the `ForAll()` compute operator with optimizations to exit early (performing less work and fewer reads). Even without addressing load balancing issue with a complicated balancing scheme, on the HIVE datasets we achieve a 100x speedup with respect to the CPU reference code, implemented using C++ and OpenMP, and ~533x speedup  with respect to the GTUSC implementation. We improve upon the algorithm by avoiding a global gather and a global synchronize, and using 3x less memory than the GTUSC reference implementation.
 
 ## Summary of Gunrock Implementation
 
-There are two approaches we took to implement Geolocation within gunrock:
+There are two approaches we took to implement Geolocation within Gunrock:
 
 - **[Fewer Reads] Global Gather:** uses two `compute` operators as `ForAll()`. The first `ForAll()` is a `gather` operation, gathering all the values of neighbors with known locations for an active vertex `v`, and the second `ForAll()` uses those values to compute the `spatial_center` where the spatial center of a list's points is the center of those points on the earth's surface.
 
@@ -243,7 +243,7 @@ One way to implement this will use the `ForAll()` operator for the parallel comp
 | P100 | instagram          | 23731995 | 82711740  | 10         | 1000          | 8009.491 ms        | 1589.884033    | 15.113831     |
 | V100 | twitter            | 50190344 | 488078602 | 10         | 1000          | N/A                | 9216.666016    | 46.108007     |
 
-On a workload that fills the GPU, gunrock outperforms GT's OpenMP C++ implementation by ~533x. Comparing gunrock's GPU vs. CPU performance, we see that gunrock's GPU version outperforms the CPU implementation by 100x. There is a lack of available datasets against which we can compare performance, so we use only the provided instagram and twitter datasets, and a toy sample for a sanity check on NVIDIA's P100 with 16GB of global memory and V100 with 32GB of global memory. All tested implementations meet the criteria of accuracy, which is validated against the output of the original python implementation.
+On a workload that fills the GPU, Gunrock outperforms GT's OpenMP C++ implementation by ~533x. Comparing Gunrock's GPU vs. CPU performance, we see that Gunrock's GPU version outperforms the CPU implementation by 100x. There is a lack of available datasets against which we can compare performance, so we use only the provided instagram and twitter datasets, and a toy sample for a sanity check on NVIDIA's P100 with 16GB of global memory and V100 with 32GB of global memory. All tested implementations meet the criteria of accuracy, which is validated against the output of the original python implementation.
 
 - [HIVE reference implementation](https://gitlab.hiveprogram.com/ggillary/geotagging.git) uses distributed PySpark.
 - [GTUSC implementation](https://gitlab.hiveprogram.com/gtusc/geotagging) uses C++ OpenMP.
@@ -266,11 +266,11 @@ Profiling the application shows 98.78% of the compute time in GPU activities is 
 
 - **The `predicted` atomic:** Geolocation and some other applications exhibit the same behavior where the algorithm stops when all vertices' labels are predicted or determined. In Geolocation's case, when a location for all nodes is predicted, geolocation converges. We currently implement this with a loop and an atomic. This needs to be more of a core operation (mini-operator) such that when `isValidCount(labels|V|) == |V|`, a stop condition is met. Currently, we sidestep this issue by using a number-of-iterations parameter to determine the stop condition.
 
-- **Parallel -> Serial -> Parallel:** As discussed earlier, gunrock currently doesn't have a way to address the dynamic parallelism problem, or even a kernel launch within a kernel. In geolocation's case, these minor parallel work inside the serial loop need to be multiple neighbor reduce.
+- **Parallel -> Serial -> Parallel:** As discussed earlier, Gunrock currently doesn't have a way to address the dynamic parallelism problem, or even a kernel launch within a kernel. In geolocation's case, these minor parallel work inside the serial loop need to be multiple neighbor reduce.
 
 ### Notes on multi-GPU parallelization
 
-The challenging part for a multi-GPU Geolocation would be to obtain the updated node location from a separate device if the two vertices on different devices share an edge. An interesting approach here would be leveraging the P2P memory bandwidth with the new NVLink connectors to exchange a small amount of updates across the NVLink's memory lane; other ways are simply using direct accesses or explicit data movement. This is detailed more in the scaling documentation, but the communication model for multi-gpu geolocation could be done in the following way:
+The challenging part for a multi-GPU Geolocation would be to obtain the updated node location from a separate device if the two vertices on different devices share an edge. An interesting approach here would be leveraging the P2P memory bandwidth with the new NVLink connectors to exchange a small amount of updates across the NVLink's memory lane; other ways are simply using direct accesses or explicit data movement. This is detailed more in the scaling documentation, but the communication model for multi-GPU geolocation could be done in the following way:
 
 ```
 do
@@ -293,4 +293,4 @@ Geolocation calls a lot of CUDA math functions (`sin`, `cos`, `atan`, `atan2`, `
 
 ### Research Potential
 
-Further research is required to study Geolocation's dynamic parallelism pattern, it's memory access behavior, compute resource utilization, implementation details (API and core) and load balancing startegies for dynamic parallelism on the GPUs. Studying and understanding this pattern can allow us to create a more generalized approach for load balancing `parallel -> serial -> parallel` type of problems. It further invokes the question of studying when dynamic parallelism is better than mapping an alogirthm to a more conventional static approach (if possible).
+Further research is required to study Geolocation's dynamic parallelism pattern, it's memory access behavior, compute resource utilization, implementation details (API and core) and load balancing strategies for dynamic parallelism on the GPUs. Studying and understanding this pattern can allow us to create a more generalized approach for load balancing `parallel -> serial -> parallel` type of problems. It further invokes the question of studying when dynamic parallelism is better than mapping an algorithm to a more conventional static approach (if possible).
