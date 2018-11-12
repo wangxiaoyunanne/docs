@@ -87,7 +87,7 @@ Repeat iteration till convergence:
     Run a BFS to mark the accessibilities of vertices from the source vertex
     in the residue graph
 
-    // Second part: renormalization
+    // Part 2: renormalization
     // Reset available community
     For each community comm:
         community_weights[comm] := 0
