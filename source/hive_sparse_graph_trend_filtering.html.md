@@ -42,7 +42,7 @@ Load the graph and normalize edge weights
 
 Repeat iteration till convergence:
 
-    // First part: Maxflow
+    // Part 1: Maxflow
     Do
         lockfree_op (num-repeats, V)
     While no more updates
@@ -61,22 +61,27 @@ Repeat iteration till convergence:
     // Finding lowest neighbor in residual network phase
     Def lowest_neighbor_in_residual_network (v):
         min_height := infinity
+        min_u := undefined
         For each e<v, u> of v:
-            If (capacity[e] <= flow[e]) continue;
-            If (min_height > height[u]) min_height := height[u]
+            If e.capacity <= e.flow:
+                    continue;
+            If min_height > u.height: 
+                    min_height := u.height
+                    min_u := u
+        return min_u
     
     // Push phase
-    def Push (e<v, u>):
-        residual_capacity[e] := capacity[e] - flow[e]
-        move := min(residual_capacity[e], excess[v])
-        excess[v] -= move
-        flow[e] += move
-        excess[u] += move
-        flow[reverse[e]] -= move
+    Def Push (e<v, u>):
+        e.residual_capacity := e.capacity - e.flow
+        move := min(e.residual_capacity, v.excess)
+        v.excess -= move
+        e.flow += move
+        u.excess += move
+        e.reverse.flow -= move
 
     // Relabel phase
     Def Relabel (e<v, u>):
-        height[v] := height[u] + 1
+        v.height := u.height + 1
 
     // Min-cut
     Run a BFS to mark the accessibilities of vertices from the source vertex
