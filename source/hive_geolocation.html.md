@@ -63,7 +63,7 @@ def spatial_center(Vertex v):
 
 | Approach         | Memory Usage | Memory Reads/Vertex  | Device Barriers | Largest Dataset (P100) |
 |------------------|--------------|----------------------|-----------------|------------------------|
-| Global Gather    | $O(3 \cdot \cardinality{E}$     | # of valid locations | 1               | ~160M Edges            |
+| Global Gather    | $O(3 \cdot \cardinality{E})$     | # of valid locations | 1               | ~160M Edges            |
 | Repeated Compute | $O(\cardinality{E})$       | degree of vertex     | 0               | ~500M Edges            |
 
 
