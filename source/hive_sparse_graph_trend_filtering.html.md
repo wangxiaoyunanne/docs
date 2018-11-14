@@ -45,6 +45,7 @@ Repeat iteration till convergence:
     // Part 1: Maxflow
     Do
         lockfree_op (num-repeats, V)
+        global_relabeling_heuristic // update heights of all vertices
     While no more updates
 
     // Lock-free Push-Relabel operator
