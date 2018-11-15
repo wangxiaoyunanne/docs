@@ -15,9 +15,7 @@ full_length: true
 Scan statistics as described in [Priebe et al](http://www.cis.jhu.edu/~parky/CEP-Publications/PCMP-CMOT2005.pdf) are the generic method that computes a statistic for the neighborhood of each node in the graph, and looks for anomalies in those statistics. In this workflow, we implement the specific version of scan statistics where we compute the number of edges in the subgraph induced by the one-hop neighborhood of each node u in the graph. It turns out that this statistic is equal to the number of triangles that node u participates in plus the degree of u. Thus, we are able to implement scan statistics by making relatively minor modifications to our existing Gunrock triangle counting (TC) application.
 
 ## Summary of Results
-
-__TODO__
-One or two sentences that summarize "if you had one or two sentences to sum up your whole effort, what would you say". I will copy this directly to the high-level executive summary in the first page of the report. Talk to JDO about this. Write it last, probably.
+Scan statistics problem on solving static graphs fits perfectly in Gunrock framework. Using a combination of ForAll and Intersection operations, we are able to beat the parallel OpenMP CPU reference by up to 45.4 times speedup on small enron graph provided by hive workflows and up to 580 times speedup on larger graphs which saturates the thoughouput of the GPU device.
 
 ## Algorithm: Scan Statistics
 Input is an undirected graph w/o self loops.
@@ -37,14 +35,12 @@ return argmax([scan_stats(node) for node in graph.nodes])
 max_scan_stat = -1
 node = -1
 src_node_ids[nodes]
-scan_stats[nodes] = degrees[nodes]
-node_ids[nodes]
+scan_stats[nodes]
 
-Advance + Filter (src_node_ids): remove all edges whose src id is larger than dest to avoid visiting the same edge two times later
-Intersection (src_node_ids, scan_stats): intersect neighoring nodes of both nodes of each edge to get number of triangles and accumulate the count to each node in scan_stats
-Sort(scan_stats, node_ids): sort the node ids based on the scan_stats' values from largest to smallest
+ForAll (src_node_ids, scan_stats): fill scan_stats with the degree of each node.
+Intersection (src_node_ids, scan_stats): intersect neighoring nodes of both nodes of each edge, add 1 to scan_stats[common_node] for each common_node we get from intersection.
 
-return [scan_stats[0], node_ids[0]]
+return [scan_stats]
 ```
 
 ## How To Run This Application on DARPA's DGX-1
@@ -68,14 +64,54 @@ Example command-line:
 ```bash
 ./bin/test_ss_main_10.0_x86_64 \
 	--graph-type=market \
-	--graph-file=./scan_statistics.mtx
+	--graph-file=./enron.mtx \
+        --undirected --num_runs=10
 ```
 
 ### Output
 
-The output of this app is two values: the maximum scan statistic value we've found and the node id that has this statistic.  The output file will be in `.txt` format with the aforementioned two values.
+The output of this app is an array of uint values: the scan statistics values for each node.  The output file will be in `.txt` format with the aforementioned values.
 
-We compare our GPU output with the [HIVE CPU reference implementation] which is implemented using python and the SNAP graph processing library.
+We compare our GPU output with the [HIVE CPU reference implementation] which is implemented using OpenMP.
+
+Details of the datasets:
+
+| DataSet          | #V    | #E | #dangling vertices|
+|------------------|---------:|-----------:|-------:|
+| enron            |    15056 |     57074  |      0 |
+| ca               |   108299 |    186878  |  85166 |
+| amazon           |   548551 |   1851744  | 213688 |
+| coAuthorsDBLP    |   299067 |   1955352* |      0 |
+| citationCiteseer |   268495 |   2313294* |      0 |
+| as-Skitter       |  1696415 |  22190596* |      0 |
+| coPapersDBLP     |   540486 |  30481458* |      0 |
+| pokec            |  1632803 |  30622564  |      0 |
+| coPapersCiteseer |   434102 |  32073440* |      0 |
+| akamai           | 16956250 |  53300364  |      0 |
+| soc-LiveJournal1 |  4847571 |  68475391  |    962 |
+| europe_osm       | 50912018 | 108109320* |      0 |
+| hollywood-2009   | 11399905 | 112751422* |  32662 |
+| rgg_n_2_24_s0    | 16777216 | 265114400* |      1 |
+
+
+Running time in milli seconds:
+
+| GPU  | Dataset          | Gunrock GPU | Speedup vs. OMP | OMP |
+|------|------------------|------------:|-----:|-------:|-------:|
+| P100 | enron            |     **0.461** | 45.4 | 20.95 |
+| P100 | ca               |     **0.219** | 71.6 | 15.681 |
+| P100 | amazon           |     **1.354** | 74.5 | 100.871 |
+| P100 | coAuthorsDBLP    |     **1.569** | 88.0 | 138.111 |
+| P100 | citationCiteseer |     **3.936** | 65.22 | 256.694 |
+| P100 | as-Skitter       |     **111.738**| 579.22  | 64721.414 |
+| P100 | coPapersDBLP     |     **226.672** | 25.4 | 5766.4 |
+| P100 | pokec            |     **202.185** | 80.7 | 16316.474 |
+| P100 | coPapersCiteseer |     **451.582** | 16.34 | 7378.188 |
+| P100 | akamai           |     **151.47** | 5.13 | 12596.36 |
+| P100 | soc-LiveJournal1 |     **1.548** | 2.59 | 4.016 |
+| P100 | europe_osm       |     **9.59** | 153.35 | 1470.632 |
+| P100 | hollywood-2009   |     **10032.46** | 18.76 | 188206.234 |
+| P100 | rgg_n_2_24_s0    |     **539.559** | 29.45 | 15887.536 |
 
 ## Performance and Analysis
 
@@ -83,33 +119,28 @@ We measure the performance by runtime. The whole process is ran on the GPU and w
 
 ### Implementation limitations
 
-__TODO__
+Since the implementation only needs /number of nodes/'s size of memory allocated on the GPU, so the largest dataset which can fit on a single GPU is limited by GPU on-die memory size / number of nodes.
 
-e.g.:
-
-- Size of dataset that fits into GPU memory (what is the specific limitation?)
-- Restrictions on the type/nature of the dataset
+Because our implementation takes the graph as undirected graph. The graph type limitation is that it needs to be undirected.
 
 ### Comparison against existing implementations
 
-- Reference implementation is in python on the CPU
-- OpenMP reference is not available yet
+- Reference implementation is in OpenMP on the CPU
 
 Comparison is both performance and accuracy/quality.
 
 ### Performance limitations
 
-__TODO__
-
-e.g., random memory access?
+We have to use atomic adds to accumulate the number of triangles each node is included in and atomic operations is relatively slow here. 
 
 ## Next Steps
 
 ### Alternate approaches
 
-__TODO__
+There's still improvement space for intersection operation in Gunrock which is the most time consuming part for scan statistics. 
 
-If you had an infinite amount of time, is there another way (algorithm/approach) we should consider to implement this?
+Currently we divide the edge lists into two groups:
+(1) small neighbor lists; and (2) large neighbor lists. We implement two kernels (TwoSmall and TwoLarge) that cooperatively compute intersections. Our TwoSmall kernel uses one thread to compute the intersection of a node pair. Our TwoLarge kernel partitions the edge list into chunks and assigns each chunk to a separate thread block. Then each block uses the balanced path primitive to cooperatively compute intersections. But there's one other case we haven't covered which is one small neighbor list and one large neighbor list. By using 3-kernel strategy and carefully choosing a threshold value to divide the edge list into two groups, we can process intersections with same level of workload together to gain load balancing and higher GPU resource utilization.
 
 ### Gunrock implications
 
