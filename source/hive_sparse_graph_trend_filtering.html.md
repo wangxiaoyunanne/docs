@@ -23,7 +23,7 @@ GPU SFL runs around 2 times slower than the benchmark on the largest dataset pro
 
 ## Summary of Gunrock Implementation
 
-The loss function is $0.5 \cdot \sum((y' - y)^2) + \lambda_1 * \sum(|y_i' - y_j'|) + \lambda_2 \cdot \sum(|y_i'|)$, where $y$ is the input weight (observation) for each vertex and $y'$ (fitted weight) is the new weight for each vertex. $\lambda_1$ and $\lambda_2$ are required parameters to process the graph in SFL.
+The loss function is $0.5 \cdot \sum((y' - y)^2) + \lambda_1 \cdot \sum(|y_i' - y_j'|) + \lambda_2 \cdot \sum(|y_i'|)$, where $y$ is the input weight (observation) for each vertex and $y'$ (fitted weight) is the new weight for each vertex. $\lambda_1$ and $\lambda_2$ are required parameters to process the graph in SFL.
 
 The input graph is specified in two files. The first file contains the original vertices' weights and the second file contains the directed graph connectivity without weights (edge pairs only). These two files and a edge_regularization_strength ($\lambda_1$) of the directed graph edge weights are the input to preprocessing. Two extra vertices, source and sink, are added to the original graph as well. They serve as two "labels" of different segments on the graph. This results in a graph where edges that connect to the source or sink have edge-weights as in the `vertices' weights` file, and the other edges are assigned an edge weight of $\lambda_1$.
 
@@ -265,7 +265,7 @@ transfering to host!!!: 8924
 
 ## Performance and Analysis
 
-We measure the runtime and loss function $0.5 \cdot \sum((y' - y)^2) + \lambda_1 * \sum(|y_i' - y_j'|) + \lambda_2 \cdot \sum(|y_i'|)$, where $y$ is the input weight (observation) for each vertex and $y'$ (fitted weight) is the new weight for each vertex.
+We measure the runtime and loss function $0.5 \cdot \sum((y' - y)^2) + \lambda_1 \cdot \sum(|y_i' - y_j'|) + \lambda_2 \cdot \sum(|y_i'|)$, where $y$ is the input weight (observation) for each vertex and $y'$ (fitted weight) is the new weight for each vertex.
 
 ### Implementation limitations
 
@@ -276,7 +276,7 @@ We measure the runtime and loss function $0.5 \cdot \sum((y' - y)^2) + \lambda_1
 ### Comparison against existing implementations
 Graphtv is an official implementation of the sparse fused lasso algorithm with a parametric maxflow backend. It is a CPU serial implementation <https://www.cs.ucsb.edu/~yuxiangw/codes/gtf_code.zip>. The Gunrock GPU runtime is measured between the application enactor and it is an output of the application.
 
-| DataSet | time starts | time ends | #E | #V | Graphtv runtime | Gunrock GPU runtime |
+| DataSet | time starts | time ends | \cardinality{E} | \cardinality{V} | Graphtv runtime | Gunrock GPU runtime |
 |--------------|---------------------|--------------------|----------|----------|------|---|
 | NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 0.11s | 4.98s |
 | NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | 8.71s | |
