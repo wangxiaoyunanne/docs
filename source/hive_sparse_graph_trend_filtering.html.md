@@ -285,9 +285,9 @@ We measure the runtime and loss function `0.5 * sum((y' - y)^2) + lambda1 * sum(
 
 ### Implementation limitations
 
-- **Memory usage** Each edge in the graph needs at least 20 bytes of GPU device memory: 64 bits for the capacity value, 64 bits for the flow value, 16 bits for the index of the reverse edge. Each node in the graph needs at least 16 bytes of GPU device memory: 64 bits for the excess value, 16 bits for the height value and 16 bits for the index of the lowest neighbor.
+- **Memory usage** Each edge in the graph needs at least 28 bytes of GPU device memory: 64 bits for the residual_capacity value, 64 bits for the capacity value, 64 bits for the flow value, 16 bits for the index of the reverse edge. Each node in the graph needs at least 16 bytes of GPU device memory: 64 bits for the excess value, 16 bits for the height value and 16 bits for the index of the lowest neighbor.
 
-- **Data type** For edges we have the following arrays: capacity, flow, reverse. For nodes we have the following arrays: height, excess, lowest_neighbor. Capacity, flow and excess arrays and all computation around them are double-precision floating point values (64-bit `double` in C/C++). We use an epsilon value of 1e-6 to compare floating-point numbers to zero. Reverse, height, and lowest_neighbor arrays and all computation around them are 32-bit integer values.
+- **Data type** For edges we have the following arrays: residual_capacity, capacity, flow, reverse. For nodes we have the following arrays: height, excess, lowest_neighbor. Residual_capacity, capacity, flow and excess arrays and all computation around them are double-precision floating point values (64-bit `double` in C/C++). We use an epsilon value of 1e-6 to compare floating-point numbers to zero. Reverse, height, and lowest_neighbor arrays and all computation around them are 32-bit integer values.
 
 ### Comparison against existing implementations
 Graphtv is an official implementation of the sparse fused lasso algorithm with a parametric maxflow backend. It is a CPU serial implementation <https://www.cs.ucsb.edu/~yuxiangw/codes/gtf_code.zip>. The Gunrock GPU runtime is measured between the application enactor and it is an output of the application.
@@ -317,22 +317,23 @@ uses a parallel implementation of the push relabel algorithm. On this particular
 dataset, push relabel uses more than 20K iterations, and SFL runs about a hundred
 seconds on CPU.
 
-- The large number of iterations is very harmful to the computation speed of our
-GPU implementation, because of the kernel launching overhead. In fact, profiling
-shows the computation kernels only takes about 20% of MF's computation time, and
-the rest (80%) is overhead. Since maxflow takes up about 95% of SFL's
-computation time, this makes SFL kernel launching overhead-bound. We are looking
-at optimizations to cut down the number of iterations, such as the one described
-by Bo Hong in "A Lock-free Multi-threaded Algorithm for the Maximum Flow Problem"
-<http://people.cs.ksu.edu/~wls77/weston/projects/cis598/hong.pdf>.
+- Maxflow algorithm uses serial global relabeling and gap heuristics performed
+in Device memory by one CUDA thread. The profiling shows these heuristics
+computation take about 42% of MF's whole computation time while the rest (58%)
+is push relabel (precisely: Gunrock RepeatFor operator running lock-free 
+push-relabel operator). Since maxflow takes up about 96% of SFL's
+computation time, this makes SFL kernel launching overhead-bound. 
+Further optimization of the Maxflow algorithm is discussed below in 
+the Maxflow optimization opportunities paragraph.
 
 - This dataset with ~9k vertices and ~20k edges is too small to fill the GPU. It makes the kernel launching overhead issue much
 worse than it would with larger graphs.
 
 - There are some engineering limitations in our current implementation:
 
-    1. The relabeling heuristics in maxflow are performed on the CPU; although they only
-    run once per 100 iterations, the data movement takes up time.
+    1. The global relabeling and gap heuristics in maxflow are performed by one
+    thread; although they only run once per a few kilos iterations, these 
+    procedure takes almost half of computation time.
 
     2. The current min-cut finding and renormalization are serial on GPU (i.e.
     only use a single thread to perform the computation).
@@ -340,11 +341,46 @@ worse than it would with larger graphs.
     We will improve on these issues when the number of iterations is reduced,
     which has a much larger impact on computation time.
 
+### Maxflow lessons learned
+    
+- Our first approach to max flow problem was the push relabel algorithm in the 
+simplest version. This implementation used 3 operators with 2 synchronization 
+between them, which in combination with a large number of iterations of the 
+algorithm was very harmful to the computation speed up of GPU implementation,
+because of the kernel's launching overhead.
+
+- To reduced the number of kernels and synchronizations we implemented the push-relabel
+in version lock-free proposed by Bo Hong in "A Lock-free Multi-threaded Algorithm for the Maximum Flow Problem"
+<http://people.cs.ksu.edu/~wls77/weston/projects/cis598/hong.pdf>. It allowed us
+to reduced all operators to only one lock-free push-relabel operator and one
+synchronization after calling them.
+
+- Our next optimization was reducing the iteration number of push-relabel algorithm 
+which needs synchronization. For this perpose we used the Gunrock operator RepeatFor.
+
+### Maxflow optimization opportunities 
+
+- We are looking at optimization to speed up the global reabeling-gap heuristic. 
+  It is performed in the Device memory by one thread. This algorithm is 
+  based on BFS which could be paralellized as well.
+
+- We are going to work on parallelizetion of another approach which is used in
+  Boykov Kolmogorov algorithm proposed in Yuri Boykov and Vladimir Kolmogorov in
+  "An Experimental Comparison of Min-Cut/Max-Flow Algorithms for Energy 
+  Minimization in Vision" <http://www.csd.uwo.ca/faculty/yuri/Papers/pami04.pdf>
+  The algorithm instead of finding a new augmenting path or edge (push-relabel) 
+  in the graph in each iteration, the Boykov Kolmogorov algorithm keeps the 
+  already founded items in two search trees. We are going to use this idea
+  in our push relabel algorithm as well.
+
 ## Next Steps
 
 ### Alternate approaches
 
-For CPU, the parametric maxflow algorithm works well, but it is not parallelizable to GPU. The push-relabel algorithm is the best candidate for parallel implementation, but more optimizations are needed to get good running times on a GPU.
+For CPU, the parametric maxflow algorithm works well, but so far it is not 
+parallelizable to GPU. The lock-free push-relabel algorithm is the best 
+candidate for parallel implementation, but more optimizations are needed to get 
+better running times on a GPU.
 
 ### Gunrock implications
 
