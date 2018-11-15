@@ -19,13 +19,13 @@ Given a graph where each vertex on the graph has a weight, _sparse fused lasso (
 
 The SFL problem is mainly divided into two parts, computing residual graphs from maxflow and renormalizing the weights of the vertices. Maxflow is parallelizable with the push-relabel algorithm, so we adopt this algorithm in Gunrock's implementation. Moreover, each vertex has its own work to compute which communities it belongs to, and normalize the weights with other vertices in the same community. This renormalization requires global synchronization. SFL iterates by calling maxflow and renormalization several times before it converges. We notice that the overall runtime is mostly spent in maxflow, and thus improving the maxflow implementation will bring substantial speedup in the SFL.
 
-GPU SFL runs around 2 times slower than the benchmark on the decent largest dataset provided. On the smaller datasets there just isn't enough work to fill up a GPU and leverage the compute we have available. Even on the larger dataset we do not see a speed-up because of superior serial algorithm within the CPU implementation of maxflow. That converges much earlier than our parallel push-relabel max flow algorithm on the GPU.
+GPU SFL runs around 2 times slower than the benchmark on the largest dataset provided. On smaller datasets, there just isn't enough work to fill up a GPU and leverage the compute we have available. On the larger dataset, we do not see a speed-up because of the superior "parametric maxflow" serial algorithm on the CPU. Parametric maxflow converges much faster than our parallel push-relabel max flow algorithm on the GPU. Investigating the parallelization of parametric maxflow is an interesting research challenge.
 
 ## Summary of Gunrock Implementation
 
-The loss function is `0.5 * sum((y' - y)^2) + lambda1 * sum(abs(y_i' - y_j')) + lambda2 * sum(abs(yi'))`, where `y` is the input weight (observation) for each vertex and `y'` (fitted weight) is the new weight for each vertex. Lambda1 and Lambda2 are required parameters to process the graph in SFL.
+The loss function is $0.5 \cdot \sum((y' - y)^2) + \lambda_1 * \sum(|y_i' - y_j'|) + \lambda_2 \cdot \sum(|y_i'|)$, where $y$ is the input weight (observation) for each vertex and `y'` (fitted weight) is the new weight for each vertex. $\lambda_1$ and $\Lambda_2$ are required parameters to process the graph in SFL.
 
-The input graph is specified in two files. The first file contains the original vertices' weights and the second file contains the directed graph connectivity without weights (edge pairs only). These two files and a edge_regularization_strength (`lambda1`) of the directed graph edge weights are the input to preprocessing. Two extra vertices, source and sink, are added to the original graph as well. They serve as two "labels" of different segments on the graph. This results in a graph where edges that connect to the source or sink have edge-weights as in the `vertices' weights` file, and the other edges are assigned an edge weight of `lambda1`.
+The input graph is specified in two files. The first file contains the original vertices' weights and the second file contains the directed graph connectivity without weights (edge pairs only). These two files and a edge_regularization_strength ($\lambda_1$) of the directed graph edge weights are the input to preprocessing. Two extra vertices, source and sink, are added to the original graph as well. They serve as two "labels" of different segments on the graph. This results in a graph where edges that connect to the source or sink have edge-weights as in the `vertices' weights` file, and the other edges are assigned an edge weight of $\lambda_1$.
 
 The Gunrock implementation of this application has two parts. The first part is the maxflow algorithm. We choose a push-relabel maxflow formulation, which is well-suited for parallelization on a GPU with Gunrock. Computing a valid maxflow also implies a solution to the mincut problem, which is a segmentation of a graph into two pieces where the division is across a set of edges with the minimum possible weights. The output of this maxflow algorithm is (1) a residual graph where each edge weight is computed as `capacity - edge_flow`, and (2) a Boolean array that marks which vertices are reachable from the source after the mincut.
 
@@ -33,7 +33,7 @@ The second part is a renormalization of the residual graph and clustering based 
 
 The outputs will be the normalized values assigned to each vertex.
 
-Lastly, these values will be passed into a soft-threshold function with `lambda2` to achieve the sparse representation by dropping the small absolute values. More specifically, the new weight will be subtracted by `lambda2` if the new weight is positive and larger than `lambda2`, or added by `lambda2` if the new weight is negative and smaller than `-lambda2`. If the new weight is in between `-lambda2` to `lambda2`, then the new weights will be 0.
+Lastly, these values will be passed into a soft-threshold function with $\lambda_2$ to achieve the sparse representation by dropping the small absolute values. More specifically, the new weight will be subtracted by $\lambda_2$ if the new weight is positive and larger than $\lambda_2$, or added by $\lambda_2$ if the new weight is negative and smaller than $-\lambda_2$. If the new weight is in between $-\lambda_2$ to $\lambda_2$, then the new weights will be 0.
 
 Pseudocode for the core SFL algorithm is as follows:
 
@@ -107,12 +107,12 @@ Repeat iteration till convergence:
 
     // End of Repeats
 
-// Part 3 Sparsify community_accus by lambda2
+// Part 3 Sparsify community_accus by \lambda_2
 For i in len(each community_accus):
     If (community_accus < 0):
-        community_accus[i] := min(community_accus[i] + lambda2, 0)
+        community_accus[i] := min(community_accus[i] + \lambda_2, 0)
     Else:
-        community_accus[i] := max(community_accus[i] - lambda2, 0)
+        community_accus[i] := max(community_accus[i] - \lambda_2, 0)
 
 Return community_accus
 ```
@@ -176,7 +176,7 @@ python taxi_tsv_file_preprocessing.py
 
 Two files, `e` and `n`, are generated.
 
-Set the `lambda1` (see equation above) in generate_graph.py. If you have the `e` and `n` files, generated by the above commands or copied from `/raid/data/hive/gtf/{small, medium, large}`, you can do the following (`/raid/data/hive/gtf/small/` as an example):
+Set the $\lambda_1$ (see equation above) in generate_graph.py. If you have the `e` and `n` files, generated by the above commands or copied from `/raid/data/hive/gtf/{small, medium, large}`, you can do the following (`/raid/data/hive/gtf/small/` as an example):
 
 ```shell
 cd gunrock/tests/gtf/_data
@@ -189,13 +189,13 @@ A file called `std_added.mtx` is generated for Gunrock input.
 
 ### Running the application
 ```
---lambda2 is the sparsity regularization strength
+--lambda_2 is the sparsity regularization strength
 ```
 Sample command line with argument.
 ```shell
-./bin/test_gtf_10.0_x86_64 market ./_data/std_added.mtx --lambda2 3
+./bin/test_gtf_10.0_x86_64 market ./_data/std_added.mtx --lambda_2 3
 ```
-Please also note that we have set the number of MF iterations to 10000 as default. In larger graphs, a larger number may be required.
+Please also note that we have set the number of MF iterations to 10000 as a default. In larger graphs, a larger number may be required.
 
 ### Output
 
@@ -265,7 +265,7 @@ transfering to host!!!: 8924
 
 ## Performance and Analysis
 
-We measure the runtime and loss function `0.5 * sum((y' - y)^2) + lambda1 * sum(abs(y_i' - y_j')) + lambda2 * sum(abs(yi'))`, where `y` is the input weight (observation) for each vertex and `y'` (fitted weight) is the new weight for each vertex.
+We measure the runtime and loss function $0.5 \cdot \sum((y' - y)^2) + \lambda_1 * \sum(|y_i' - y_j'|) + \lambda_2 \cdot \sum(|y_i'|)$, where $y$ is the input weight (observation) for each vertex and $y'$ (fitted weight) is the new weight for each vertex.
 
 ### Implementation limitations
 
@@ -322,7 +322,7 @@ worse than it would with larger graphs.
 
 ### Alternate approaches
 
-For CPU, the parametric maxflow algorithm works well, but it is not parallelizable to GPU. The push-relabel algorithm is the best candidate for parallel implementation, but more optimizations are needed to get good running times on a GPU.
+For CPU, the parametric maxflow algorithm works well, but it is not yet parallelized. The push-relabel algorithm is currently the best candidate for parallel implementation, but more optimizations are needed to get good running times on a GPU.
 
 ### Gunrock implications
 
@@ -330,7 +330,7 @@ SFL is the first application in Gunrock that calls another application (maxflow)
 
 ### Notes on multi-GPU parallelization
 
-To parallelize the push-relabel algorithm across multiple GPUs, all arrays related to the graph have to be stored on each GPU. Moreover, the GPUs have to update their adjacent neighbors' data. Because the push-relabel algorithm needs to store at least three arrays of size O(|E|) and three arrays of size O(|V|), communicating so much data efficiently between GPUs is challenging.
+To parallelize the push-relabel algorithm across multiple GPUs, all arrays related to the graph have to be stored on each GPU. Moreover, the GPUs have to update their adjacent neighbors' data. Because the push-relabel algorithm needs to store at least three arrays of size $O(|E|)$ and three arrays of size $O(|V|)$, communicating so much data efficiently between GPUs is challenging.
 
 The SFL renormalization should be able to be easily parallelized across different GPUs, because it is array operations only. However, extra data transfer is necessary if the graph is not copied across multiple GPUs.
 
@@ -350,4 +350,4 @@ Currently there is no GPU library that addresses SFL renormalization.
 
 ### Research opportunities
 
-Prof. Sharpnack indicates that this implementation could be generalized to multi-graph fused lasso. The idea is to set multiple edge values for the edges connecting to source/sink, while keeping the graph topology and edge values (`lambda1`) for the edges in the original graph (excluding source and sink) the same.
+Prof. Sharpnack indicates that this implementation could be generalized to multi-graph fused lasso. The idea is to set multiple edge values for the edges connecting to source/sink, while keeping the graph topology and edge values $(\lambda_1)$ for the edges in the original graph (excluding source and sink) the same.
