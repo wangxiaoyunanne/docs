@@ -365,7 +365,7 @@ which needs synchronization. For this perpose we used the Gunrock operator Repea
   based on BFS which could be paralellized as well.
 
 - We are going to work on parallelizetion of another approach which is used in
-  Boykov Kolmogorov algorithm proposed in Yuri Boykov and Vladimir Kolmogorov in
+  Boykov Kolmogorov algorithm proposed by Yuri Boykov and Vladimir Kolmogorov in
   "An Experimental Comparison of Min-Cut/Max-Flow Algorithms for Energy 
   Minimization in Vision" <http://www.csd.uwo.ca/faculty/yuri/Papers/pami04.pdf>
   The algorithm instead of finding a new augmenting path or edge (push-relabel) 
