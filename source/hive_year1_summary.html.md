@@ -31,7 +31,7 @@ However, there are two neighbor reduce operations that may benefit from the kind
 
 ## Geolocation 
 **[Geolocation](https://gunrock.github.io/docs/hive_geolocation.html)** 
-Geolocation or geotagging is an interesting parallel problem, because it is among the few that exhibits the dynamic parallism pattern within the compute. The pattern is as follows; there is parallel compute across nodes, each node has some serial work and within the serial work there are sveral parallel math operations. Even without leveraging dynamic parallelism within CUDA (kernel launches within a kernel), Geolocation performs well on the GPU environment because it mainly requires simple math operations, instead of complicated memory movement schemes. 
+Geolocation or geotagging is an interesting parallel problem, because it is among the few that exhibits the dynamic parallism pattern within the compute. The pattern is as follows; there is parallel compute across nodes, each node has some serial work and within the serial work there are sveral parallel math operations. Even without leveraging dynamic parallelism within CUDA (kernel launches within a kernel), Geolocation performs well on the GPU environment because it mainly requires simple math operations, instead of complicated memory movement schemes.
 
 However, the challenge within the application is load balancing this simple compute, such that each processor has roughly the same amount of work. Currently, in gunrock, we map Geolocation using the `ForAll()` compute operator with optimizations to exit early (performing less work and fewer reads). Even without addressing load balancing issue with a complicated balancing scheme, on the HIVE datasets we achieve a 100x speedup with respect to the CPU reference code, implemented using C++ and OpenMP, and ~533x speedup  with respect to the GTUSC implementation. We improve upon the algorithm by avoiding a global gather and a global synchronize, and using 3x less memory than the GTUSC reference implementation.
 
@@ -106,16 +106,16 @@ The term "vertex nomination" covers a variety of different node ranking schemes 
 
 ## Scaling analysis for HIVE applications 
 **[Scaling analysis for HIVE applications](https://gunrock.github.io/docs/hive_scaling.html)** 
-Summary of all hive applications (computation/communication, scalability and implementation difficulty):
+Scaling summary:
 
-| Application                     | Computation to communication ratio              | Scalability    | Implementation difficulty |
-|---------------------------------|-------------------------------------------------|----------------|---------------------------|
+| Application                     | Computation to communication ratio              | Scalability    | Impl. difficulty |
+|---------------------------------|-------------------------------------------------|----------------|------------------|
 | Louvain                         | $E/p : 2V$                                      | Okay           | Hard                      |
 | Graph SAGE                      | $\sim CF : \min(C, 2p) \cdot 4$                 | Good           | Easy                      |
 | Random walk                     | Duplicated graph: infinity \linebreak Distributed graph: $1 : 24$ | Perfect \linebreak Very poor | Trivial \linebreak Easy |
 | Graph search: Uniform           | $1 : 24$                                        | Very poor      | Easy                      |
 | Graph search: Greedy            | Straightforward: $d : 24$ \linebreak Pre-visit: $1:24$  | Poor \linebreak Very poor | Easy \linebreak Easy           |
-| Graph search: Stochastic greedy | Straightforward: $d : 24$ \linebreak Pre-visit: $\log(d) : 24$ | Poor \linebreak Very Poor | Easy \linebreak Easy    |
+| Graph search: Stochastic greedy | Straightforward: $d : 24$ \linebreak Pre-visit: $\log(d) : 24$ | Poor \linebreak Very poor | Easy \linebreak Easy    |
 | Geolocation                     | Explicit movement: $25E/p : 4V$ \linebreak UVM or peer access: $25 : 1$ | Okay \linebreak Good | Easy \linebreak Easy |
 | Vertex nomination               | $E : 8V \cdot \min(d, p)$                       | Okay           | Easy                      |
 | Scan statistics                 | Duplicated graph: infinity \linebreak Distributed graph: $\sim (d+a \cdot \log(d)):12$ | Perfect \linebreak Okay | Trivial \linebreak Easy |
@@ -125,34 +125,34 @@ Summary of all hive applications (computation/communication, scalability and imp
 | Seeded graph matching           |                                                 |                |                           |
 | Application classification      |                                                 |                |                           |
 
-Seeded graph matching and application classification are matrix-operation-based
-and not covered in this table.
+Seeded graph matching and application classification are
+matrix-operation-based and not covered in this table.
 
-From the scaling analysis, we can see these workflows can be roughly grouped
-into three categories, by their scalabilities:
+From the scaling analysis, we can see these workflows can be roughly
+grouped into three categories, by their scalabilities:
 
-*Good scalability*
-GraphSAGE, geolocation using UVM or peer accesses, and local graph clustering
-belong to this group. They share some algorithmic signatures: the whole graph
-needs to be visited at least once in every iteration, and visiting each edge
-involves nontrivial computation. The communication costs are roughly at the
-level of V. As a result, the computation vs. communication ratio is larger than
-E : V. PageRank is a standard graph algorithm that falls in this group.
+**Good scalability** GraphSAGE, geolocation using UVM or peer
+accesses, and local graph clustering belong to this group. They share
+some algorithmic signatures: the whole graph needs to be visited at
+least once in every iteration, and visiting each edge involves
+nontrivial computation. The communication costs are roughly at the
+level of $V$. As a result, the computation vs. communication ratio is
+larger than $E : V$. PageRank is a standard graph algorithm that falls
+in this group.
 
-*Moderate scalability*
-This group includes Louvain, geolocation using explicit movement, vertex
-nomination, scan statistics, and graph projection. They either only visit part
-of the graph in an iteration, have only trivial computation during an edge
-visit, or communicate a little more data than V. The computation vs.
-communication is less than E : V, but still larger than 1 (or 1 operation : 4
-bytes). They are still scalable on the
-DGX-1 system, but not as well as the previous group. Single source shortest
-path (SSSP) is an typical example for this group.
+**Moderate scalability** This group includes Louvain, geolocation
+using explicit movement, vertex nomination, scan statistics, and graph
+projection. They either only visit part of the graph in an iteration,
+have only trivial computation during an edge visit, or communicate a
+little more data than $V$. The computation vs. communication is less
+than $E : V$, but still larger than 1 (or 1 operation : 4 bytes). They
+are still scalable on the DGX-1 system, but not as well as the
+previous group. Single source shortest path (SSSP) is an typical
+example for this group.
 
-*Poor scalability*
-Random walk, graph search, and sparse fused lasso belong to this group. They
-need to send out some data for each vertex or edge visit. As a result, the
-computation vs communication ratio is less than 1 (or 1 operation : 4 bytes).
-They are very hard to scale across multiple GPUs. Random walk is an typical
-example.
+**Poor scalability** Random walk, graph search, and sparse fused lasso
+belong to this group. They need to send out some data for each vertex
+or edge visit. As a result, the computation vs communication ratio is
+less than 1 (or 1 operation : 4 bytes). They are very hard to scale
+across multiple GPUs. Random walk is an typical example.
 
