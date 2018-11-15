@@ -19,7 +19,7 @@ Given a graph where each vertex on the graph has a weight, _sparse fused lasso (
 
 The SFL problem is mainly divided into two parts, computing residual graphs from maxflow and renormalizing the weights of the vertices. Maxflow is parallelizable with the push-relabel algorithm, so we adopt this algorithm in Gunrock's implementation. Moreover, each vertex has its own work to compute which communities it belongs to, and normalize the weights with other vertices in the same community. This renormalization requires global synchronization. SFL iterates by calling maxflow and renormalization several times before it converges. We notice that the overall runtime is mostly spent in maxflow, and thus improving the maxflow implementation will bring substantial speedup in the SFL.
 
-Because of the current state of our maxflow implementation, we notice a 30x slowdown of Gunrock's GPU SFL with respect to the benchmark implementation. This slowdown is mainly caused by the parallel push-relabel implementation taking too many iterations to converge, and making SFL kernel launching overhead-bound. We are looking into algorithmic optimizations to reduce the number of iterations maxflow takes, and also engineering optimizations to reduce the effects of kernel overheads in computation time.
+GPU SFL runs around 2 times slower than the benchmark on the decent largest dataset provided. On the smaller datasets there just isn't enough work to fill up a GPU and leverage the compute we have available. Even on the larger dataset we do not see a speed-up because of superior serial algorithm within the CPU implementation of maxflow. That converges much earlier than our parallel push-relabel max flow algorithm on the GPU.
 
 ## Summary of Gunrock Implementation
 
@@ -144,8 +144,8 @@ make
 At this point, there should be an executable `gtf_main_<CUDA version>_x86_64`
 in `tests/gtf/bin`.
 
-The testing is done with <https://github.com/wetliu/gunrock/tree/master> using `dev-refactor` branch at commit `8f51a6369127204a87893b74a7b920ad3d3fdd58`
-(Oct. 31, 2018), using CUDA 9.1 with NVIDIA driver 390.30.
+The testing is done with <https://github.com/wetliu/gunrock/tree/master> using `stable` branch at commit `a2159ce060d4dbc89a88f8d5fb0fd0d571ba907b`
+(Nov. 14, 2018), using CUDA 10.1 with NVIDIA driver 390.30.
 
 ### HIVE Data Preparation
 
@@ -195,6 +195,7 @@ Sample command line with argument.
 ```shell
 ./bin/test_gtf_10.0_x86_64 market ./_data/std_added.mtx --lambda2 3
 ```
+Please also note that we have set the number of MF iterations to 10000 as default. In larger graphs, a larger number may be required.
 
 ### Output
 
@@ -277,45 +278,39 @@ Graphtv is an official implementation of the sparse fused lasso algorithm with a
 
 | DataSet | time starts | time ends | #E | #V | Graphtv runtime | Gunrock GPU runtime |
 |--------------|---------------------|--------------------|----------|----------|------|---|
-| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 0.11s |  3.23s* |
+| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 0.11s | 4.98s |
 | NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | 8.71s | |
-| NY Taxi-1M | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211 | 213360 | 103.62s |  |
+| NY Taxi-1M | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211 | 213360 | 103.62s | 211.07 |
 
 | DataSet | time starts | time ends | #E | #V | Graphtv loss | Gunrock GPU loss |
 |--------------|---------------------|--------------------|----------|----------|-------------------|-------------------|
-| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 132789.32 | 132789.32* |
-| NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | |                     |
-| NY Taxi-1M | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211 | 213360 | |                     |
-
-`*`: The GPU implementation of maxflow still has a bug that leads to different results per run. We only report the best result we can achieve with the current version of maxflow. Since this current version of maxflow is able to achieve the same loss as Graphtv, we presume that the results, both the runtime and loss, should be similar or even better with a bug-free maxflow.
+| NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 132789.32 | 132789.32 |
+| NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | 1094282.51 | 1094282.51 |
+| NY Taxi-1M | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211 | 213360 | 1670947.26 | 1670947.26 |
 
 ### Performance limitations
 
-We observe a slowdown when we compare Graphtv and Gunrock's current SFL
-implementation on the `NY Taxi-small` dataset with time from `2011-06-26 12:00:00`
-to `2011-06-26 14:00:00` for the following reasons:
+We observe a slowdown when we compare Graphtv and Gunrock's current SFL implementation on the three datasets provided. On the smaller datasets there just isn't enough work to fill up a GPU and leverage the compute we have available. Even on the larger dataset we do not see a speed-up because of superior serial algorithm within the CPU implementation of maxflow. That converges much earlier than our parallel push-relabel max flow algorithm on the GPU.
 
-- Graphtv uses a serial argumenting path based max flow algorithm, and Gunrock
-uses a parallel implementation of the push relabel algorithm. On this particular
-dataset, push relabel uses more than 20K iterations, and SFL runs about a hundred
-seconds on CPU.
+We take a detailed performance analysis on the `NY Taxi-1M` dataset with time from `2011-06-19 00:00:00`
+to `2011-06-27 00:00:00`:
 
 - The large number of iterations is very harmful to the computation speed of our
 GPU implementation, because of the kernel launching overhead. In fact, profiling
 shows the computation kernels only takes about 20% of MF's computation time, and
-the rest (80%) is overhead. Since maxflow takes up about 95% of SFL's
+the rest (80%) is overhead (@Agnes please change this sentence according to your updates). Since maxflow takes up about 96% of SFL's
 computation time, this makes SFL kernel launching overhead-bound. We are looking
 at optimizations to cut down the number of iterations, such as the one described
 by Bo Hong in "A Lock-free Multi-threaded Algorithm for the Maximum Flow Problem"
 <http://people.cs.ksu.edu/~wls77/weston/projects/cis598/hong.pdf>.
 
-- This dataset with ~9k vertices and ~20k edges is too small to fill the GPU. It makes the kernel launching overhead issue much
+- This dataset with ~213k vertices and ~588k edges is still small to fill the GPU. It makes the kernel launching overhead issue much
 worse than it would with larger graphs.
 
 - There are some engineering limitations in our current implementation:
 
     1. The relabeling heuristics in maxflow are performed on the CPU; although they only
-    run once per 100 iterations, the data movement takes up time.
+    run once per 100 iterations, the data movement takes up time. (@Agnes)
 
     2. The current min-cut finding and renormalization are serial on GPU (i.e.
     only use a single thread to perform the computation).
