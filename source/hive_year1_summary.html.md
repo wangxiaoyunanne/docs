@@ -16,7 +16,7 @@ This report is located online at the following URL: <https://gunrock.github.io/d
 
 Herein UC Davis produces the following three deliverables that it promised to deliver in Year 1:
 
-1. **7--9 kernels running on a single GPU on DGX-1**. The PM had indicated that the application targets are the graph-specific kernels of larger applications, and that our effort should target these kernels. These kernels run on one GPU of the DGX-1. These kernels are in Gunrock's GitHub repository as standalone kernels. While we committed to delivering 7--9 kernels, we deliver 10 v0 kernels. Scan statistics is substantially done but the report is not complete and so we do not deliver it. Sparse graph lasso works on some inputs but requires more optimization in its maxflow component; we do include its report.
+1. **7--9 kernels running on a single GPU on DGX-1**. The PM had indicated that the application targets are the graph-specific kernels of larger applications, and that our effort should target these kernels. These kernels run on one GPU of the DGX-1. These kernels are in Gunrock's GitHub repository as standalone kernels. While we committed to delivering 7--9 kernels, as of the date of this addendum, we deliver all 11 v0 kernels.
 2. **(High-level) performance analysis of these kernels**. In this report we analyze the performance of these kernels.
 3. **Separable communication benchmark predicting latency and throughput for a multi-GPU implementation**. This report (and associated code, also in the Gunrock GitHub repository) analyzes the DGX-1's communication capabilities and projects how single-GPU benchmarks will scale on this machine to 8 GPUs.
 
@@ -31,9 +31,9 @@ However, there are two neighbor reduce operations that may benefit from the kind
 
 ## Geolocation 
 **[Geolocation](https://gunrock.github.io/docs/hive_geolocation.html)** 
-Geolocation or geotagging is an interesting parallel problem, because it is among the few that exhibits the dynamic parallism pattern within the compute. The pattern is as follows; there is parallel compute across nodes, each node has some serial work and within the serial work there are sveral parallel math operations. Even without leveraging dynamic parallelism within CUDA (kernel launches within a kernel), Geolocation performs well on the GPU environment because it mainly requires simple math operations, instead of complicated memory movement schemes.
+Geolocation or geotagging is an interesting parallel problem, because it is among the few that exhibits the dynamic parallelism pattern within the compute. The pattern is as follows; there is parallel compute across nodes, each node has some serial work and within the serial work there are several parallel math operations. Even without leveraging dynamic parallelism within CUDA (kernel launches within a kernel), Geolocation performs well on the GPU environment because it mainly requires simple math operations, instead of complicated memory movement schemes.
 
-However, the challenge within the application is load balancing this simple compute, such that each processor has roughly the same amount of work. Currently, in gunrock, we map Geolocation using the `ForAll()` compute operator with optimizations to exit early (performing less work and fewer reads). Even without addressing load balancing issue with a complicated balancing scheme, on the HIVE datasets we achieve a 100x speedup with respect to the CPU reference code, implemented using C++ and OpenMP, and ~533x speedup  with respect to the GTUSC implementation. We improve upon the algorithm by avoiding a global gather and a global synchronize, and using 3x less memory than the GTUSC reference implementation.
+However, the challenge within the application is load balancing this simple compute, such that each processor has roughly the same amount of work. Currently, in Gunrock, we map Geolocation using the `ForAll()` compute operator with optimizations to exit early (performing less work and fewer reads). Even without addressing load balancing issue with a complicated balancing scheme, on the HIVE datasets we achieve a 100x speedup with respect to the CPU reference code, implemented using C++ and OpenMP, and ~533x speedup  with respect to the GTUSC implementation. We improve upon the algorithm by avoiding a global gather and a global synchronize, and using 3x less memory than the GTUSC reference implementation.
 
 ## GraphSAGE 
 **[GraphSAGE](https://gunrock.github.io/docs/hive_graphSage.html)** 
@@ -86,6 +86,10 @@ Because it has a natural representation in terms of sparse matrix operations, gr
 
 Overall, we found that Gunrock was more flexible and more performant than GraphBLAS, likely due to better load balancing.  However, in this case, the GraphBLAS application was substantially easier to program than Gunrock, and also allowed us to take advantage of some more sophisticated memory allocation methods available in the GraphBLAS cuSPARSE backend.  These findings suggest that addition of certain commonly used API functions to Gunrock could be a fruitful direction for further work.
 
+## Scan Statistics 
+**[Scan Statistics](https://gunrock.github.io/docs/hive_scan_statistics.html)** 
+Scan statistics applied to static graphs fits perfectly into the Gunrock framework. Using a combination of `ForAll` and Intersection operations, we outperform the parallel OpenMP CPU reference by up to 45.4 times speedup on the small Enron graph (provided as part of the HIVE workflows) and up to a 580 times speedup on larger graphs that feature enough computation to saturate the throughput of the GPU.
+
 ## Seeded Graph Matching (SGM) 
 **[Seeded Graph Matching (SGM)](https://gunrock.github.io/docs/hive_sgm.html)** 
 SGM is a fruitful workflow to optimize, because the existing implementations were not written with performance in mind.  By making minor modifications to the algorithm that allow use of sparse data structures, we enable scaling to larger datasets than previously possible.
@@ -96,9 +100,9 @@ SGM is an approximate algorithm that minimizes graph adjacency disagreements via
 
 ## Sparse Fused Lasso 
 **[Sparse Fused Lasso](https://gunrock.github.io/docs/hive_sparse_graph_trend_filtering.html)** 
-The SFL problem is mainly divided into two parts, computing residual graphs from maxflow and renormalizing the weights of the vertices. Maxflow is parallelizable with the push-relabel algorithm, so we adopt this algorithm in Gunrock's implementation. Moreover, each vertex has its own work to compute which communities it belongs to, and normalize the weights with other vertices in the same community. This renormalization requires global synchronization. SFL iterates by calling maxflow and renormalization several times before it converges. We notice that the overall runtime is mostly spent in maxflow, and thus improving the maxflow implementation will bring substantial speedup in the SFL.
+The SFL problem is mainly divided into two parts, computing residual graphs from maxflow and renormalizing the weights of the vertices. Maxflow is performed with the parallelizable lock-free push-relabel algorithm. For renormalization: each vertex has to compute which communities it belongs to, and normalize the weights with other vertices in the same community. SFL iterates on maxflow and renormalization kernels with a global synchronization in between them until convergence. Current analysis show that maxflow is the bottleneck of the whole workflow, with over 90% of the runtime being spent on the maxflow kernels.
 
-Because of the current state of our maxflow implementation, we notice a 30x slowdown of Gunrock's GPU SFL with respect to the benchmark implementation. This slowdown is mainly caused by the parallel push-relabel implementation taking too many iterations to converge, and making SFL kernel launching overhead-bound. We are looking into algorithmic optimizations to reduce the number of iterations maxflow takes, and also engineering optimizations to reduce the effects of kernel overheads in computation time.
+GPU SFL runs ~2 times slower than the CPU benchmark on the largest dataset provided. On smaller datasets, GPU SFL is much slower because there just isn't enough work to fill up a GPU and leverage the compute we have available. Analyzing the runs on the larger datasets, show that the parametric maxflow on the CPU converges much faster than our parallel push-relabel max flow algorithm on the GPU. Investigating the parallelization of parametric maxflow is an interesting research challenge.
 
 ## Vertex Nomination 
 **[Vertex Nomination](https://gunrock.github.io/docs/hive_vn.html)** 
