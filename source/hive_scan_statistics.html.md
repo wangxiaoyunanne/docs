@@ -15,11 +15,12 @@ full_length: true
 Scan statistics as described in [Priebe et al](http://www.cis.jhu.edu/~parky/CEP-Publications/PCMP-CMOT2005.pdf) are the generic method that computes a statistic for the neighborhood of each node in the graph, and looks for anomalies in those statistics. In this workflow, we implement the specific version of scan statistics where we compute the number of edges in the subgraph induced by the one-hop neighborhood of each node u in the graph. It turns out that this statistic is equal to the number of triangles that node u participates in plus the degree of u. Thus, we are able to implement scan statistics by making relatively minor modifications to our existing Gunrock triangle counting (TC) application.
 
 ## Summary of Results
-Scan statistics problem on solving static graphs fits perfectly in Gunrock framework. Using a combination of ForAll and Intersection operations, we are able to beat the parallel OpenMP CPU reference by up to 45.4 times speedup on small enron graph provided by hive workflows and up to 580 times speedup on larger graphs which saturates the thoughouput of the GPU device.
+Scan statistics problem on solving static graphs fits perfectly in Gunrock framework. Using a combination of `ForAll` and Intersection operations, we are able to beat the parallel OpenMP CPU reference by up to 45.4 times speedup on small enron graph provided by hive workflows and up to 580 times speedup on larger graphs which saturates the thoughouput of the GPU device.
 
 ## Algorithm: Scan Statistics
 Input is an undirected graph w/o self loops.
-```
+
+```python
 scan_stats = [len(graph.neighbors(u)) for u in graph.nodes]
 for (u, v) in graph.edges:
     if u < v:
@@ -29,6 +30,7 @@ for (u, v) in graph.edges:
             scan_stats[shared_neib] += 1
 return argmax([scan_stats(node) for node in graph.nodes])
 ```
+
 ## Summary of Gunrock implementation
 
 ```
@@ -46,13 +48,11 @@ return [scan_stats]
 ## How To Run This Application on DARPA's DGX-1
 
 ### Prereqs/input
+
 ```bash
 git clone --recursive https://github.com/gunrock/gunrock \
 	-b dev-refactor
-cd gunrock
-mkdir build
-ctest ..
-cd ../tests/ss/
+cd gunrock/tests/ss/
 make clean && make
 ```
 
@@ -76,7 +76,7 @@ We compare our GPU output with the [HIVE CPU reference implementation] which is 
 
 Details of the datasets:
 
-| DataSet          | #V    | #E | #dangling vertices|
+| DataSet          | $\cardinality{V}$    | $\cardinality{E}$ | #dangling vertices|
 |------------------|---------:|-----------:|-------:|
 | enron            |    15056 |     57074  |      0 |
 | ca               |   108299 |    186878  |  85166 |
