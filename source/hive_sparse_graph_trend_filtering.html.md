@@ -42,13 +42,13 @@ Load the graph and normalize edge weights
 
 Repeat iteration till convergence:
 
-    // Part 1: Maxflow
+    # Part 1: Maxflow
     do
         lockfree_op (num-repeats, V)
         global_relabeling_heuristic // update heights of all vertices
     while no more updates
 
-    // Lock-free Push-Relabel operator
+    # Lock-free Push-Relabel operator
     def lockfree_op (num-repeats, V):
         for i from 1 to num-repeats do:
             for each vertex v in V:
@@ -59,7 +59,7 @@ Repeat iteration till convergence:
                     else:
                         Relabel (v, u)
 
-    // Finding lowest neighbor in residual network phase
+    # Finding lowest neighbor in residual network phase
     def lowest_neighbor_in_residual_network (v):
         min_height := infinity
         min_u := undefined
@@ -71,7 +71,7 @@ Repeat iteration till convergence:
                     min_u := u
         return min_u
     
-    // Push phase
+    # Push phase
     def Push (e<v, u>):
         move := min(e.residual_capacity, v.excess)
         v.excess -= move
@@ -79,22 +79,22 @@ Repeat iteration till convergence:
         u.excess += move
         e.reverse.flow -= move
 
-    // Relabel phase
+    # Relabel phase
     def Relabel (e<v, u>):
         v.height := u.height + 1
 
-    // Min-cut
+    # Min-cut
     Run a BFS to mark the accessibilities of vertices from the source vertex
     in the residue graph
 
-    // Part 2: renormalization
-    // Reset available community
+    # Part 2: renormalization
+    # Reset available community
     for each community comm:
         community_weights[comm] := 0
         community_sizes  [comm] := 0
         next_communities [comm] := 0
 
-    // Accumulate the weights and count the number of vertices belong to the communities
+    # Accumulate the weights and count the number of vertices belong to the communities
     for each vertex v:
         if v is accessible from the source
             comm := next_communities[curr_communities[v]];
@@ -105,12 +105,12 @@ Repeat iteration till convergence:
             community_weights[comm] -= weight[v -> sink]
             community_sizes [comm] ++
 
-    // Normalize community
+    # Normalize community
     for each community comm:
         community_weights[comm] /= community_sizes[comm]
         community_accus [comm] += community_weights[comm]
 
-    // Update the residual graph
+    # Update the residual graph
     for each vertex v:
         comm = curr_communities[v]
         if (v is accessible from the source):
@@ -119,12 +119,12 @@ Repeat iteration till convergence:
                 Swap(-weight[source->v], weight[v->sink])
         else
             weight[v->sink] += community_weights[comm]
-            If (weight[v->sink] < 0):
+            if (weight[v->sink] < 0):
                 Swap(weight[source->v], -weight[v->sink])
 
-    // End of Repeats
+    # End of Repeats
 
-// Part 3 Sparsify community_accus by \lambda_2
+# Part 3 Sparsify community_accus by \lambda_2
 for i in len(each community_accus):
     if (community_accus < 0):
         community_accus[i] := min(community_accus[i] + \lambda_2, 0)
@@ -147,8 +147,7 @@ the Makefiles. DARPA's DGX-1 has both installed when the tests are performed.
 
 ```shell
 git clone --recursive https://github.com/gunrock/gunrock -b dev-refactor
-cd gunrock
-cd ../tests/gtf
+cd gunrock/tests/gtf
 make clean && make
 ```
 
