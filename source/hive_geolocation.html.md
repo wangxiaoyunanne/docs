@@ -75,10 +75,7 @@ def spatial_center(Vertex v):
 
 ```shell
 git clone --recursive https://github.com/gunrock/gunrock -b dev-refactor
-cd gunrock
-mkdir build
-ctest ..
-cd ../tests/geo/
+cd gunrock/tests/geo/
 make clean && make
 ```
 
