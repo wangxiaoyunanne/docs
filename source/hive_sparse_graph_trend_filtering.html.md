@@ -279,7 +279,7 @@ Graphtv is an official implementation of the sparse fused lasso algorithm with a
 | DataSet | time starts | time ends | \cardinality{E} | \cardinality{V} | Graphtv runtime | Gunrock GPU runtime |
 |--------------|---------------------|--------------------|----------|----------|------|---|
 | NY Taxi-small | 2011-06-26 12:00:00 |2011-06-26 14:00:00 | 20349 | 8922 | 0.11s | 4.98s |
-| NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | 8.71s | |
+| NY Taxi-small | 2011-06-26 00:00:00 |2011-06-27 00:00:00 | 293259 | 107064 | 8.71s | 143.91s |
 | NY Taxi-1M | 2011-06-19 00:00:00 |2011-06-27 00:00:00 | 588211 | 213360 | 103.62s | 211.07 |
 
 | DataSet | time starts | time ends | #E | #V | Graphtv loss | Gunrock GPU loss |
