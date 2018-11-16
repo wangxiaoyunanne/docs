@@ -307,7 +307,7 @@ computation time, this makes SFL kernel launch overhead-bound.
 Further optimization of the Maxflow algorithm is discussed below in 
 the Maxflow optimization opportunities paragraph.
 
-- This dataset with $\sim 213k$ vertices and &\sim 588k& edges is still small to fill up the GPU. It makes the kernel launching overhead issue much worse than it would with larger graphs.
+- This dataset with $\sim 213k$ vertices and $\sim 588k$ edges is still small to fill up the GPU. It makes the kernel launching overhead issue much worse than it would with larger graphs.
 
 - There are some engineering limitations in our current implementation:
 
