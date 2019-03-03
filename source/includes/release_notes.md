@@ -1,100 +1,60 @@
-# Gunrock v0.5 Release Notes
-Release 0.5, Upcoming
+# Gunrock Release Notes
 
-Release 0.5 is mainly a API refactor, with some feature updates:
+Gunrock release 0.5 is a feature (minor) release that adds:
 
-- New operator interfaces
-- New graph representations
-- New frontier structure
-- New test driver
-- Restructured enactor routines
-- New parameter handling
-- New 1D operators
-- Other code restructuring
-- Optional Boost dependency
+- New primitives and better support for existing primitives.
+- New operator: Intersection.
+- Unit-testing support through [Googletest ](https://github.com/google/googletest) infrastructure.
+- CPU reference code for correctness checking for some of the primitives.
+- Support for central integration (Jenkins) and code-coverage.
+- Overall bug fixes and support for new CUDA architectures.
 
-## ChangeLog
-- Operators (i.e. advance, filter)
-    - Take in lambda functions for per-element operations, instead of static
-      functions in a structure. `<algo>_functor.cuh` is merged into
-      `<algo>_enactor.cuh`
-    - Use `OprtrParameters` structure to keep inputs, except for the graph,
-      input / output frontiers, and the lambdas
-    - `KernelPolicy` is defined within each operator, instead of in the enactor
-    - Templatized options (Idempotence, mark-preds, advance types, reduce ops,
-      reduce types, etc.) are provided as a combined 32bit `OprtrFlag`
-    - Queue index and selector are automatically changed by the operator when
-      needed
+## v0.5 Changelog
+All notable changes to gunrock for v0.5 are documented below:
 
+### Added
+- New primitives:
+    - A* 
+    - Weighted Label Propagation (LP) 
+    - Minimum Spanning Tree (MST)
+    - Random Walk (RW)
+    - Triangle Counting (TC)
+- Operator:
+    - Intersection operator (for example, see TC)
+- Unit-testing:
+    - Googletest support (see `unittests` directory)
+- Docs
+    - Support using Slate (see https://github.com/gunrock/docs)
+- CPU reference code
+- Run scripts for all primitives
+- Clang-format based on Google style
+    - see commit aac9add (revert for diff)
+- Support for Volta and Turing architectures
+- Regression tests to `ctest` for better code-coverage
+- Memset kernels
+- Multi-gpu testing through Jenkins
 
-- Graph representation
-    - A single structure encloses all graph related data
-    - Different representations (CSR, CSC, COO, etc.) can be selected based
-      on algorithmic needs
-    - New graph representations could be added without changing other parts of
-      Gunrock, except operator implementation that handles how to traverse such
-      new representation
-    - CPU, GPU and sub-graphs use the same graph data structure, no more
-      `GraphSlice` and `GRGraph`
-
-
-- Frontier
-    - A single structure `gunrock/app/frontier.cuh:Frontier`
-      encloses all frontier related data
+### Removed
+- Subgraph matching and join operator removed due to race conditions (SM is not added to the future release)
+- Plots generation python scripts removed (see https://github.com/gunrock/io)
+- MaxFlow primitive removed, wasn't fully implemented for a release (implementation exists in the new API for future release)
+- Outdated documentation
 
 
-- Test driver
-    - Allows multiple graph types (`64bit-VertexT`, `64bit-SizeT`,
-      `64bit-ValueT`, directed vs. undirected) and multiple parameters
-      combinations to run in a single execution
-    - Allows result validation for each run, instead of only the last run
-    - Result validation without reference for BFS and SSSP
-    - Moved common functions into `gunrock/app/test_base.cuh`
-    - Moved CPU reference code and result validation into
-      `gunrock/app/<algo>/<algo>_test.cuh`
+### Fixed
+- HITS now produces correct results
+- Illegal memory access fixed for label propagation (LP) primitive
+- WTF Illegal memory access fixed for frontier queue (see known issues for problems with this)
+- Other minor bug fixes
 
+### Changed
+- Updated README and other docs
+- Moved previously `tests` directory to `examples`
+- Doesn't require `CMakeLists.txt` (or `cmake`) to run `make`
+- Moved all docs to Slate
 
-- Enactor
-    - Common functions moved into `gunrock/app/enactor_base.cuh`
-    - Use OpenMP to maintain controlling threads on CPU
-    - Use instances of `Iteration` instead of static access to its functions
-
-
-- Command line parameters
-    - A dedicated `Parameters` struct to store all running parameters
-    - Need to define parameters via. `Use` function before using them
-    - Command line is parsed by `get_opt`
-    - `Set` to set parameter values
-    - `Get` to get parameter values
-    - Handles vectors as parameter values
-
-
-- 1D operators for Array1D
-    - Per-element operations, e.g. `ForAll` and `ForEach`
-    - Vector-Vector operations, e.g. `Add`, `Minus`, `Mul`, `Div`, `Mad`, `Set`
-    - Vector-Scalar operations
-    - Sort
-
-
-- Code restructuring
-    - Partitioners moved from `gunrock/app` to `gunrock/partitioner`
-    - `LB` operator moved from `gunrock/oprtr/edge_map_partitioned_forward` to
-      `gunrock/oprtr/LB_advance`
-    - `TWC` operator moved from 'gunrock/oprtr/edge_map_forward' to
-      `gunrock/oprtr/TWC_advance`
-
-
-- Optional Boost dependency
-    - Utility functions changed to C++11 or implemented
-    - CPU references implemented for BFS and SSSP, and will be called when BOOST
-      is not available
-    - `info` will use RapidJson-based implementation, when Boost is not available
-
-## Known Issues
-
-- Multi-GPU framework not tested
-- Operators have decreased performance, due to more than 32 registers used by
-  a single thread in the kernels
-- RGG and GRMAT generators not working
-- SSSP may have incorrect predecessors, due to data racing in marking the
-  predecessors within the operator kernels
+## Known Issues:
+- WTF has illegal memory access (https://github.com/gunrock/gunrock/issues/503).
+- A* sometimes outputs the wrong path randomly (https://github.com/gunrock/gunrock/issues/502).
+- Random Walk uses custom kernels within gunrock, this is resolved for future releases.
+- CPU Reference code not implemented for SALSA, TC and LP (https://github.com/gunrock/gunrock/issues/232).
