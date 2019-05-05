@@ -74,9 +74,8 @@ and documentation of Gunrock.
 
 ## Are all of its components/dependencies easy to find?
 
-Gunrock has three dependencies. Two of them are also GPU primitive libraries which
-also reside on GitHub. The third one is Boost (Gunrock uses Boost Graph Library
-to implement CPU reference testing algorithms). All dependencies do not require
+Gunrock has two dependencies. Both of them are GPU primitive libraries which
+also reside on GitHub. All dependencies do not require
 installation. To use, one only needs to download or git clone them and put them
 in the according directories. More details in the installation section of this
 documentation.

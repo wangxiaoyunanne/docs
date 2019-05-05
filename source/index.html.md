@@ -10,9 +10,10 @@ toc_footers:
 includes:
   - README
   - building_gunrock
-  - why-gunrock
-  - methodology
+  - overview
   - programming_model
+  - methodology
+  - why-gunrock
   - forking_workflow_gunrock
   - writing_googletests
   - road_map
