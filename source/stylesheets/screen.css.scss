@@ -206,6 +206,7 @@ html, body {
   white-space: nowrap;
   text-overflow: ellipsis;
   text-decoration: none;
+  font-weight: 100;
   color: $nav-text;
   transition-property: background;
   transition-timing-function: linear;
@@ -251,7 +252,7 @@ html, body {
 ////////////////////////////////////////////////////////////////////////////////
 
 .page-wrapper {
-  margin-left: $nav-width;
+  margin-left: $page-margin;
   position: relative;
   z-index: 10;
   background-color: $main-bg;
