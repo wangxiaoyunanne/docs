@@ -8,7 +8,7 @@ import tempfile
 import subprocess
 import re
 
-files = sorted([f for f in os.listdir('.')
+files = sorted([f for f in os.listdir('./hive')
                 if ((f.startswith('hive_') and
                      f.endswith('.html.md') and
                      f != 'hive_year1_summary.html.md' and

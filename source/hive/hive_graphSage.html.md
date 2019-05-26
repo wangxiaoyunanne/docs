@@ -492,7 +492,7 @@ utilization of the memory system:
 | Device Writes |     543669 |    2.042 GB/s | |
 | Device Total  |    2725502 |   10.236 GB/s | Idle to low |
 
-![Sage_Pokec_TianXp]( attachments/sage/pokec_TitanXp.png "Memory statics")
+![Sage_Pokec_TianXp](../attachments/sage/pokec_TitanXp.png "Memory statics")
 
 It's clear that the unified cache is almost fully utilized, at 4 TBps out of
 the 5 TBps theoretical upper bound, and is the bottleneck.
@@ -519,7 +519,7 @@ system:
 | Device Writes |     571925 |    4.959 GB/s | |
 | Device Total  |    2974758 |   25.791 GB/s | Idle to low |
 
-![Sage_Pokec_V100]( attachments/sage/pokec_V100.png "Memory statics")
+![Sage_Pokec_V100](../attachments/sage/pokec_V100.png "Memory statics")
 
 On the V100, kernel2 only takes 3.982 ms (about 60% of 6.67 ms per batch), and the
 unified-cache throughput increases to 9.8 TBps, more than double than on the

@@ -169,7 +169,7 @@ For example, when DataSet = `akamai`, and LogDir = `eval/DGX1-P100x1`, the comma
 
 ### Output
 
-The outputs are in the [louvain](attachments/louvain "louvain") directory. Look for the `.txt` files: running time is after `Run x elapsed:`, and the number of communities and the resulting modularity is in the line that starts with `Computed:`. There are 12 runs in each `.txt` file: 1 single thread CPU run for reference, 1 OpenMP multiple-thread (32 threads in the example, may not be optimal) run, and 10 GPU runs.
+The outputs are in the [louvain](../attachments/louvain "louvain") directory. Look for the `.txt` files: running time is after `Run x elapsed:`, and the number of communities and the resulting modularity is in the line that starts with `Computed:`. There are 12 runs in each `.txt` file: 1 single thread CPU run for reference, 1 OpenMP multiple-thread (32 threads in the example, may not be optimal) run, and 10 GPU runs.
 
 The output was compared against PNNL's results on the number of communities and
 modularity for the amazon and ca datasets. Note that PNNL's code does not count
@@ -341,7 +341,7 @@ very small neighbor list; the parallel formulation Gunrock uses does not work
 well on this kind of graph.
 
 Published results (timing and modularity) from previous work are summarized in
-the [louvain_results.xlsx]( attachments/louvain/louvain_results.xlsx "Louvain
+the [louvain_results.xlsx](../attachments/louvain/louvain_results.xlsx "Louvain
 results") file in the `louvain` directory.
 
 ### Performance limitations
@@ -370,7 +370,7 @@ Using the `akamai` dataset to profile the GPU Louvain implementation on a V100, 
 |PCIe Reads    |       0 |        0 B/s  | None |
 |PCIe Writes   |       5 |  682.381 kB/s | Idle to Low |
 
-![Louvain_akamai]( attachments/louvain/Louvain_akamai.png "Memory statistics")
+![Louvain_akamai](../attachments/louvain/Louvain_akamai.png "Memory statistics")
 
 It's clear that the bottleneck is at the device memory: most data are read-once and write-once,  with little possibility to reuse the data. The kernel achieved 691 GB/s bandwidth utilization, ~77% of the 32GB HBM2's 900 GB/s capability. This high-bandwidth utilization fits the memory access pattern: mostly regular and coalesced.
 

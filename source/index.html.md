@@ -22,4 +22,6 @@ includes:
   - frequently_asked_questions
 
 search: true
+
+full_length: true
 ---

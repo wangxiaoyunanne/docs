@@ -27,7 +27,7 @@ partitioning schemes, thus may have different scaling results.
 ### DGX-1
 
 The DGX-1 with P100 GPUs has 4 NVLink lanes per GPU, connected as
-follows. ![DGX1-NVLink]( attachments/scaling/NVLink-DGX1.png "DGX1
+follows. ![DGX1-NVLink](../attachments/scaling/NVLink-DGX1.png "DGX1
 NVLink Topology")
 
 Each of the NVLink links runs at 20 GBps per direction, higher than
@@ -107,7 +107,7 @@ driver 410 shows considerablly better throughputs.
 The DGX-2 system has a very different NVLink topology: the GPUs are
 connected by NVSwitches, and all to all peer accesses are available.
 
-![DGX2-NVLink]( attachments/scaling/NVLink-DGX2.png "DGX2 NVLink Topology").
+![DGX2-NVLink](../attachments/scaling/NVLink-DGX2.png "DGX2 NVLink Topology").
 
 At the time of this report, the DGX-2 is hardly available, and not to
 us. What we have locally at UC Davis are two Quadro GV100 GPUs
