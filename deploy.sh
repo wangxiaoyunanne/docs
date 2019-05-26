@@ -22,27 +22,25 @@ Options:
 
 run_build() {
   # pre-processing
-  rm -rf ./source/includes/README.md
-  wget -O ./source/includes/README.md https://raw.githubusercontent.com/gunrock/gunrock/master/README.md
-  # pandoc --from markdown-tex_math_dollars --to html source/sandbox.html.md > source/hive_sandbox.html.md
-  # pandoc --from markdown-tex_math_dollars --to gfm source/sandbox.html.md > source/hive_sandbox.html.md
+  rm -rf ./source/includes/README.md # remove old README
+  wget -O ./source/includes/README.md https://raw.githubusercontent.com/gunrock/gunrock/pre-release/README.md # get the new README from gunrock/gunrock
 
   # build documentation
   bundle exec middleman build --clean
 
   # post-processing
-  sed -i -- 's/&quot;/"/g' ./build/*.html
-  sed -i -- 's/&#39;/'"'"'/g' ./build/*.html
-  sed -i -- 's/&lt;/</g' ./build/*.html
-  sed -i -- 's/&gt;/>/g' ./build/*.html
+  find ./build/ -type f -name "*.html" -print0 | xargs -0 sed -i -- 's/&quot;/"/g'
+  find ./build/ -type f -name "*.html" -print0 | xargs -0 sed -i -- 's/&#39;/'"'"'/g'
+  find ./build/ -type f -name "*.html" -print0 | xargs -0 sed -i -- 's/&lt;/</g'
+  find ./build/ -type f -name "*.html" -print0 | xargs -0 sed -i -- 's/&gt;/>/g'
 
   # hive-docs
-  sed -i 's/<pre>/<pre class=\"highlight\">/g' ./build/hive_*.html
-  sed -i 's/\b=\"highlight\b/& mid-column-code/' ./build/hive_*.html
-  sed -i 's/<table>/<table style=\"font-size: 12px;\">/g' ./build/hive_*.html
-  sed -i 's/<table style=\"/<table style=\"font-size: 12px;/g' ./build/hive_*.html
-  sed -i 's/\\linebreak/<br>/g' ./build/hive_*.html
-  sed -i -E 's/\\cardinality[^\{\}]*\{([^\}]+)\}/\&vert;\1\&vert;/g' ./build/hive_*.html
+  find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i 's/<pre>/<pre class=\"highlight\">/g'
+  find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i 's/\b=\"highlight\b/& mid-column-code/'
+  find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i 's/<table>/<table style=\"font-size: 12px;\">/g'
+  find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i 's/<table style=\"/<table style=\"font-size: 12px;/g'
+  find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i 's/\\linebreak/<br>/g'
+  find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i -E 's/\\cardinality[^\{\}]*\{([^\}]+)\}/\&vert;\1\&vert;/g'
 }
 
 parse_args() {
