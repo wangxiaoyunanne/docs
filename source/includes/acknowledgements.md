@@ -1,24 +1,3 @@
-# Gunrock Developers
-
-- [Yangzihao Wang](http://www.idav.ucdavis.edu/~yzhwang/),
-  University of California, Davis
-- [Yuechao Pan](https://sites.google.com/site/panyuechao/home), University of California, Davis
-- [Yuduo Wu](http://www.yuduowu.com/),
-  University of California, Davis
-- [Carl Yang](http://web.ece.ucdavis.edu/~ctcyang/),
-  University of California, Davis
-- [Leyuan Wang](http://www.ece.ucdavis.edu/~laurawly/),
-  University of California, Davis
-- Weitang Liu, University of California, Davis
-- [Muhammad Osama](http://www.ece.ucdavis.edu/~mosama/),
-  University of California, Davis
-- Chenshan Shari Yuan, University of California, Davis
-- Andy Riffel, University of California, Davis
-- [Huan Zhang](http://www.huan-zhang.com/),
-  University of California, Davis
-- [John Owens](http://www.ece.ucdavis.edu/~jowens/),
-  University of California, Davis
-
 # Acknowledgments
 
 Thanks to the following developers who contributed code: The connected-component implementation was derived from code written by Jyothish Soman, Kothapalli Kishore, and P. J. Narayanan and described in their IPDPSW '10 paper *A Fast GPU Algorithm for Graph Connectivity* ([DOI](http://dx.doi.org/10.1109/IPDPSW.2010.5470817)). The breadth-first search implementation and many of the utility functions in Gunrock are derived from the [b40c](http://code.google.com/p/back40computing/) library of [Duane Merrill](https://sites.google.com/site/duanemerrill/). The algorithm is described in his PPoPP '12 paper *Scalable GPU Graph Traversal* ([DOI](http://dx.doi.org/10.1145/2370036.2145832)). Thanks to Erich Elsen and Vishal Vaidyanathan from [Royal Caliber](http://www.royal-caliber.com/) and the [Onu](http://www.onu.io/) Team for their discussion on library development and the dataset auto-generating code. Thanks to Adam McLaughlin for his technical discussion. Thanks to Oded Green for his technical discussion and an optimization in the CC primitive. Thanks to the [Altair](https://altair-viz.github.io/) and [Vega-lite](https://vega.github.io/vega-lite/) teams in the [Interactive Data Lab](http://idl.cs.washington.edu/) at the University of Washington for graphing help. We appreciate the technical assistance, advice, and machine access from many colleagues at NVIDIA: Chandra Cheij, Joe Eaton, Michael Garland, Mark Harris, Ujval Kapasi, David Luebke, Duane Merrill, Josh Patterson, Nikolai Sakharnykh, and Cliff Woolley.

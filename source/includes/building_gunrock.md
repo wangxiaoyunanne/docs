@@ -11,18 +11,24 @@ Gunrock's current release has been tested on Ubuntu 16.04 and 18.04 with CUDA 9+
 ## Prerequisites
 **Required Dependencies:**
 
+* GCC & G++
+
 * [CUDA](https://developer.nvidia.com/cuda-zone) (7.5 or higher) is used to implement Gunrock. Recommended CUDA version is CUDA 9 or higher, with some features such as Cooperative Groups and CUDA graphs only available in CUDA 10 or higher.
   * Refer to NVIDIA's [CUDA](https://developer.nvidia.com/cuda-downloads) homepage to download and install CUDA.
   * Refer to NVIDIA [CUDA C Programming Guide](http://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html) for detailed information and examples on programming CUDA.
 
 
-* [ModernGPU](https://github.com/moderngpu/moderngpu) and [CUB](http://nvlabs.github.io/cub/) used as external submodules for Gunrock's APIs.
-  * You will need to download or clone ModernGPU and CUB, and place them to `gunrock/externals`
+* [ModernGPU](https://github.com/moderngpu/moderngpu), [CUB](http://nvlabs.github.io/cub/) and RapidJSON used as external submodules for Gunrock's APIs.
+  * You will need to download or clone ModernGPU, CUB and RapidJSON, and place them to `gunrock/externals`
   * Alternatively, you can clone gunrock recursively with `git clone --recursive https://github.com/gunrock/gunrock`
   * or if you already cloned gunrock, under `gunrock/` directory: run `git submodule init` and
   `git submodule update`
 
 **Optional Dependencies:**
+
+* lcov
+
+* googletest
 
 * [Boost](http://www.boost.org/users/history/version_1_58_0.html) (version 1.58) is used for for the CPU reference implementations of Connected Component, Betweenness Centrality, PageRank, Single-Source Shortest Path, and Minimum Spanning Tree.
   * Refer to Boost [Getting Started Guide](http://www.boost.org/doc/libs/1_58_0/more/getting_started/unix-variants.html) to install the required Boost libraries.
@@ -31,10 +37,12 @@ Gunrock's current release has been tested on Ubuntu 16.04 and 18.04 with CUDA 9+
 * [METIS](http://glaros.dtc.umn.edu/gkhome/metis/metis/overview) is used as one possible partitioner to partition graphs for multi-gpu primitives implementations.
   * Refer to METIS [Installation Guide](http://glaros.dtc.umn.edu/gkhome/metis/metis/download). If the build cannot find your METIS library, please set the `METIS_DLL` environment variable to the full path of the library.
 
+* doxygen
+
 ## Compilation
 **Simple Gunrock Compilation:**
 
-> Downloading gunrock
+Downloading gunrock
 
 ```shell
 # Using git (recursively) download gunrock
@@ -43,7 +51,7 @@ git clone --recursive https://github.com/gunrock/gunrock
 wget --no-check-certificate https://github.com/gunrock/gunrock/archive/master.zip
 ```
 
-> Compiling gunrock
+Compiling gunrock
 
 ```shell
 cd gunrock
@@ -69,12 +77,12 @@ You can also compile gunrock with more specific/advanced settings using `cmake -
 * **GUNROCK_GOOGLE_TESTS** (default: OFF) - ON to build unit tests using googletest.
 * **GUNROCK_CODE_COVERAGE** (default: OFF) - ON to run code coverage on Gunrock's source code. Requires `lcov` to be installed on the system.
 * **GUNROCK_BUILD_APPLICATIONS** (default: ON) - Set off to only build one of the following primitive (GUNROCK\_APP\_\* must be set on to build if this option is turned off.) Example for compiling gunrock with only *Breadth First Search (BFS)* primitive, and list of some of the other applications that can be compiled using `cmake` (note: for the full list, see the `CMakeLists.txt` file).
-<pre class="highlight mid-column-code shell tab-shell">
-<code>mkdir build && cd build
+
+```shell
+mkdir build && cd build
 cmake -DGUNROCK_BUILD_APPLICATIONS=OFF -DGUNROCK_APP_BFS=ON ..
 make
-</code>
-</pre>
+```
 
   * **GUNROCK_APP_BC** (default: OFF)
   * **GUNROCK_APP_BFS** (default: OFF)

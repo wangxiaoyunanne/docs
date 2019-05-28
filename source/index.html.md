@@ -20,8 +20,9 @@ includes:
   - road_map
   - potential_projects
   - release_notes
-  - developers_and_acknowledgements
+  - developers
   - frequently_asked_questions
+  - acknowledgements
 
 search: true
 
