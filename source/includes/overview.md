@@ -4,9 +4,11 @@
 Gunrock is a stable, powerful, and forward-looking substrate for GPU-based graph-centric research and development. Like many graph frameworks, it leverages a bulk-synchronous programming model and targets iterative convergent graph computations. We believe that today Gunrock offers both the best performance on GPU graph analytics as well as the widest range of primitives.
 
 ## Who may use _Gunrock_?
-// TODO:
-+ **External Interface Users:**
-+ **Application Developers:**
+
++ **External Interface Users:** Users interested in leveraging the external C, C++ and/or Python interfaces to call high-performant applications and primitives (such as Breadth First Search, Connected Components, PageRank, Single Source Shortest Path, etc.) within Gunrock to perform graph analytics.
+
++ **Application Developers:** Uses interested in developing applications, primitives and/or low level operators for Gunrock.
+
 + **Graph Analytics Library Developers:** (CUDA and/or other languages -- for more backends, etc.)
 
 ## Why use _Gunrock_?
@@ -18,7 +20,7 @@ Gunrock is a stable, powerful, and forward-looking substrate for GPU-based graph
 
     This programming model is a better fit to high-performance GPU implementations than traditional programming models adapted from CPUs. Specifically, traditional models like gather-apply-scatter (GAS) map to a suboptimal set of GPU kernels that do a poor job of capturing producer-consumer locality. With Gunrock, we can easily integrate compute steps within the same kernels as traversal steps. As well, Gunrock's frontier-centric programming model is a better match for key optimizations such as push-pull direction-optimal search or priority queues, which to date have not been implemented in other GPU frameworks, where they fit poorly into the abstraction.
 
--   **Gunrock supports more primitives than any other programmable GPU+graph library.** We currently support a wide variety of graph primitives, including traversal-based (breadth-first search, single-source shortest path); node-ranking (HITS, SALSA, PageRank); and global (connected component, minimum spanning tree). Many more algorithms are under active development, see [Gunrock Applications](https://gunrock.github.io/docs/#gunrock_applications).
+-   **Gunrock supports more primitives than any other programmable GPU+graph library.** We currently support a wide variety of graph primitives, including traversal-based (breadth-first search, single-source shortest path); node-ranking (HITS, SALSA, PageRank); and global (connected component, minimum spanning tree). Many more algorithms are under active development, see [Gunrock Applications](https://gunrock.github.io/docs/#gunrock-39-s-application-cases).
 
 -   **Gunrock has better scalability with multiple GPUs on a node than any other graph library.** We not only show [better BFS performance on a single node than any other GPU framework](http://arxiv.org/abs/1504.04804) but also outperform other frameworks, even those customized to BFS, with up to four times as many GPUs. More importantly, our framework supports all Gunrock graph primitives rather than being customized to only one primitive.
 
