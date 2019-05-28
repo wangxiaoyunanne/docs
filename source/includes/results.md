@@ -1,6 +1,6 @@
 # Results and Analysis
 
-We are gradually adding summaries of our results to these web pages (please let us know if you would like other comparisons). These summaries also include a table of results along with links to the configuration and results of each individual run. We detail our [methodology for our measurements here](https://gunrock.github.io/docs/#methodology-for-graph-analytics-performance).
+We are gradually adding summaries of our results to these web pages (please let us know if you would like other comparisons). These summaries also include a table of results along with links to the configuration and results of each individual run. We detail our [methodology for our measurements here](https://gunrock.github.io/docs/#methodology).
 
 - [Gunrock performance compared with other engines for graph analytics](https://gunrock.github.io/docs/engines_topc.html)
 - [Setting parameters for direction-optimized BFS](http://gunrock.github.io/gunrock/doc/latest/md_stats_do_ab_random.html)
@@ -14,7 +14,7 @@ For reproducibility, we maintain Gunrock configurations and results in our githu
 
 We are happy to run experiments with other engines, particularly if those engines output results in our JSON format / a format that can be easily parsed into JSON format.
 
-# Preliminary Performance Results
+## Preliminary Performance Results
 
 The following are some preliminary performance results. It is meant to give a rough idea
 of how Gunrock performs with specific version, testing environment, parameters
@@ -24,7 +24,7 @@ running parameters and datasets. If more accurate numbers (e.g. for comparison
 in a paper), or results with different parameters / datasets, please contact
 the developers of Gunrock.
 
-## General remarks
+### General remarks
 
 - All timings are shown in Millisecond (ms).
 - Abreviation:
@@ -54,7 +54,7 @@ clean-up time
 is not optimized for data load / write performance). The processing time may be a better
 indicator of performance.
 
-## Breadth-First Search (BFS)
+### Breadth-First Search (BFS)
 
 No. |          Dataset            |  graph type |     V     |      E      | root vertex | iteration | process time |   MTEPS   |   MTVPS   |  load time  | preprocess time | postprocess time |  write time |  total time  |     condition     
 -----|-----------------------------|-------------|-------------|---------------|-------------|-------------|--------------|-----------|-----------|-------------|-----------------|------------------|-------------|--------------|-------------------
@@ -64,16 +64,16 @@ No. |          Dataset            |  graph type |     V     |      E      | root
 4 | com_friendster              | SOC, CSR, D | 124,836,419 | 1,806,067,135 |   7,688,909 |          31 |   1,425.3568 | 1267.0983 |  108.0366 | 16,707.1941 |    145,548.2471 |                  | 65,636.1299 | 231,047.3258 | H1 + S1 + G1 + P1
 5 | com_LiveJournal             | SOC, CSR, D |   4,036,537 |    34,681,189 |       9,766 |          17 |      49.9380 |  694.4850 |  191.7421 | 12,260.1349 |      1,461.0670 |                  | 12,260.1349 |  18,522.2769 | H1 + S1 + G1 + P1
 
-### Parameters
+#### Parameters
 
 - P1 = --traversal-mode=0 --device=0,1,2,3 --src=largestdegree --mark-pred --quick --output_filename=some_valid_filename
 
-### Remarks
+#### Remarks
 
 - Idempotence is disabled when --mark-pred (mark predecessors) is used.
 
 
-## Page Rank (PR)
+### Page Rank (PR)
 
 No. |          Dataset            |  graph type |     V     |      E      | iteration | process time |   MTEPS   |   MTVPS   |  load time  | preprocess time | postprocess time |  write time  |  total time  |     condition     
 -----|-----------------------------|-------------|-------------|---------------|-------------|--------------|-----------|-----------|-------------|-----------------|------------------|--------------|--------------|-------------------
@@ -83,11 +83,11 @@ No. |          Dataset            |  graph type |     V     |      E      | iter
 4 | com_friendster              | SOC, CSR, D | 124,836,419 | 1,806,067,135 |         100 | 308,233.7812 |  585.9407 |   40.5005 | 14,585.0809 |      3,117.2709 |                  | 240,381.1152 | 567,139.1692 | H2 + S1 + G1 + P1
 5 | com_LiveJournal             | SOC, CSR, D |   4,036,537 |    34,681,189 |          23 |   2,333.8479 |  341.7821 |  369.7800 |  8,339.2031 |        100.7540 |                  |   7,719.7220 |  18,512.9559 | H2 + S1 + G1 + P1
 
-### Paramters
+#### Paramters
 
 - P1 = --traversal-mode=1 --device=2 --quick --delta=0.85 --error=0.001 --max-iter=100 --normalized --queue-sizing=1 --queue-sizing1=0
 
-### Remarks
+#### Remarks
 
 - PR has two formulations, and Gunrock has both implemented. The
 unnormalized one is the one described by the original PR paper;
@@ -101,15 +101,15 @@ way to solve this by distributing the rank of those vertices to all
 vertices. This should make the total rank always equal to 1 (when using
 the normalized formula), but we have not implemented this yet.
 
-## Hardware
+### Hardware
 
 - H1 = 4 x NVIDIA Tesla K40c, 2 x Intel Xeon E5-2637 v2, 256 GB DDR3 RAM with ECC
 - H2 = 1 x NVIDIA Telsa K40c, 2 x Intel Xeon E5-2637 v2, 256 GB DDR3 RAM with ECC
 
-## Software
+### Software
 
 - S1 = ubuntu 14.04.3 LTS (GNU/Linux 3.13.0-62-generic x86_64), NVIDIA GPU driver 352.30, CUDA 7.5, gcc 4.8.4
 
-## Gunrock version
+### Gunrock version
 
 G1 = dev, bc761f0c78ac855e33587c4be55e2cf672013de5, 2015.12.31
