@@ -14,14 +14,15 @@ includes:
   - gunrock_applications
   - building_gunrock
   - methodology
+  - results
   - publications_and_presentations
   - forking_workflow_gunrock
   - writing_googletests
   - road_map
   - potential_projects
-  - release_notes
   - developers
   - frequently_asked_questions
+  - release_notes
   - acknowledgements
 
 search: true

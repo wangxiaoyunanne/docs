@@ -8,14 +8,14 @@ As in the other Git workflows, the Forking Workflow begins with an **official pu
 <br><br> When they're ready to publish a local commit, they push the commit to their own public repository—not the official one. Then, they file a pull request with the main repository, which lets the project maintainer know that an update is ready to be integrated. The **pull request also serves as a convenient discussion thread** if there are issues with the contributed code.
 <br><br> To integrate the feature into the official codebase, the maintainer pulls the contributor’s changes into their local repository, checks to make sure it doesn’t break the project, merges it into his local master branch, then pushes the master branch to the official repository on the server. The contribution is now part of the project, and other developers should pull from the official repository to synchronize their local repositories.
 
-## Gunrock's Forking Workflow:
+## Gunrock's Forking Workflow
 **gunrock/gunrock:**
 
 * **Master Branch:** Reserved only for final releases or some bug fixes/patched codes.
 * **Dev Branch:** Current working branch where all developers push their changes to. This dev branch will serve as the "next release" gunrock, eliminating the need of managing individual branches for each feature and merging them when it is time for the release.
 
 
-**personal-fork/gunrock**
+**(personal-fork)/gunrock**
 
 * **Feature Branch:** This is the developer's personal repository with their feature branch. Whatever changes they would like to contribute to gunrock must be in their own personal fork. And once it is time to create a pull request, it is done so using github pull request, a reviewer checks it and the changes are merged into gunrock/gunrock dev branch.
 
