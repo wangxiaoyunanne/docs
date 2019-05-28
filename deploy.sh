@@ -34,11 +34,17 @@ run_build() {
   find ./build/ -type f -name "*.html" -print0 | xargs -0 sed -i -- 's/&lt;/</g'
   find ./build/ -type f -name "*.html" -print0 | xargs -0 sed -i -- 's/&gt;/>/g'
 
+  # index needs special support
+  find ./build/ -type f -name "index.html" -print0 | xargs -0 sed -i 's/<pre>/<pre class=\"highlight\">/g'
+  find ./build/ -type f -name "index.html" -print0 | xargs -0 sed -i 's/\b=\"highlight\b/& mid-column-code/'
+  find ./build/ -type f -name "index.html" -print0 | xargs -0 sed -i 's/<table style=\"/<table style=\"font-size: 12px;/g'
+  find ./build/ -type f -name "index.html" -print0 | xargs -0 sed -i 's/<table>/<table style=\"font-size: 12px;\">/g'
+
   # hive-docs
   find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i 's/<pre>/<pre class=\"highlight\">/g'
   find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i 's/\b=\"highlight\b/& mid-column-code/'
-  find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i 's/<table>/<table style=\"font-size: 12px;\">/g'
   find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i 's/<table style=\"/<table style=\"font-size: 12px;/g'
+  find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i 's/<table>/<table style=\"font-size: 12px;\">/g'
   find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i 's/\\linebreak/<br>/g'
   find ./build/ -type f -name "hive_*" -print0 | xargs -0 sed -i -E 's/\\cardinality[^\{\}]*\{([^\}]+)\}/\&vert;\1\&vert;/g'
 }
