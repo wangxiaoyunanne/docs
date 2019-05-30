@@ -8,7 +8,6 @@ toc_footers:
   - Gunrock © 2019 The Regents of the University of California.
 
 includes:
-  - style_guide
   - forking_workflow_gunrock
   - writing_googletests
 
