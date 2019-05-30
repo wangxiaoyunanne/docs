@@ -2,7 +2,7 @@
 
 The following is are a wide variety of graph primitives, including traversal-based (breadth-first search, single-source shortest path); node-ranking (HITS, SALSA, PageRank); and global (connected component, minimum spanning tree) implemented within Gunrock.
 
-The "Directory" column in the table below shows, which subdirectory within `gunrock/app` and `examples` these applications' implementations are. The version number in the "Single GPU" and "Multi-GPU" columns show which API abstraction of gunrock supports the respective application. If you are interested in helping us port an application in the older abstraction (`v0.5.x`) to a newer, much cleaner abstraction (`v1.x.x`), please see our [Porting Guide](https://gunrock.github.io/docs/#porting_guide).
+The "Directory" column in the table below shows, which subdirectory within `gunrock/app` and `examples` these applications' implementations are. The version number in the "Single GPU" and "Multi-GPU" columns show which API abstraction of gunrock supports the respective application. If you are interested in helping us port an application in the older abstraction (`v0.5.x`) to a newer, much cleaner abstraction (`v1.x.x`), please see our [Porting Guide](https://gunrock.github.io/docs/developers.html#porting_guide).
 
 
 | Application                                     | Directory | Single GPU | Multi-GPU |
