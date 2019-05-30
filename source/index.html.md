@@ -16,8 +16,6 @@ includes:
   - methodology
   - results
   - publications_and_presentations
-  - forking_workflow_gunrock
-  - writing_googletests
   - road_map
   - potential_projects
   - developers
