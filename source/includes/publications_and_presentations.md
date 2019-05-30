@@ -1,5 +1,9 @@
 # Publications
 
+Muhammad Osama, Minh Truong, Carl Yang, Aydin Buluç and John D. Owens. **Graph Coloring on the GPU**. In Proceedings of the 33rd IEEE International Parallel and Distributed Processing Symposium Workshops, IPDPSW '19, pages 231&ndash;240, May 2019.
+[[DOI]() |
+[http]()]
+
 Yuechao Pan, Roger Pearce, and John D. Owens. **Scalable Breadth-First Search on a GPU Cluster**. In Proceedings of the 31st IEEE International Parallel and Distributed Processing Symposium, IPDPS 2018, May 2018. [[http](https://escholarship.org/uc/item/9bd842z6)]
 
 Yangzihao Wang, Yuechao Pan, Andrew Davidson, Yuduo Wu, Carl Yang, Leyuan Wang, Muhammad Osama, Chenshan Yuan, Weitang Liu, Andy T. Riffel, and John D. Owens. **Gunrock: GPU Graph Analytics**. ACM Transactions on Parallel Computing, 4(1):3:1&ndash;3:49, August 2017. [[DOI](http://dx.doi.org/10.1145/3108140) | [http](http://escholarship.org/uc/item/9gj6r1dj)]
@@ -36,6 +40,8 @@ COSN '14, pages 63&ndash;68, October 2014.
 [[DOI](http://dx.doi.org/10.1145/2660460.2660481) | [http](http://escholarship.org/uc/item/5xq3q8k0)]
 
 # Presentations
+
+GrAPL 2019, **Graph Coloring on the GPU**, May 2019. [[slides]()]
 
 GTC 2018, **Latest Development of the Gunrock Graph Processing Library on GPUs**, March 2018. [[slides](http://on-demand.gputechconf.com/gtc/2018/presentation/s8594-latest-development-of-the-gunrock-graph-processing-library-on-gpus.pdf) | [video](http://on-demand.gputechconf.com/gtc/2018/video/S8594/)]
 
