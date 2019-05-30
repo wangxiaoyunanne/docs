@@ -49,7 +49,7 @@ html, body {
 
 .toc-wrapper {
   transition: left 0.3s ease-in-out;
-
+  overflow: hidden; // Hide scrollbar
   overflow-y: auto;
   overflow-x: hidden;
   position: fixed;
@@ -69,6 +69,11 @@ html, body {
       padding-top: 0.5em;
       padding-bottom: 0.5em;
     }
+  }
+
+  // Remove scrollbar from the nav
+  .toc-wrapper::-webkit-scrollbar {
+    width: 0 !important;
   }
 
   // This is the logo at the top of the ToC
@@ -355,6 +360,7 @@ html, body {
     padding-top: 0.5em;
     padding-bottom: 0.5em;
     margin-bottom: $h1-margin-bottom;
+    margin-right: $h1-margin-right;
     margin-top: 2em;
     border-top: 1px solid #f0f4f7;
     // border-top: 1px solid #ccc;
@@ -560,6 +566,8 @@ html, body {
     clear:right;
 
     box-sizing: border-box;
+
+    white-space: pre-wrap;
 
     @extend %right-col;
 

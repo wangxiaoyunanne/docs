@@ -55,7 +55,7 @@ $lang-select-pressed-text: #fff !default; // color of language tab text when mou
 // SIZES
 ////////////////////
 $nav-width: 300px !default; // width of the navbar
-$page-margin: 350px !default; // width of navbar + 50px
+$page-margin: 320px !default; // width of navbar + 20px
 $examples-width: 40% !default; // portion of the screen taken up by code examples
 // $logo-margin: 0px !default; // margin below logo
 $logo-margin-top: 15px;
@@ -68,6 +68,7 @@ $nav-v-padding: 10px !default; // padding used vertically around search boxes an
 $nav-indent: 10px !default; // extra padding for ToC subitems
 $code-annotation-padding: 13px !default; // padding inside code annotations
 $h1-margin-bottom: 21px !default; // padding under the largest header tags
+$h1-margin-right: 41.2% !default; // margin on the right to add white spaces to the header
 $tablet-width: 930px !default; // min width before reverting to tablet size
 $phone-width: $tablet-width - $nav-width !default; // min width before reverting to mobile size
 
