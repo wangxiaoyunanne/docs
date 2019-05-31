@@ -8,6 +8,7 @@ toc_footers:
   - Gunrock © 2019 The Regents of the University of California.
 
 includes:
+  - directory_structure
   - forking_workflow_gunrock
   - writing_googletests
 
@@ -18,4 +19,8 @@ full_length: false
 
 # Developers
 
-This is a developers guide for Gunrock. (TODO)
+This is a developer's guide for Gunrock, split into three major sections based on the depth of the work:
+
+  - Interface Developer's Guide
+  - Primitive/Application/Algorithm Developer's Guide
+  - Operator/Core Developer's Guide
