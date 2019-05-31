@@ -1,8 +1,7 @@
-How to setup and use gunrock/io on a server/machine
-================
+# Setup and Use gunrock/io
 
-gunrock/io can be used to generate visual representation of graph engine performance, for exmaple, Gunrock. 
-It takes output of a graph algorithm run and can produce visual output in svg, pdf, png, html and md format. 
+gunrock/io can be used to generate visual representation of graph engine performance, for exmaple, Gunrock.
+It takes output of a graph algorithm run and can produce visual output in svg, pdf, png, html and md format.
 
 **Grunrock/io Dependencies**
 
@@ -20,11 +19,11 @@ To use gunrock/io to produce visual output of any graph algorithm, (as of Dec.20
 * inkscape 0.91
 
 
-Below are the instructions to to install dependencies, 
+Below are the instructions to to install dependencies,
 
 **Assume the machine has the following env setup:**
 
-* OS: Ubuntu 14.04 
+* OS: Ubuntu 14.04
 * Python 2.7.x
 * GCC 4.8.x
 
@@ -74,11 +73,11 @@ If no root access, use following command:
 	ls [returned directory]
 	#npm install /node_modules in current directory
 	#check if {vg2png  vg2svg  vl2png  vl2svg  vl2vg} exist in /bin or /.bin
-	#Open .bashrc add: 
+	#Open .bashrc add:
 	NPM_PACKAGES=/where/node_modules/folder/is/
 	PATH=$NPM_PACKAGES/.bin:$PATH
 	source ~/.bashrc
-	
+
 
 **More dependencies to save figure as pdf: inkscape**
 
@@ -86,15 +85,14 @@ If no root access, use following command:
 	sudo apt-get update
 	sudo apt-get install inkscape
 
-How to use gunrock/io
-================
+## How to use gunrock/io
 
 With all the dependencies installed, to use gunrock/io, below is a guide of how to reproduce the performance figures from JSON in gunrock/io:
 
 
 1.  Parses the engine outputs (in txt format) and generates jsons containing important information regarding the output results using **text2json.py**. (Instructions @ [README](https://github.com/gunrock/io/blob/master/scripts/README.md))
 
-2. Make a folder for output visual representation files. 
+2. Make a folder for output visual representation files.
 
 3. One can use exsiting scripts to generate different visualization output from JSON files. For example, altair_engines.py generates performance comparison visualization from different graph engines. Below is an example makefile to generate different engines performance comparison figures into .md file into gunrock/doc:
 
@@ -123,6 +121,3 @@ Reference:
 * http://wiki.inkscape.org/wiki/index.php/Installing_Inkscape
 * https://altair-viz.github.io/installation.html
 * http://www.hostingadvice.com/how-to/install-nodejs-ubuntu-14-04/
-
-
-
