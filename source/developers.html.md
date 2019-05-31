@@ -11,6 +11,8 @@ includes:
   - directory_structure
   - forking_workflow_gunrock
   - writing_googletests
+  - gunrock_to_json
+  - gunrock_io_setup
 
 search: true
 
