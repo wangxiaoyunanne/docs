@@ -23,7 +23,7 @@ Options:
 run_build() {
   # pre-processing
   rm -rf ./source/includes/README.md # remove old README
-  wget -O ./source/includes/README.md https://raw.githubusercontent.com/gunrock/gunrock/pre-release/README.md # get the new README from gunrock/gunrock
+  wget -O ./source/includes/README.md https://raw.githubusercontent.com/gunrock/gunrock/master/README.md # get the new README from gunrock/gunrock
 
   # build documentation
   bundle exec middleman build --clean
