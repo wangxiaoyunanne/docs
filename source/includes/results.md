@@ -27,7 +27,7 @@ the developers of Gunrock.
 ### General remarks
 
 - All timings are shown in Millisecond (ms).
-- Abreviation:
+- Abbreviation:
 
   - CSR   = compressed sparse row
   - CSC   = compressed sparse column
@@ -56,7 +56,7 @@ indicator of performance.
 
 ### Breadth-First Search (BFS)
 
-No. |          Dataset            |  graph type |     V     |      E      | root vertex | iteration | process time |   MTEPS   |   MTVPS   |  load time  | preprocess time | postprocess time |  write time |  total time  |     condition     
+No. |          Dataset            |  graph type |     V     |      E      | root vertex | iteration | process time |   MTEPS   |   MTVPS   |  load time  | preprocess time | postprocess time |  write time |  total time  |     condition
 -----|-----------------------------|-------------|-------------|---------------|-------------|-------------|--------------|-----------|-----------|-------------|-----------------|------------------|-------------|--------------|-------------------
 1 | friendster_edges_small_2hop | SOC, CSR, D | 121,674,532 |        20,509 |   3,546,566 |           6 |      17.2760 |    1.1871 |    0.4893 | 12,590.6990 |     17,114.5179 |                  |    112.5512 |  31,016.4499 | H1 + S1 + G1 + P1
 2 | friendster_edges_gte_1M     | SOC, CSR, D | 124,836,417 |     8,361,851 |  27,345,193 |          10 |      30.0791 |  227.9951 |  101.5078 | 12,519.1791 |     17,790.8509 |                  |  2,787.5559 |  34,283.0300 | H1 + S1 + G1 + P1
@@ -75,7 +75,7 @@ No. |          Dataset            |  graph type |     V     |      E      | root
 
 ### Page Rank (PR)
 
-No. |          Dataset            |  graph type |     V     |      E      | iteration | process time |   MTEPS   |   MTVPS   |  load time  | preprocess time | postprocess time |  write time  |  total time  |     condition     
+No. |          Dataset            |  graph type |     V     |      E      | iteration | process time |   MTEPS   |   MTVPS   |  load time  | preprocess time | postprocess time |  write time  |  total time  |     condition
 -----|-----------------------------|-------------|-------------|---------------|-------------|--------------|-----------|-----------|-------------|-----------------|------------------|--------------|--------------|-------------------
 1 | friendster_edges_small_2hop | SOC, CSR, D | 121,674,532 |        20,509 |          18 |   5,287.1938 |    0.0698 |  414.2352 | 10,758.1401 |        241.4210 |                  | 235,052.1171 | 251,862.2911 | H2 + S1 + G1 + P1
 2 | friendster_edges_gte_1M     | SOC, CSR, D | 124,836,417 |     8,361,851 |          41 |  13,322.2578 |   25.7340 |  384.1911 | 10,514.4429 |        156.9688 |                  | 245,985.4951 | 270,482.5490 | H2 + S1 + G1 + P1
@@ -83,7 +83,7 @@ No. |          Dataset            |  graph type |     V     |      E      | iter
 4 | com_friendster              | SOC, CSR, D | 124,836,419 | 1,806,067,135 |         100 | 308,233.7812 |  585.9407 |   40.5005 | 14,585.0809 |      3,117.2709 |                  | 240,381.1152 | 567,139.1692 | H2 + S1 + G1 + P1
 5 | com_LiveJournal             | SOC, CSR, D |   4,036,537 |    34,681,189 |          23 |   2,333.8479 |  341.7821 |  369.7800 |  8,339.2031 |        100.7540 |                  |   7,719.7220 |  18,512.9559 | H2 + S1 + G1 + P1
 
-#### Paramters
+#### Parameters
 
 - P1 = --traversal-mode=1 --device=2 --quick --delta=0.85 --error=0.001 --max-iter=100 --normalized --queue-sizing=1 --queue-sizing1=0
 
