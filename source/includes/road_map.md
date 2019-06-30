@@ -1,8 +1,11 @@
 # Road Map
 
- - **Framework:** We are exploring more operators such as neighborhood
-   reduction and segmented intersection. Generally we want to find the right set of operators that can abstract most graph primitives while delivering high performance.
+We have three principal near-term priorities for Gunrock development (as of June 2019):
 
- - **API:** We would like to make an API refactoring to simplify parameter passing and to isolate parts of the library that dependencies are not necessary. The target is to make the frontier concept more clear, and to promote code reuse.
+-   Gunrock's 1.0 release focused on single-GPU performance. We expect to target single-node multi-GPU support in a near-term future release.
 
- - **Primitives:** Our near-term goal is to graduate several primitives in dev branch including A* search, weighted label propagation, subgraph matching, triangle counting, and clustering coefficients; implement maximal independent set, max flow, and graph coloring algorithms, build better support for bipartite graph algorithms, and explore community detection algorithms. Our long term goals include algorithms on dynamic graphs, multi-level priority queue support, graph partitioning, and more flexible and scalable multi-GPU algorithms.
+-   We believe dynamic (mutable) graphs are a practically interesting area of graph analytics that has not been a focus of the GPU graph analytics research community.
+
+-   We will ensure that Gunrock will integrate with NVIDIA's [RAPIDS](https://rapids.ai/) suite of software libraries to accelerate data science workloads on GPUs.
+
+We also continue to pursue projects in scalability (within a node, across nodes, and across the CPU-GPU boundary); in programmability, including working with the MIT [GraphIt](http://graphit-lang.org/) team; in improving Gunrock's internals, both their performance and their modularity; in expanding the number and coverage of applications written in Gunrock; and in better interoperability with other tools, languages, and libraries.
