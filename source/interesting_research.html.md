@@ -18,7 +18,7 @@ We may see papers during the course of our work lives that have possible applica
 2. Summarize what those papers do.
 3. Ascertain with the aid of Gunrock-internals experts if these are worth pursuing (as core-Gunrock projects, as projects for new students, and/or as possible external projects). If we know they're good, we can add them to the main docs [here](https://gunrock.github.io/docs/#possible-gunrock-projects).
 
-Your todo: Add your summary below for any of these! And/or add your assessment on how well it'd work in Gunrock!
+Your todos: Add new papers! Add your summary below for any of these! And/or add your assessment on how well it'd work in Gunrock!
 
 ## The broker queue: A fast, linearizable FIFO queue for fine-granular work distribution on the GPU
 
@@ -52,12 +52,12 @@ M. M. Ozdal, “Improving Efficiency of Parallel Vertex-Centric Algorithms for I
 
 ## Optimal algebraic Breadth-First Search for sparse graphs
 
-P. Burkhardt, “Optimal algebraic Breadth-First Search for sparse graphs.” [[arXiv](https://arxiv.org/abs/1906.03113)
+P. Burkhardt, “Optimal algebraic Breadth-First Search for sparse graphs.” [[arXiv](https://arxiv.org/abs/1906.03113)]
 
 
 ## Kaskade: Graph Views for Efficient Graph Analytics
 
-J. M. F. da Trindade, K. Karanasos, C. Curino, S. Madden, and J. Shun, “Kaskade: Graph Views for Efficient Graph Analytics,” arXiv.org, vol. cs.DB. 12-Jun-2019. [[arXiv](https://arxiv.org/abs/1906.05162v1)
+J. M. F. da Trindade, K. Karanasos, C. Curino, S. Madden, and J. Shun, “Kaskade: Graph Views for Efficient Graph Analytics,” arXiv.org, vol. cs.DB. 12-Jun-2019. [[arXiv](https://arxiv.org/abs/1906.05162v1)]
 
 ## Synchronization-Avoiding Graph Algorithms
 
