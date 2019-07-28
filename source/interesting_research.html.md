@@ -69,4 +69,12 @@ K. Meng, J. Li, G. Tan, and N. Sun, A pattern based algorithmic autotuner for gr
 
 ## When is Graph Reordering an Optimization?: Studying the Effect of Lightweight Graph Reordering Across Applications and Input Graphs
 
-[1] V. Balaji and B. Lucia, “When is Graph Reordering an Optimization?: Studying the Effect of Lightweight Graph Reordering Across Applications and Input Graphs,” presented at the 2018 IEEE International Symposium on Workload Characterization, IISWC 2018, 2018, pp. 203–214. [[doi](https://dx.doi.org/10.1109/IISWC.2018.8573478)]
+V. Balaji and B. Lucia, “When is Graph Reordering an Optimization?: Studying the Effect of Lightweight Graph Reordering Across Applications and Input Graphs,” presented at the 2018 IEEE International Symposium on Workload Characterization, IISWC 2018, 2018, pp. 203–214. [[doi](https://dx.doi.org/10.1109/IISWC.2018.8573478)]
+
+## SEP-Graph: Finding shortest execution paths for graph processing under a hybrid framework on GPU
+
+H. Wang, L. Geng, R. Lee, K. Hou, Y. Zhang, and X. Zhang, "SEP-Graph: Finding shortest execution paths for graph processing under a hybrid framework on GPU," Proceedings of the ACM SIGPLAN Symposium on Principles and Practice of Parallel Programming, PPOPP, 2019, pp. 38–52. [[doi](10.1145/3293883.3295733)]
+
+## A compiler for throughput optimization of graph algorithms on GPUs
+
+S. Pai and K. Pingali, "A compiler for throughput optimization of graph algorithms on GPUs," Proceedings of the Conference on Object-Oriented Programming Systems, Languages, and Applications, OOPSLA, 2016, vol. 2, pp. 1–19. [[doi](10.1145/2983990.2984015)]
