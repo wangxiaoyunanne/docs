@@ -78,3 +78,7 @@ H. Wang, L. Geng, R. Lee, K. Hou, Y. Zhang, and X. Zhang, "SEP-Graph: Finding sh
 ## A compiler for throughput optimization of graph algorithms on GPUs
 
 S. Pai and K. Pingali, "A compiler for throughput optimization of graph algorithms on GPUs," Proceedings of the Conference on Object-Oriented Programming Systems, Languages, and Applications, OOPSLA, 2016, vol. 2, pp. 1–19. [[doi](10.1145/2983990.2984015)]
+
+## SHOVE ASIDE, PUSH: THE CASE FOR PULL-BASED GRAPH PROCESSING
+
+S. R. Grossman, “SHOVE ASIDE, PUSH: THE CASE FOR PULL-BASED GRAPH PROCESSING,” Ph.D. dissertation, Stanford University Department of Electrical Engineering, Nov. 2018. [[url](https://stacks.stanford.edu/file/druid:pr584hs3251/dissertation-augmented.pdf)]
