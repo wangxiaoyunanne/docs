@@ -82,3 +82,15 @@ S. Pai and K. Pingali, "A compiler for throughput optimization of graph algorith
 ## SHOVE ASIDE, PUSH: THE CASE FOR PULL-BASED GRAPH PROCESSING
 
 S. R. Grossman, “SHOVE ASIDE, PUSH: THE CASE FOR PULL-BASED GRAPH PROCESSING,” Ph.D. dissertation, Stanford University Department of Electrical Engineering, Nov. 2018. [[url](https://stacks.stanford.edu/file/druid:pr584hs3251/dissertation-augmented.pdf)]
+
+## Tigr: Transforming Irregular Graphs for GPU-Friendly Graph Processing
+
+Amir Hossein Nodehi Sabet, Junqiao Qiu, and Zhijia Zhao. 2018. Tigr: Transforming Irregular Graphs for GPU-Friendly Graph Processing. In Proceedings of the Twenty-Third International Conference on Architectural Support for Programming Languages and Operating Systems (ASPLOS '18), pp. 622–636. [[doi](https://doi.org/10.1145/3173162.3173180)]
+
+### Summary
+
+Preprocesses scale-free datasets to reduce irregularity by splitting high-degree nodes into sets of lower-degree nodes. This can be done virtually without modifying the underlying graph structure by adding additional virtual data structures atop it.
+
+### Assessment (JDO)
+
+I read this as "requiring preprocessing" but preprocessing times do not appear to be included in the results. This is an incomplete comparison.
