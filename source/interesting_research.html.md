@@ -5,7 +5,9 @@ toc_footers:
   - <a href='https://github.com/gunrock/gunrock'>Gunrock&colon; GPU Graph Analytics</a>
   - Gunrock &copy; 2019 The Regents of the University of California.
 
-search: true
+search: false
+
+noindex: true
 
 full_length: true
 ---
@@ -94,3 +96,19 @@ Preprocesses scale-free datasets to reduce irregularity by splitting high-degree
 ### Assessment (JDO)
 
 I read this as "requiring preprocessing" but preprocessing times do not appear to be included in the results. This is an incomplete comparison.
+
+## Low-latency graph streaming using compressed purely-functional trees
+
+Laxman Dhulipala, Guy E. Blelloch, and Julian Shun. 2019. Low-latency graph streaming using compressed purely-functional trees. In Proceedings of the 40th ACM SIGPLAN Conference on Programming Language Design and Implementation (PLDI 2019). ACM, New York, NY, USA, 918-934. [[doi](https://doi.org/10.1145/3314221.3314598)]
+
+### Summary
+
+Muhammad discussed this work in September with the author and thought it had interesting applications to both multi-node Gunrock and to data-structure design.
+
+## Realtime Top-k Personalized PageRank over Large Graphs on GPUs
+
+Shi, J., Yang, R., Jin, T., Xiao, X., Yang, Y. Realtime Top-k Personalized PageRank over Large Graphs on GPUs. Proceedings of the VLDB Endowment, 13(1):15-28, 2019. [[www](http://www.vldb.org/pvldb/vol13/p15-shi.pdf)]
+
+### Summary
+
+Implementation of Personalized PageRank. Can we learn something from this?
