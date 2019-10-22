@@ -112,3 +112,8 @@ Shi, J., Yang, R., Jin, T., Xiao, X., Yang, Y. Realtime Top-k Personalized PageR
 ### Summary
 
 Implementation of Personalized PageRank. Can we learn something from this?
+
+## SIMD-X: Programming and Processing of Graph Algorithms on GPUs
+
+Hang Liu and H. Howie Huang. SIMD-X: Programming and Processing
+of Graph Algorithms on GPUs. Proceedings of the 2019 USENIX Annual Technical Conference, 2019. [[www](https://www.usenix.org/system/files/atc19-liu-hang.pdf)]
