@@ -1,4 +1,40 @@
-# GoogleTest for Gunrock
+# Unit Testing & Code Coverage
+
+```c
+/*
+ * @brief PageRank test for shared library advanced interface
+ * @file test_lib_pr.h
+ */
+
+TEST(sharedlibrary, pagerank) {
+
+  int num_nodes = 7, num_edges = 26;
+  int row_offsets[8]  = {0, 3, 6, 11, 15, 19, 23, 26};
+  int col_indices[26] = {1, 2, 3, 0, 2, 4, 0, 1, 3, 4, 5, 0, 2,
+                         5, 6, 1, 2, 5, 6, 2, 3, 4, 6, 3, 4, 5};
+
+  int 	*top_nodes = new int  [num_nodes];
+  float	*top_ranks = new float[num_nodes];
+
+  double elapsed =  pagerank(num_nodes, num_edges, row_offsets, 
+		  	     col_indices, 1, top_nodes, top_ranks); 
+
+  double nodes[7] = {2, 3, 4, 5, 0, 1, 6};
+  double scores[7] = {0.186179, 0.152261, 0.152261, 0.151711,
+    0.119455, 0.119455, 0.118680};
+
+  for (int node = 0; node < num_nodes; ++node) {
+    EXPECT_EQ(top_nodes[node], nodes[node])
+      << "Node indices differ at node index " << node;
+    EXPECT_NEAR(top_ranks[node], scores[node], 0.0000005)
+      << "Scores differ at node index " << node;
+  }
+
+  delete[] top_nodes; top_nodes = NULL;
+  delete[] top_ranks; top_ranks = NULL;
+
+}
+```
 
 **Recommended Read:** [Introduction: Why Google C++ Testing Framework?](https://github.com/google/googletest/blob/master/googletest/docs/Primer.md)
 
@@ -25,70 +61,9 @@ Below is an example of what lines are a hit and a miss; you can target the lines
 
 ## Example Test Using GoogleTest
 
-```c
-/**
- * @brief BFS test for shared library advanced interface
- * @file test_lib_bfs.h
- */
+1. Create a `test_<test-name>.h` file and place it in the appropriate directory inside `/path/to/gunrock/unittests/`. I will be using `test_pr_lib.h` as an example.
 
-// Includes required for the test
-
-#include "stdio.h"
-#include "gunrock/gunrock.h"
-#include "gmock/gmock.h"
-#include "gtest/gtest.h"
-
-// Add to gunrock's namespace
-namespace gunrock {
-
-/* Test function, test suite in this case is
- * sharedlibrary and the test itself is breadthfirstsearch
- */
-TEST(sharedlibrary, breadthfirstsearch)
-{
-    struct GRTypes data_t;                 // data type structure
-    data_t.VTXID_TYPE = VTXID_INT;         // vertex identifier
-    data_t.SIZET_TYPE = SIZET_INT;         // graph size type
-    data_t.VALUE_TYPE = VALUE_INT;         // attributes type
-    int srcs[3] = {0,1,2};
-
-    struct GRSetup *config = InitSetup(3, srcs);   // gunrock configurations
-
-    int num_nodes = 7, num_edges = 15;  // number of nodes and edges
-    int row_offsets[8]  = {0, 3, 6, 9, 11, 14, 15, 15};
-    int col_indices[15] = {1, 2, 3, 0, 2, 4, 3, 4, 5, 5, 6, 2, 5, 6, 6};
-
-    struct GRGraph *grapho = (struct GRGraph*)malloc(sizeof(struct GRGraph));
-    struct GRGraph *graphi = (struct GRGraph*)malloc(sizeof(struct GRGraph));
-    graphi->num_nodes   = num_nodes;
-    graphi->num_edges   = num_edges;
-    graphi->row_offsets = (void*)&row_offsets[0];
-    graphi->col_indices = (void*)&col_indices[0];
-
-    gunrock_bfs(grapho, graphi, config, data_t);
-
-    int *labels = (int*)malloc(sizeof(int) * graphi->num_nodes);
-    labels = (int*)grapho->node_value1;
-
-    // IMPORTANT: Expected output is stored in an array to compare against determining if the test passed or failed
-    int result[7] = {2147483647, 2147483647, 0, 1, 1, 1, 2};
-
-    for (int i = 0; i < graphi->num_nodes; ++i) {
-      // IMPORTANT: Compare expected result with the generated labels
-      EXPECT_EQ(labels[i], result[i]) << "Vectors x and y differ at index " << i;
-    }
-
-    if (graphi) free(graphi);
-    if (grapho) free(grapho);
-    if (labels) free(labels);
-
-}
-} // namespace gunrock
-```
-
-1. Create a `test_<test-name>.h` file and place it in the appropriate directory inside `/path/to/gunrock/tests/`. I will be using `test_bfs_lib.h` as an example.
-
-2. In the `tests/test.cpp` file, add your test file as an include: `#include "bfs/test_lib_bfs.h"`.
+2. In the `tests/test_unittests.cu` file, add your test file as an include: `#include "test_lib_pr.h"`.
 
 3. In your `test_<test-name>.h` file, create a `TEST()` function, which takes two parameters: `TEST(<nameofthesuite>, <nameofthetest>)`.
 
