@@ -1,0 +1,16 @@
+Computational patterns in GraphSAGE related to Gunrock: 
+(1) neighborhood sample 
+(2) aggregate neighbor nodes attributes. 
+Gunrock has function to access the degree of nodes and nodes neighborhood;
+Basic reduce algorithm could be used for aggregations.
+Neighborhood sample is the key to many GNNs accelerating methods,
+it could be the bottleneck for node with large degrees,
+thus our Gunrock could contribute a lot in GNNs accelerations. 
+
+
+Other computations needs:
+(1)	Matrix multiplication in forward and backward propagations. 
+(2)	Softmax() function
+Gunrock does not support automatic backpropagations,
+so we need to calculate the gradients formula by hand for backpropagation,
+then use matrix-matrix multiplications to get each layer’s gradients; 
